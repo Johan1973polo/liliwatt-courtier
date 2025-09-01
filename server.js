@@ -16,6 +16,39 @@ const app = express();
 const port = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'ecogies-secret-key-2024';
 
+// Créer le dossier data s'il n'existe pas
+const initDataFolder = async () => {
+  const dataDir = path.join(__dirname, 'data');
+  if (!require('fs').existsSync(dataDir)) {
+    require('fs').mkdirSync(dataDir);
+  }
+  
+  // Créer le fichier users.json avec un admin par défaut s'il n'existe pas
+  const usersFile = path.join(dataDir, 'users.json');
+  if (!require('fs').existsSync(usersFile)) {
+    const defaultAdmin = {
+      id: Date.now().toString(),
+      email: 'admin@ecogies.fr',
+      password: await bcrypt.hash('Ecogies2024!', 10),
+      role: 'admin',
+      name: 'Admin',
+      createdAt: new Date().toISOString()
+    };
+    
+    require('fs').writeFileSync(usersFile, JSON.stringify({ users: [defaultAdmin] }, null, 2));
+    console.log('✅ Admin par défaut créé: admin@ecogies.fr / Ecogies2024!');
+  }
+  
+  // Créer le fichier notifications.json s'il n'existe pas
+  const notifsFile = path.join(dataDir, 'notifications.json');
+  if (!require('fs').existsSync(notifsFile)) {
+    require('fs').writeFileSync(notifsFile, JSON.stringify({ notifications: [] }, null, 2));
+  }
+};
+
+// Initialiser les dossiers et fichiers
+initDataFolder();
+
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
