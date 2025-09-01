@@ -1,0 +1,11 @@
+node_modules/
+.env
+.DS_Store
+*.log
+npm-debug.log*
+data/users.json
+data/notifications.json
+uploads/
+temp/
+*.bak
+*.bak.*

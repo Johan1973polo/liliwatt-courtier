@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECOGIES - Panel Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .mec-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        
+        .mec-item.completed {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+        }
+        
+        .mec-item.pending {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+        }
+        
+        .user-item, .notification-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #fee2e2;
+            color: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1 style="color: #1e3a8a;">Panel Administration ECOGIES</h1>
+                <p style="color: #64748b; margin-top: 5px;">Bienvenue, <span id="adminEmail"></span></p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="showSection('gestion')">
+                    👥 Gestion
+                </button>
+                <button class="btn btn-warning" onclick="showSection('mec')" style="position: relative;">
+                    🔔 MEC <span id="mecCount" style="font-weight: bold;">(0)</span>
+                </button>
+                <button class="btn btn-danger" onclick="logout()">
+                    🚪 Déconnexion
+                </button>
+            </div>
+        </div>
+        
+        <!-- Section Gestion (Vendeurs + Admins) -->
+        <div id="gestionSection" class="section" style="display: block;">
+            <!-- Gestion des vendeurs -->
+            <div style="margin-bottom: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="color: #1e3a8a;">👥 Vendeurs</h2>
+                    <button class="btn btn-success" onclick="showAddUserModal('vendeur')">
+                        ➕ Nouveau vendeur
+                    </button>
+                </div>
+                <div id="vendeursList">
+                    <p style="color: #64748b;">Aucun vendeur enregistré</p>
+                </div>
+            </div>
+            
+            <!-- Gestion des administrateurs -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="color: #ef4444;">👑 Administrateurs</h2>
+                    <button class="btn btn-success" onclick="showAddUserModal('admin')">
+                        ➕ Nouvel admin
+                    </button>
+                </div>
+                <div id="adminsList">
+                    <p style="color: #64748b;">Chargement...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Section MEC -->
+        <div id="mecSection" class="section" style="display: none;">
+            <h2 style="color: #1e3a8a; margin-bottom: 20px;">🔔 MEC en attente</h2>
+            <div id="pendingMecList">
+                <p style="color: #64748b;">Aucune MEC en attente</p>
+            </div>
+        </div>
+        
+        <!-- Bouton retour à l'application -->
+        <div style="text-align: right; margin-top: 30px;">
+            <button onclick="window.location.href='index.html'" style="padding: 12px 25px; font-size: 16px; background: #8b5cf6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                ↩️ Retour à l'application
+            </button>
+        </div>
+    </div>
+    
+    <!-- Modal Ajout Utilisateur -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 20px;" id="modalTitle">Créer un utilisateur</h3>
+            <form onsubmit="addUser(event)">
+                <input type="hidden" id="userRole" value="vendeur">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="newEmail" required placeholder="email@ecogies.fr">
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" id="newPassword" required placeholder="Minimum 8 caractères">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-success">Créer</button>
+                    <button type="button" class="btn btn-danger" onclick="hideAddUserModal()">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal Consultation Vendeur -->
+    <div id="viewUserModal" class="modal">
+        <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+            <h3 style="margin-bottom: 20px;">👁️ Consultation du vendeur</h3>
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="color: #1e3a8a; margin-bottom: 15px;">Informations de base</h4>
+                <div class="form-group">
+                    <label>Email</label>
+                    <div style="padding: 10px; background: #e2e8f0; border-radius: 6px;" id="viewEmail">-</div>
+                </div>
+                <div class="form-group">
+                    <label>Créé le</label>
+                    <div style="padding: 10px; background: #e2e8f0; border-radius: 6px;" id="viewCreated">-</div>
+                </div>
+            </div>
+            
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="color: #1e3a8a; margin-bottom: 15px;">🔑 Identifiants et Accès</h4>
+                <div id="viewCredentialsContainer" style="max-height: 300px; overflow-y: auto;">
+                    <!-- Les identifiants seront affichés ici -->
+                </div>
+            </div>
+            
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="color: #1e3a8a; margin-bottom: 15px;">🔗 Liens personnalisés</h4>
+                <div id="viewLinksContainer">
+                    <!-- Les liens seront affichés ici -->
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <button type="button" class="btn btn-primary" onclick="hideViewUserModal()">Fermer</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Édition Vendeur -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+            <h3 style="margin-bottom: 20px;">📝 Éditer les informations du vendeur</h3>
+            <form onsubmit="saveUserInfo(event)">
+                <input type="hidden" id="editUserId">
+                
+                <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="color: #1e3a8a; margin-bottom: 15px;">Informations de base</h4>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="editEmail" disabled style="background: #e2e8f0;">
+                    </div>
+                </div>
+                
+                <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="color: #1e3a8a; margin-bottom: 15px;">🔑 Identifiants et Accès</h4>
+                    <div id="credentialsContainer">
+                        <!-- Les identifiants seront ajoutés dynamiquement ici -->
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addCredential()" style="margin-top: 15px;">
+                        ➕ Ajouter un identifiant
+                    </button>
+                </div>
+                
+                <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="color: #1e3a8a; margin-bottom: 15px;">🔗 Liens personnalisés</h4>
+                    <div id="linksContainer">
+                        <!-- Les liens seront ajoutés dynamiquement ici -->
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addLink()" style="margin-top: 10px;">
+                        ➕ Ajouter un lien
+                    </button>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-success">💾 Sauvegarder</button>
+                    <button type="button" class="btn btn-danger" onclick="hideEditUserModal()">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('token');
+        let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        // Vérifier l'authentification
+        if (!authToken || currentUser.role !== 'admin') {
+            alert('Accès non autorisé');
+            window.location.href = 'login.html';
+        }
+        
+        // Afficher email admin
+        document.getElementById('adminEmail').textContent = currentUser.email;
+        
+        // Charger les données au démarrage
+        loadPendingMEC();
+        loadUsers();
+        
+        // Vérifier si on doit afficher directement la section MEC
+        if (window.location.hash === '#mec') {
+            showSection('mec');
+        }
+        
+        // Actualiser toutes les 10 secondes
+        setInterval(() => {
+            loadPendingMEC();
+        }, 10000);
+        
+        // Fonction pour afficher une section
+        function showSection(section) {
+            document.getElementById('gestionSection').style.display = section === 'gestion' ? 'block' : 'none';
+            document.getElementById('mecSection').style.display = section === 'mec' ? 'block' : 'none';
+            
+            if (section === 'mec') {
+                loadPendingMEC();
+            } else if (section === 'gestion') {
+                loadUsers();
+            }
+        }
+        
+        async function loadPendingMEC() {
+            try {
+                // Charger uniquement les MEC en attente
+                const response = await fetch('/api/notifications', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const pendingNotifs = data.notifications || [];
+                    
+                    // Mettre à jour le compteur dans le bouton
+                    document.getElementById('mecCount').textContent = `(${pendingNotifs.length})`;
+                    
+                    // Afficher les MEC en attente
+                    const pendingDiv = document.getElementById('pendingMecList');
+                    if (pendingNotifs.length === 0) {
+                        pendingDiv.innerHTML = '<p style="color: #64748b;">Aucune MEC en attente</p>';
+                    } else {
+                        pendingDiv.innerHTML = pendingNotifs.map(notif => `
+                            <div class="mec-item pending">
+                                <div>
+                                    <strong>👤 ${notif.vendeur_email}</strong><br>
+                                    <strong style="color: #1e3a8a;">🏢 ${notif.client_name || 'Non spécifié'}</strong><br>
+                                    <small style="color: #64748b;">📅 ${new Date(notif.date).toLocaleString('fr-FR')}</small>
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <button class="btn btn-success" onclick="reprendreMEC('${notif.id}')">
+                                        📝 Reprendre
+                                    </button>
+                                    <button class="btn btn-danger" onclick="deleteMEC('${notif.id}')">
+                                        🗑️ Supprimer
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur chargement MEC:', error);
+            }
+        }
+        
+        async function loadUsers() {
+            try {
+                // Charger tous les utilisateurs
+                const response = await fetch('/api/auth/all-users', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const allUsers = data.users || [];
+                    
+                    // Séparer vendeurs et admins
+                    const vendeurs = allUsers.filter(u => u.role === 'vendeur');
+                    const admins = allUsers.filter(u => u.role === 'admin');
+                    
+                    // Afficher les vendeurs
+                    const vendeursDiv = document.getElementById('vendeursList');
+                    if (vendeurs.length === 0) {
+                        vendeursDiv.innerHTML = '<p style="color: #64748b;">Aucun vendeur enregistré</p>';
+                    } else {
+                        vendeursDiv.innerHTML = vendeurs.map(user => `
+                            <div class="user-item">
+                                <div>
+                                    <strong>${user.email}</strong><br>
+                                    <small style="color: #64748b;">Créé le: ${new Date(user.created).toLocaleDateString('fr-FR')}</small>
+                                    ${user.info ? `<br><small style="color: #10b981;">✓ Infos configurées</small>` : ''}
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <button class="btn btn-success" onclick="viewUser('${user.id}')">
+                                        👁️ Consulter
+                                    </button>
+                                    <button class="btn btn-primary" onclick="editUser('${user.id}')">
+                                        ✏️ Éditer
+                                    </button>
+                                    <button class="btn btn-danger" onclick="deleteUser('${user.id}', 'vendeur')">
+                                        🗑️ Supprimer
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                    
+                    // Afficher les admins
+                    const adminsDiv = document.getElementById('adminsList');
+                    if (admins.length === 0) {
+                        adminsDiv.innerHTML = '<p style="color: #64748b;">Aucun administrateur</p>';
+                    } else {
+                        adminsDiv.innerHTML = admins.map(admin => `
+                            <div class="user-item" style="background: #fee2e2;">
+                                <div>
+                                    <strong>👑 ${admin.email}</strong><br>
+                                    <small style="color: #64748b;">Créé le: ${new Date(admin.created).toLocaleDateString('fr-FR')}</small>
+                                </div>
+                                <div>
+                                    ${admin.id !== currentUser.id ? `
+                                        <button class="btn btn-danger" onclick="deleteUser('${admin.id}', 'admin')">
+                                            🗑️ Supprimer
+                                        </button>
+                                    ` : '<span style="color: #64748b; font-size: 14px;">Vous-même</span>'}
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur chargement utilisateurs:', error);
+            }
+        }
+        
+        function showAddUserModal(role) {
+            document.getElementById('userRole').value = role;
+            document.getElementById('modalTitle').textContent = role === 'admin' ? 'Créer un administrateur' : 'Créer un vendeur';
+            document.getElementById('newEmail').placeholder = role === 'admin' ? 'admin@ecogies.fr' : 'vendeur@ecogies.fr';
+            document.getElementById('addUserModal').style.display = 'flex';
+        }
+        
+        function hideAddUserModal() {
+            document.getElementById('addUserModal').style.display = 'none';
+            document.getElementById('newEmail').value = '';
+            document.getElementById('newPassword').value = '';
+        }
+        
+        async function addUser(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('newEmail').value;
+            const password = document.getElementById('newPassword').value;
+            const role = document.getElementById('userRole').value;
+            
+            try {
+                const response = await fetch('/api/auth/create-user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ email, password, role })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const userType = role === 'admin' ? 'Administrateur' : 'Vendeur';
+                    alert(`${userType} créé avec succès!\nEmail: ${email}\nMot de passe: ${password}`);
+                    hideAddUserModal();
+                    loadUsers();
+                } else {
+                    alert(data.error || 'Erreur lors de la création');
+                }
+            } catch (error) {
+                alert('Erreur de connexion au serveur');
+                console.error('Erreur:', error);
+            }
+        }
+        
+        async function deleteUser(userId, userRole) {
+            const userType = userRole === 'admin' ? 'cet administrateur' : 'ce vendeur';
+            if (!confirm(`Êtes-vous sûr de vouloir supprimer ${userType}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/auth/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    alert(`${userRole === 'admin' ? 'Administrateur' : 'Vendeur'} supprimé avec succès`);
+                    loadUsers();
+                } else {
+                    alert('Erreur lors de la suppression');
+                }
+            } catch (error) {
+                alert('Erreur de connexion au serveur');
+                console.error('Erreur:', error);
+            }
+        }
+        
+        async function reprendreMEC(notifId) {
+            try {
+                // Récupérer les détails de la notification
+                const response = await fetch('/api/notifications', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const notification = data.notifications.find(n => n.id === notifId);
+                    
+                    if (notification && notification.session_data) {
+                        // Sauvegarder toutes les données de la session du vendeur
+                        localStorage.setItem('reprendre_mec_data', JSON.stringify(notification.session_data));
+                        localStorage.setItem('reprendre_mec_id', notifId);
+                        
+                        // Rediriger vers l'application principale
+                        window.location.href = 'index.html?reprendre=' + notifId;
+                    } else {
+                        alert('Erreur : données de la MEC non trouvées');
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur récupération MEC:', error);
+                alert('Erreur lors de la récupération de la MEC');
+            }
+        }
+        
+        async function deleteMEC(notifId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette MEC ?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/notifications/${notifId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    alert('MEC supprimée avec succès');
+                    loadPendingMEC();
+                } else {
+                    alert('Erreur lors de la suppression');
+                }
+            } catch (error) {
+                alert('Erreur de connexion au serveur');
+                console.error('Erreur:', error);
+            }
+        }
+        
+        let editingLinks = [];
+        let editingCredentials = [];
+        let viewPasswordsVisible = {};
+        
+        async function viewUser(userId) {
+            try {
+                const response = await fetch(`/api/auth/users/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const user = data.user;
+                    
+                    // Afficher les informations de base
+                    document.getElementById('viewEmail').textContent = user.email;
+                    document.getElementById('viewCreated').textContent = new Date(user.created).toLocaleDateString('fr-FR');
+                    
+                    // Afficher les identifiants
+                    const credContainer = document.getElementById('viewCredentialsContainer');
+                    if (user.info?.credentials && user.info.credentials.length > 0) {
+                        credContainer.innerHTML = user.info.credentials.map((cred, index) => {
+                            if (!cred.name && !cred.username && !cred.password) return '';
+                            return `
+                                <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e2e8f0;">
+                                    <h5 style="color: #1e3a8a; margin: 0 0 10px 0;">${cred.name || 'Service'}</h5>
+                                    ${cred.username ? `
+                                        <div style="margin-bottom: 8px;">
+                                            <span style="color: #64748b; font-size: 12px;">Identifiant:</span><br>
+                                            <strong>${cred.username}</strong>
+                                        </div>
+                                    ` : ''}
+                                    ${cred.password ? `
+                                        <div>
+                                            <span style="color: #64748b; font-size: 12px;">Mot de passe:</span><br>
+                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                <strong id="view-pwd-${index}">${viewPasswordsVisible[index] ? cred.password : '••••••••'}</strong>
+                                                <button type="button" onclick="toggleViewPassword(${index}, '${cred.password}')" 
+                                                        style="background: #e2e8f0; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
+                                                    ${viewPasswordsVisible[index] ? '🙈' : '👁️'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }).join('');
+                    } else {
+                        credContainer.innerHTML = '<p style="color: #64748b;">Aucun identifiant configuré</p>';
+                    }
+                    
+                    // Afficher les liens
+                    const linksContainer = document.getElementById('viewLinksContainer');
+                    if (user.info?.links && user.info.links.length > 0) {
+                        linksContainer.innerHTML = user.info.links.map(link => `
+                            <div style="background: white; padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                <span><strong>${link.name}</strong></span>
+                                <a href="${link.url}" target="_blank" class="btn btn-primary" style="padding: 5px 15px; font-size: 14px;">
+                                    🔗 Ouvrir
+                                </a>
+                            </div>
+                        `).join('');
+                    } else {
+                        linksContainer.innerHTML = '<p style="color: #64748b;">Aucun lien configuré</p>';
+                    }
+                    
+                    // Afficher le modal
+                    document.getElementById('viewUserModal').style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Erreur chargement utilisateur:', error);
+                alert('Erreur lors du chargement des informations');
+            }
+        }
+        
+        function toggleViewPassword(index, password) {
+            viewPasswordsVisible[index] = !viewPasswordsVisible[index];
+            const display = document.getElementById(`view-pwd-${index}`);
+            if (display) {
+                display.textContent = viewPasswordsVisible[index] ? password : '••••••••';
+            }
+            
+            // Mettre à jour le bouton
+            const button = display.nextElementSibling;
+            if (button) {
+                button.textContent = viewPasswordsVisible[index] ? '🙈' : '👁️';
+            }
+        }
+        
+        function hideViewUserModal() {
+            document.getElementById('viewUserModal').style.display = 'none';
+            viewPasswordsVisible = {};
+        }
+        
+        async function editUser(userId) {
+            try {
+                const response = await fetch(`/api/auth/users/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const user = data.user;
+                    
+                    // Remplir le formulaire avec les données existantes
+                    document.getElementById('editUserId').value = user.id;
+                    document.getElementById('editEmail').value = user.email;
+                    
+                    // Charger les identifiants existants ou créer les défauts
+                    if (user.info?.credentials && user.info.credentials.length > 0) {
+                        editingCredentials = user.info.credentials;
+                    } else {
+                        // Créer les identifiants par défaut si pas encore configurés
+                        editingCredentials = [
+                            { name: 'OHM Énergie - Segment Classique', username: '', password: '', type: 'ohm-classic' },
+                            { name: 'OHM Énergie - Petits Consommateurs', username: '', password: '', type: 'ohm-small' }
+                        ];
+                        
+                        // Migration des anciennes données si elles existent
+                        if (user.info?.ohmId || user.info?.ohmPassword) {
+                            editingCredentials[0].username = user.info.ohmId || '';
+                            editingCredentials[0].password = user.info.ohmPassword || '';
+                        }
+                        if (user.info?.ilekId || user.info?.ilekPassword) {
+                            editingCredentials.push({
+                                name: 'ILEK',
+                                username: user.info.ilekId || '',
+                                password: user.info.ilekPassword || '',
+                                type: 'ilek'
+                            });
+                        }
+                    }
+                    
+                    renderCredentials();
+                    
+                    // Charger les liens existants
+                    editingLinks = user.info?.links || [];
+                    renderLinks();
+                    
+                    // Afficher le modal
+                    document.getElementById('editUserModal').style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Erreur chargement utilisateur:', error);
+                alert('Erreur lors du chargement des informations');
+            }
+        }
+        
+        function hideEditUserModal() {
+            document.getElementById('editUserModal').style.display = 'none';
+            editingLinks = [];
+            editingCredentials = [];
+        }
+        
+        function renderCredentials() {
+            const container = document.getElementById('credentialsContainer');
+            if (editingCredentials.length === 0) {
+                container.innerHTML = '<p style="color: #64748b;">Aucun identifiant configuré</p>';
+            } else {
+                container.innerHTML = editingCredentials.map((cred, index) => `
+                    <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e2e8f0;">
+                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: end;">
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-size: 12px; color: #64748b;">Nom du service</label>
+                                <input type="text" placeholder="Ex: OHM Énergie" value="${cred.name || ''}" 
+                                       onchange="updateCredential(${index}, 'name', this.value)"
+                                       style="padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; width: 100%;">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-size: 12px; color: #64748b;">Identifiant</label>
+                                <input type="text" placeholder="Identifiant" value="${cred.username || ''}" 
+                                       onchange="updateCredential(${index}, 'username', this.value)"
+                                       style="padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; width: 100%;">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-size: 12px; color: #64748b;">Mot de passe</label>
+                                <div style="position: relative;">
+                                    <input type="${credentialVisibility[index] ? 'text' : 'password'}" 
+                                           id="cred-pwd-${index}"
+                                           placeholder="Mot de passe" value="${cred.password || ''}" 
+                                           onchange="updateCredential(${index}, 'password', this.value)"
+                                           style="padding: 8px; padding-right: 35px; border: 1px solid #e2e8f0; border-radius: 4px; width: 100%;">
+                                    <button type="button" onclick="toggleCredentialPassword(${index})" 
+                                            style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 5px;">
+                                        ${credentialVisibility[index] ? '🙈' : '👁️'}
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-danger" onclick="removeCredential(${index})" 
+                                    style="padding: 8px 12px; height: fit-content;">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        let credentialVisibility = {};
+        
+        function toggleCredentialPassword(index) {
+            credentialVisibility[index] = !credentialVisibility[index];
+            renderCredentials();
+        }
+        
+        function addCredential() {
+            editingCredentials.push({ name: '', username: '', password: '' });
+            renderCredentials();
+        }
+        
+        function updateCredential(index, field, value) {
+            editingCredentials[index][field] = value;
+        }
+        
+        function removeCredential(index) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cet identifiant ?')) {
+                editingCredentials.splice(index, 1);
+                renderCredentials();
+            }
+        }
+        
+        function renderLinks() {
+            const container = document.getElementById('linksContainer');
+            if (editingLinks.length === 0) {
+                container.innerHTML = '<p style="color: #64748b;">Aucun lien configuré</p>';
+            } else {
+                container.innerHTML = editingLinks.map((link, index) => `
+                    <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 10px; margin-bottom: 10px; align-items: center;">
+                        <input type="text" placeholder="Nom du bouton" value="${link.name || ''}" 
+                               onchange="updateLink(${index}, 'name', this.value)"
+                               style="padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                        <input type="url" placeholder="https://..." value="${link.url || ''}" 
+                               onchange="updateLink(${index}, 'url', this.value)"
+                               style="padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                        <button type="button" class="btn btn-danger" onclick="removeLink(${index})" style="padding: 8px;">
+                            🗑️
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        function addLink() {
+            editingLinks.push({ name: '', url: '' });
+            renderLinks();
+        }
+        
+        function updateLink(index, field, value) {
+            editingLinks[index][field] = value;
+        }
+        
+        function removeLink(index) {
+            editingLinks.splice(index, 1);
+            renderLinks();
+        }
+        
+        async function saveUserInfo(event) {
+            event.preventDefault();
+            
+            const userId = document.getElementById('editUserId').value;
+            const info = {
+                credentials: editingCredentials.filter(cred => cred.name || cred.username || cred.password),
+                links: editingLinks.filter(link => link.name && link.url)
+            };
+            
+            try {
+                const response = await fetch(`/api/auth/users/${userId}/info`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ info })
+                });
+                
+                if (response.ok) {
+                    alert('✅ Informations sauvegardées avec succès');
+                    hideEditUserModal();
+                    loadUsers();
+                } else {
+                    alert('Erreur lors de la sauvegarde');
+                }
+            } catch (error) {
+                alert('Erreur de connexion au serveur');
+                console.error('Erreur:', error);
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

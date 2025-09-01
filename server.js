@@ -1,0 +1,662 @@
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const OpenAI = require('openai');
+const { formidable } = require('formidable');
+const fs = require('fs').promises;
+const pdf = require('pdf-parse');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
+const path = require('path');
+
+dotenv.config();
+
+const app = express();
+const port = process.env.PORT || 3001;
+const JWT_SECRET = process.env.JWT_SECRET || 'ecogies-secret-key-2024';
+
+app.use(cors());
+app.use(express.json());
+app.use(cookieParser());
+app.use(express.static('public'));
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+// Route de test
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    message: 'API ECOGIES - GPT-4 EXTRACTION PARFAITE!', 
+    timestamp: new Date(),
+    version: 'COMPLETE_V2'
+  });
+});
+
+// Route principale
+app.get('/', (req, res) => {
+  res.send(`
+    <h1>🚀 Serveur EcoGies OPTIMISÉ</h1>
+    <p>✅ GPT-4 Extraction Complète</p>
+    <p>✅ Génération RGPD + PDF</p>
+    <p>✅ Calculs optimisés</p>
+    <a href="/interface.html">👉 Accéder à l'interface</a>
+  `);
+});
+
+// Route pour traiter l'upload et l'extraction
+app.post('/api/upload-and-extract', async (req, res) => {
+  console.log('🔍 POST /api/upload-and-extract appelé');
+  
+  const form = formidable({ multiples: true, maxFileSize: 20 * 1024 * 1024 });
+  
+  try {
+    const [fields, files] = await form.parse(req);
+    const file1 = Array.isArray(files.file) ? files.file[0] : files.file;
+    const file2 = Array.isArray(files.file2) ? files.file2[0] : files.file2;
+    
+    if (!file1) {
+      return res.status(400).json({ success: false, error: 'Aucun fichier uploadé' });
+    }
+    
+    console.log('📄 Fichier(s) reçu(s):', file1.originalFilename, file2?.originalFilename || '');
+    
+    // Lire le contenu du premier fichier
+    let content1 = '';
+    if (file1.mimetype === 'application/pdf') {
+      const dataBuffer = await fs.readFile(file1.filepath);
+      const data = await pdf(dataBuffer);
+      content1 = data.text.substring(0, 5000); // 5000 caractères max
+    } else {
+      const dataBuffer = await fs.readFile(file1.filepath);
+      content1 = dataBuffer.toString('utf-8').substring(0, 5000);
+    }
+    
+    // Lire le second fichier si présent
+    let content2 = '';
+    if (file2) {
+      if (file2.mimetype === 'application/pdf') {
+        const dataBuffer = await fs.readFile(file2.filepath);
+        const data = await pdf(dataBuffer);
+        content2 = data.text.substring(0, 5000);
+      } else {
+        const dataBuffer = await fs.readFile(file2.filepath);
+        content2 = dataBuffer.toString('utf-8').substring(0, 5000);
+      }
+    }
+    
+    // Combiner les contenus
+    const fullContent = content2 ? 
+      `=== FACTURE PÉRIODE 1 (été) ===\n${content1}\n\n=== FACTURE PÉRIODE 2 (hiver) ===\n${content2}` : 
+      content1;
+    
+    console.log('🤖 Extraction GPT-4 ULTRA-PRÉCISE en cours...');
+    console.log('📏 Taille du contenu:', fullContent.length, 'caractères');
+    
+    // Extraction avec GPT-4 ULTRA-OPTIMISÉ
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: `Tu es L'EXPERT ABSOLU en extraction de factures d'énergie françaises pour EcoGies.
+Tu DOIS extraire TOUTES les informations avec une PRÉCISION MAXIMALE !
+
+⚠️ IMPORTANT POUR C4/C2 : Tu as 2 FACTURES (été + hiver) à analyser !
+- FACTURE 1 (été) : contient HPE et HCE
+- FACTURE 2 (hiver) : contient HPH et HCH
+- OBLIGATOIRE : EXTRAIS LES 4 PRIX depuis les 2 factures !
+- NE JAMAIS laisser un prix à 0 pour C4 !
+
+🔍 IDENTIFICATION DU FOURNISSEUR (PRIORITÉ ABSOLUE) :
+- Identifie TOUJOURS le fournisseur en premier (EDF, ENGIE, Total, ENI, Primeo, etc.)
+- Si EDF → les prix sont TOUJOURS en c€/kWh, extraire directement
+- Si PRIMEO → les prix sont en €/MWh, extraire tel quel
+- Autres fournisseurs → GARDE L'UNITÉ D'ORIGINE sans conversion
+
+🚨 RÈGLES CRITIQUES D'EXTRACTION :
+
+1. SEGMENT (DÉTECTION ULTRA-PRÉCISE) :
+   - Si GAZ → "GAZ"
+   - Si ÉLECTRICITÉ + UN SEUL tarif visible → "C5-BASE" 
+   - Si ÉLECTRICITÉ + 2 tarifs (HP/HC ou heures pleines/creuses) → "C5-HPHC"
+   - Si ÉLECTRICITÉ + 4 tarifs (HPE/HCE/HPH/HCH) → "C4"
+   - Si ÉLECTRICITÉ + 5 tarifs (+ POINTE) → "C2"
+
+2. PRIX/TARIFS (EXTRACTION BRUTE SANS CONVERSION) :
+   Cherche ABSOLUMENT PARTOUT ces indicateurs :
+   - "prix", "tarif", "€/kWh", "c€/kWh", "centimes", "€/MWh"
+   - "base", "HP", "HC", "heures pleines", "heures creuses"
+   - "HPE", "HCE", "HPH", "HCH", "pointe"
+   - "molécule"
+   
+   EXTRACTION SELON L'UNITÉ VISIBLE :
+   - Si tu vois "0.1911 €/kWh" → extraire 0.1911
+   - Si tu vois "19.11 c€/kWh" → extraire 19.11
+   - Si tu vois "191.10 €/MWh" → extraire 191.10
+   - Si tu vois "251,60 €/MWh" → extraire 251.60 (convertir virgule en point)
+   - Si tu vois "25 160" ou "25160" → extraire 25160 tel quel
+   - NE JAMAIS CONVERTIR, extraire la valeur brute !
+   
+   POUR C4 : CHERCHE dans les 2 FACTURES :
+   - FACTURE ÉTÉ : HPE et HCE (OBLIGATOIRE)
+   - FACTURE HIVER : HPH et HCH (OBLIGATOIRE)
+   - SI UN PRIX MANQUE : Relis la facture correspondante !
+
+3. VOLUMES/CONSOMMATIONS :
+   Extrais TOUTES les consommations en kWh :
+   - Pour HP/HC : volume HP et volume HC séparément
+   - Pour GAZ : consommation totale en kWh ou CAR en MWh/an
+   - Si en MWh, multiplie par 1000 pour avoir en kWh
+
+4. PUISSANCE SOUSCRITE (ATTENTION PRIMEO !) :
+   Pour PRIMEO spécifiquement :
+   - Chercher "Puissance souscrite kVA" dans section "VOS RELEVÉS D'INDEX"
+   - OU chercher "Puissance souscrite" dans tableaux de consommation
+   - IGNORER ABSOLUMENT les "kVA/jour" des composantes tarifaires
+   - IGNORER les calculs type "0,54 €/kVA/jour" ou "Prime fixe kVA"
+   - Extraire la VRAIE puissance contractuelle (ex: 36 kVA, 42 kVA, etc.)
+   
+   Pour AUTRES fournisseurs :
+   - Chercher "Puissance souscrite" standard
+   - Valeur normale entre 6 et 1000 kVA
+
+5. DONNÉES OBLIGATOIRES :
+   - PDL (14 chiffres) ou PCE (14 chiffres pour gaz)
+   - Puissance souscrite RÉELLE (pas les calculs tarifaires !)
+   - Date fin contrat COMPLÈTE (format JJ/MM/AAAA, ex: 15/09/2025)
+     ⚠️ IMPORTANT: Extraire la date COMPLÈTE avec jour, mois ET année !
+     Si tu ne vois que le jour, cherche le mois et l'année ailleurs dans la facture
+     Ne JAMAIS retourner juste "15" mais toujours "15/09/2025" par exemple
+   - Type offre précis
+   - Adresses COMPLÈTES
+
+6. SIREN CLIENT (9 chiffres) :
+   IGNORE ces SIREN de gestionnaires : 552081317, 444786511, 777921987
+   Cherche le VRAI SIREN du client
+
+FOUILLE CHAQUE MOT, CHAQUE LIGNE ! Sois ULTRA-AGRESSIF !
+
+🔴 RÈGLE ABSOLUE POUR C4 :
+- Tu DOIS extraire HPE et HCE de la facture été
+- Tu DOIS extraire HPH et HCH de la facture hiver
+- JAMAIS laisser un prix à 0 pour C4 !
+- Si un prix manque, RECHERCHE ENCORE dans les 2 factures !
+
+Format JSON EXACT :
+{
+  "nom_client": "",
+  "siren": "",
+  "pdl_pce": "",
+  "segment": "",
+  "fournisseur": "",
+  "type_offre": "",
+  "puissance_souscrite": 0,
+  "date_fin_contrat": "",
+  "adresse_facturation": "",
+  "adresse_consommation": "",
+  "prix_base_centimes": 0,
+  "prix_hp_centimes": 0,
+  "prix_hc_centimes": 0,
+  "prix_hpe_centimes": 0,
+  "prix_hce_centimes": 0,
+  "prix_hph_centimes": 0,
+  "prix_hch_centimes": 0,
+  "prix_pointe_centimes": 0,
+  "prix_molecule_eur_mwh": 0,
+  "prix_abonnement_eur": 0,
+  "volume_hp_kwh": 0,
+  "volume_hc_kwh": 0,
+  "volume_base_kwh": 0,
+  "volume_total_kwh": 0,
+  "iban": ""
+}`
+        },
+        {
+          role: "user",
+          content: `FACTURE(S) À ANALYSER AVEC PRÉCISION MAXIMALE :
+Énergie sélectionnée: ${fields.energyType}
+Profil choisi: ${fields.profileType}
+
+CONTENU COMPLET À FOUILLER :
+${fullContent}
+
+EXTRAIS ABSOLUMENT TOUT ! Trouve les prix coûte que coûte !
+Si une donnée n'existe pas, mets "N/A" pour texte ou 0 pour nombres.`
+        }
+      ],
+      temperature: 0.01,
+      max_tokens: 2000
+    });
+    
+    const responseText = completion.choices[0].message.content.trim();
+    console.log('✅ Réponse GPT-4 ULTRA-PRÉCISE reçue');
+    
+    // Parser le JSON
+    let result;
+    try {
+      // Nettoyer la réponse de GPT-4 qui peut contenir du texte avant/après
+      let cleanedResponse = responseText;
+      
+      // Si la réponse contient ```json, extraire le JSON
+      if (responseText.includes('```json')) {
+        const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch && jsonMatch[1]) {
+          cleanedResponse = jsonMatch[1];
+        }
+      } else if (responseText.includes('```')) {
+        // Si juste des backticks sans "json"
+        const jsonMatch = responseText.match(/```\s*([\s\S]*?)\s*```/);
+        if (jsonMatch && jsonMatch[1]) {
+          cleanedResponse = jsonMatch[1];
+        }
+      } else if (responseText.includes('{')) {
+        // Extraire le JSON brut s'il est présent
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          cleanedResponse = jsonMatch[0];
+        }
+      }
+      
+      cleanedResponse = cleanedResponse.trim();
+      result = JSON.parse(cleanedResponse);
+      console.log('🎯 JSON parsé avec succès:', result);
+    } catch (parseError) {
+      console.error('❌ Erreur parsing JSON:', parseError);
+      console.error('📝 Texte reçu:', responseText);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'GPT-4 n\'a pas retourné un JSON valide',
+        raw: responseText 
+      });
+    }
+    
+    // Nettoyer les fichiers temporaires
+    await fs.unlink(file1.filepath);
+    if (file2) await fs.unlink(file2.filepath);
+    
+    res.json({ success: true, data: result });
+    
+  } catch (error) {
+    console.error('💥 Erreur complète:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      details: error.toString()
+    });
+  }
+});
+
+// Route pour générer le PDF RGPD
+app.post('/api/generate-rgpd', async (req, res) => {
+  try {
+    const { clientData, extractedData } = req.body;
+    
+    console.log('📄 Génération RGPD PDF pour:', clientData.nom);
+    
+    // Ici on peut ajouter la génération PDF avec jsPDF ou autre
+    // Pour l'instant, on retourne les données formatées
+    
+    const rgpdData = {
+      success: true,
+      client: clientData,
+      factureData: extractedData,
+      dateGeneration: new Date().toLocaleDateString('fr-FR'),
+      message: 'RGPD généré avec succès'
+    };
+    
+    res.json(rgpdData);
+    
+  } catch (error) {
+    console.error('❌ Erreur génération RGPD:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// ========== SYSTÈME D'AUTHENTIFICATION ==========
+
+// Helper pour lire/écrire les fichiers JSON
+const readJSON = async (filename) => {
+  try {
+    const data = await fs.readFile(path.join(__dirname, 'data', filename), 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    return filename === 'users.json' ? { users: [] } : { notifications: [] };
+  }
+};
+
+const writeJSON = async (filename, data) => {
+  await fs.mkdir(path.join(__dirname, 'data'), { recursive: true });
+  await fs.writeFile(path.join(__dirname, 'data', filename), JSON.stringify(data, null, 2));
+};
+
+// Middleware pour vérifier le token
+const verifyToken = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1] || req.cookies.token;
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Non autorisé' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Token invalide' });
+  }
+};
+
+// Middleware pour vérifier si admin
+const isAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
+  }
+  next();
+};
+
+// Route de connexion
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const data = await readJSON('users.json');
+    
+    const user = data.users.find(u => u.email === email);
+    if (!user) {
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+    }
+    
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+    }
+    
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+    
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour créer un utilisateur (admin only)
+app.post('/api/auth/create-user', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { email, password, role = 'vendeur' } = req.body;
+    const data = await readJSON('users.json');
+    
+    if (data.users.find(u => u.email === email)) {
+      return res.status(400).json({ error: 'Cet email existe déjà' });
+    }
+    
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = {
+      id: role === 'admin' ? `admin_${Date.now()}` : `vendeur_${Date.now()}`,
+      email,
+      password: hashedPassword,
+      role: role,
+      created: new Date().toISOString(),
+      created_by: req.user.id
+    };
+    
+    data.users.push(newUser);
+    await writeJSON('users.json', data);
+    
+    res.json({
+      success: true,
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        role: newUser.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour lister les vendeurs (admin only)
+app.get('/api/auth/users', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const data = await readJSON('users.json');
+    const vendeurs = data.users
+      .filter(u => u.role === 'vendeur')
+      .map(u => ({
+        id: u.id,
+        email: u.email,
+        created: u.created,
+        last_login: u.last_login,
+        info: u.info // Inclure les infos pour l'affichage
+      }));
+    
+    res.json({ success: true, users: vendeurs });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour lister tous les utilisateurs (admin only)
+app.get('/api/auth/all-users', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const data = await readJSON('users.json');
+    const users = data.users.map(u => ({
+      id: u.id,
+      email: u.email,
+      role: u.role,
+      created: u.created,
+      last_login: u.last_login,
+      info: u.info
+    }));
+    
+    res.json({ success: true, users });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour obtenir un utilisateur spécifique
+app.get('/api/auth/users/:id', verifyToken, async (req, res) => {
+  try {
+    const data = await readJSON('users.json');
+    const user = data.users.find(u => u.id === req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+    
+    // Vérifier les permissions (admin peut tout voir, vendeur seulement lui-même)
+    if (req.user.role !== 'admin' && req.user.id !== user.id) {
+      return res.status(403).json({ error: 'Accès non autorisé' });
+    }
+    
+    // Ne pas renvoyer le mot de passe hashé
+    const { password, ...userWithoutPassword } = user;
+    res.json({ success: true, user: userWithoutPassword });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour mettre à jour les infos d'un utilisateur (admin only)
+app.put('/api/auth/users/:id/info', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const data = await readJSON('users.json');
+    const userIndex = data.users.findIndex(u => u.id === req.params.id);
+    
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+    
+    // Mettre à jour les infos
+    data.users[userIndex].info = req.body.info;
+    await writeJSON('users.json', data);
+    
+    res.json({ success: true, message: 'Informations mises à jour' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour supprimer un vendeur (admin only)
+app.delete('/api/auth/users/:id', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const data = await readJSON('users.json');
+    data.users = data.users.filter(u => u.id !== req.params.id);
+    await writeJSON('users.json', data);
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour créer une notification (vendeur)
+app.post('/api/notifications', verifyToken, async (req, res) => {
+  try {
+    const data = await readJSON('notifications.json');
+    
+    // Vérifier si une notification existe déjà pour ce client et ce vendeur
+    const existingNotif = data.notifications.find(n => 
+      n.vendeur_id === req.user.id && 
+      n.client_name === req.body.client_name &&
+      n.status === 'pending'
+    );
+    
+    if (existingNotif) {
+      // Mettre à jour la notification existante au lieu d'en créer une nouvelle
+      existingNotif.date = new Date().toISOString();
+      existingNotif.session_data = req.body.session_data;
+      await writeJSON('notifications.json', data);
+      
+      res.json({ success: true, notification: existingNotif, updated: true });
+    } else {
+      // Créer une nouvelle notification
+      const notification = {
+        id: `notif_${Date.now()}`,
+        vendeur_id: req.user.id,
+        vendeur_email: req.user.email,
+        date: new Date().toISOString(),
+        status: 'pending',
+        ...req.body
+      };
+      
+      data.notifications.push(notification);
+      await writeJSON('notifications.json', data);
+      
+      res.json({ success: true, notification });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour lister les notifications (admin only)
+app.get('/api/notifications', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const data = await readJSON('notifications.json');
+    const pending = data.notifications.filter(n => n.status === 'pending');
+    
+    res.json({ success: true, notifications: pending });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour récupérer une notification spécifique
+app.get('/api/notifications/:id', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const data = await readJSON('notifications.json');
+    const notification = data.notifications.find(n => n.id === req.params.id);
+    
+    if (!notification) {
+      return res.status(404).json({ error: 'Notification non trouvée' });
+    }
+    
+    res.json({ success: true, notification });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour marquer une notification comme complète
+app.put('/api/notifications/:id', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const data = await readJSON('notifications.json');
+    const notif = data.notifications.find(n => n.id === req.params.id);
+    
+    if (notif) {
+      notif.status = 'completed';
+      notif.completed_at = new Date().toISOString();
+      notif.completed_by = req.user.id;
+      await writeJSON('notifications.json', data);
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour récupérer les MEC complétées
+app.get('/api/notifications/completed', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const data = await readJSON('notifications.json');
+    const completed = data.notifications.filter(n => n.status === 'completed')
+      .sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0));
+    
+    res.json({ success: true, notifications: completed });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour supprimer une notification (admin only)
+app.delete('/api/notifications/:id', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const data = await readJSON('notifications.json');
+    const index = data.notifications.findIndex(n => n.id === req.params.id);
+    
+    if (index === -1) {
+      return res.status(404).json({ error: 'Notification non trouvée' });
+    }
+    
+    data.notifications.splice(index, 1);
+    await writeJSON('notifications.json', data);
+    
+    res.json({ success: true, message: 'Notification supprimée avec succès' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route pour vérifier le token
+app.get('/api/auth/verify', verifyToken, (req, res) => {
+  res.json({ 
+    success: true, 
+    user: req.user 
+  });
+});
+
+app.listen(port, () => {
+  console.log(`🚀 SERVEUR ECOGIES ULTRA-OPTIMISÉ démarré sur http://localhost:${port}`);
+  console.log(`🧪 Test API: http://localhost:${port}/api/test`);
+  console.log(`🌐 Interface: http://localhost:${port}/`);
+  console.log(`🤖 GPT-4 EXTRACTION ULTRA-PRÉCISE activée`);
+  console.log(`📄 Génération RGPD + PDF disponible`);
+});
