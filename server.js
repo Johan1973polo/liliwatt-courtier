@@ -28,15 +28,15 @@ const initDataFolder = async () => {
   if (!require('fs').existsSync(usersFile)) {
     const defaultAdmin = {
       id: Date.now().toString(),
-      email: 'admin@ecogies.fr',
-      password: await bcrypt.hash('Ecogies2024!', 10),
+      email: 'sabir.bahloul@ecogies.fr',
+      password: await bcrypt.hash('Ecogies2023@', 10),
       role: 'admin',
-      name: 'Admin',
+      name: 'Sabir Bahloul',
       createdAt: new Date().toISOString()
     };
     
     require('fs').writeFileSync(usersFile, JSON.stringify({ users: [defaultAdmin] }, null, 2));
-    console.log('✅ Admin par défaut créé: admin@ecogies.fr / Ecogies2024!');
+    console.log('✅ Admin par défaut créé: sabir.bahloul@ecogies.fr / Ecogies2023@');
   }
   
   // Créer le fichier notifications.json s'il n'existe pas
