@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Chargement Automatique des Avis</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #1e3a8a;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .status-box {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+        .loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffc107;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+        .image-preview {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .image-box {
+            text-align: center;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        .image-box img {
+            max-width: 100%;
+            height: 200px;
+            object-fit: contain;
+            margin: 10px 0;
+        }
+        .image-box h3 {
+            color: #495057;
+            margin: 10px 0;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        .progress {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            width: 0%;
+            transition: width 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ Chargement Automatique des Images d'Avis</h1>
+        
+        <div id="status" class="status-box loading">
+            ⏳ Initialisation...
+        </div>
+        
+        <div class="progress">
+            <div id="progressBar" class="progress-bar">0%</div>
+        </div>
+        
+        <div class="image-preview">
+            <div class="image-box">
+                <h3>📊 Avis OHM Énergie</h3>
+                <img id="ohm-img" src="avis-ohm.png" alt="Avis OHM">
+                <div id="ohm-status">⏳ En attente...</div>
+            </div>
+            <div class="image-box">
+                <h3>🌱 Avis ILEK</h3>
+                <img id="ilek-img" src="avis-ilek.png" alt="Avis ILEK">
+                <div id="ilek-status">⏳ En attente...</div>
+            </div>
+        </div>
+        
+        <button onclick="forceReload()">🔄 Forcer le Rechargement</button>
+        
+        <div id="results" style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+            <h3>📋 Résultats:</h3>
+            <div id="resultsList"></div>
+        </div>
+    </div>
+
+    <script>
+        let loadedImages = 0;
+        const totalImages = 2;
+        
+        function updateProgress(percent) {
+            const bar = document.getElementById('progressBar');
+            bar.style.width = percent + '%';
+            bar.textContent = percent + '%';
+        }
+        
+        function updateStatus(message, type = 'loading') {
+            const status = document.getElementById('status');
+            status.className = 'status-box ' + type;
+            status.innerHTML = message;
+        }
+        
+        function convertAndStore(type, imgElement) {
+            return new Promise((resolve, reject) => {
+                try {
+                    // Créer un canvas
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // S'assurer que l'image est chargée
+                    if (!imgElement.complete || imgElement.naturalWidth === 0) {
+                        reject(new Error(`Image ${type} non chargée`));
+                        return;
+                    }
+                    
+                    // Définir les dimensions du canvas
+                    canvas.width = imgElement.naturalWidth;
+                    canvas.height = imgElement.naturalHeight;
+                    
+                    // Dessiner l'image
+                    ctx.drawImage(imgElement, 0, 0);
+                    
+                    // Convertir en base64
+                    const dataURL = canvas.toDataURL('image/png');
+                    
+                    // Stocker dans localStorage avec plusieurs clés
+                    const keys = [
+                        `avis-${type}-base64`,
+                        `${type.toUpperCase()} AVIS`,
+                        `${type}-avis`,
+                        `logo_avis_${type}`
+                    ];
+                    
+                    keys.forEach(key => {
+                        localStorage.setItem(key, dataURL);
+                        console.log(`✅ Stocké sous la clé: ${key}`);
+                    });
+                    
+                    // Mettre à jour le statut individuel
+                    document.getElementById(`${type}-status`).innerHTML = 
+                        '<span style="color: green;">✅ Chargé avec succès</span>';
+                    
+                    // Ajouter au résultat
+                    const resultsList = document.getElementById('resultsList');
+                    resultsList.innerHTML += `
+                        <div style="margin: 10px 0; padding: 10px; background: #d4edda; border-radius: 5px;">
+                            ✅ <strong>${type.toUpperCase()}</strong>: 
+                            ${canvas.width}x${canvas.height}px - 
+                            ${Math.round(dataURL.length / 1024)}KB
+                        </div>
+                    `;
+                    
+                    resolve(dataURL);
+                } catch (error) {
+                    document.getElementById(`${type}-status`).innerHTML = 
+                        `<span style="color: red;">❌ Erreur: ${error.message}</span>`;
+                    reject(error);
+                }
+            });
+        }
+        
+        async function loadAllImages() {
+            updateStatus('🚀 Chargement des images en cours...', 'loading');
+            updateProgress(0);
+            
+            const ohmImg = document.getElementById('ohm-img');
+            const ilekImg = document.getElementById('ilek-img');
+            
+            let successCount = 0;
+            
+            // Charger OHM
+            try {
+                updateStatus('📊 Conversion de l\'image OHM...', 'loading');
+                updateProgress(25);
+                await convertAndStore('ohm', ohmImg);
+                successCount++;
+                updateProgress(50);
+            } catch (error) {
+                console.error('Erreur OHM:', error);
+            }
+            
+            // Charger ILEK
+            try {
+                updateStatus('🌱 Conversion de l\'image ILEK...', 'loading');
+                updateProgress(75);
+                await convertAndStore('ilek', ilekImg);
+                successCount++;
+                updateProgress(100);
+            } catch (error) {
+                console.error('Erreur ILEK:', error);
+            }
+            
+            // Résultat final
+            if (successCount === totalImages) {
+                updateStatus('🎉 Toutes les images ont été chargées avec succès!', 'success');
+                
+                // Vérifier le stockage
+                setTimeout(() => {
+                    console.log('=== VÉRIFICATION DU STOCKAGE ===');
+                    ['avis-ohm-base64', 'avis-ilek-base64'].forEach(key => {
+                        const data = localStorage.getItem(key);
+                        if (data) {
+                            console.log(`✅ ${key}: ${data.substring(0, 50)}...`);
+                        } else {
+                            console.log(`❌ ${key}: NON TROUVÉ`);
+                        }
+                    });
+                }, 1000);
+            } else if (successCount > 0) {
+                updateStatus(`⚠️ ${successCount}/${totalImages} images chargées`, 'loading');
+            } else {
+                updateStatus('❌ Erreur lors du chargement des images', 'error');
+            }
+        }
+        
+        function forceReload() {
+            localStorage.clear();
+            location.reload();
+        }
+        
+        // Attendre que toutes les images soient vraiment chargées
+        window.onload = function() {
+            const ohmImg = document.getElementById('ohm-img');
+            const ilekImg = document.getElementById('ilek-img');
+            
+            let imagesReady = 0;
+            
+            function checkReady() {
+                imagesReady++;
+                if (imagesReady === totalImages) {
+                    console.log('✅ Toutes les images sont prêtes');
+                    setTimeout(loadAllImages, 500);
+                }
+            }
+            
+            // Vérifier si les images sont déjà chargées
+            if (ohmImg.complete && ohmImg.naturalWidth > 0) {
+                checkReady();
+            } else {
+                ohmImg.onload = checkReady;
+                ohmImg.onerror = () => {
+                    console.error('❌ Erreur chargement OHM');
+                    document.getElementById('ohm-status').innerHTML = 
+                        '<span style="color: red;">❌ Image introuvable</span>';
+                };
+            }
+            
+            if (ilekImg.complete && ilekImg.naturalWidth > 0) {
+                checkReady();
+            } else {
+                ilekImg.onload = checkReady;
+                ilekImg.onerror = () => {
+                    console.error('❌ Erreur chargement ILEK');
+                    document.getElementById('ilek-status').innerHTML = 
+                        '<span style="color: red;">❌ Image introuvable</span>';
+                };
+            }
+            
+            // Timeout de sécurité
+            setTimeout(() => {
+                if (imagesReady < totalImages) {
+                    updateStatus('⚠️ Certaines images n\'ont pas pu être chargées', 'error');
+                    loadAllImages(); // Essayer quand même
+                }
+            }, 5000);
+        };
+    </script>
+</body>
+</html>

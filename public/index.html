@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ECOGIES - Extraction Factures Énergie</title>
+    <title>LILIWATT - Extraction Factures Énergie</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * {
@@ -897,9 +897,9 @@
     <div class="container">
         <div class="header">
             <div class="logo">
-                <img src="logo-ecogies-blanc.png" alt="ECOGIES">
+                <img src="logo-liliwatt-blanc.png" alt="LILIWATT">
             </div>
-            <h1>⚡ ECOGIES</h1>
+            <h1>⚡ LILIWATT</h1>
             <p>Extraction et Comparatif Énergétique Professionnel</p>
             <div id="userControls" style="position: absolute; right: 30px; top: 20px;">
                 <!-- Boutons seront ajoutés par JavaScript -->
@@ -1494,7 +1494,7 @@
                     <input type="text" id="referentPrenom" placeholder="Prénom" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                     <input type="text" id="referentNom" placeholder="Nom" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                     <input type="tel" id="referentTel" placeholder="Téléphone (ex: 06 12 34 56 78)" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-                    <input type="email" id="referentEmail" placeholder="Email@ecogies.fr" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="email" id="referentEmail" placeholder="Email@liliwatt.fr" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
             </div>
             
@@ -1568,7 +1568,7 @@
                     <input type="checkbox" id="rgpdConsent" required>
                     <label for="rgpdConsent">
                         <strong>✅ ACCEPTED - CONSENTEMENT RGPD</strong><br>
-                        Je confirme disposer de l'autorisation du client et/ou d'un mandat RGPD dûment signé par celui-ci pour l'utilisation et la reproduction de ses données. Je m'engage à pouvoir fournir ce document à tout moment, sur simple demande d'ECOGIES.
+                        Je confirme disposer de l'autorisation du client et/ou d'un mandat RGPD dûment signé par celui-ci pour l'utilisation et la reproduction de ses données. Je m'engage à pouvoir fournir ce document à tout moment, sur simple demande d'LILIWATT.
                     </label>
                 </div>
                 
@@ -1645,7 +1645,7 @@
             'OHM': '/logos/ohm.png',
             'OHM ENERGIE': '/logos/ohm.png',
             'ILEK': '/logos/ilek.png',
-            'ECOGIES': '/logos/ecogies.png'
+            'LILIWATT': '/logos/liliwatt.png'
         };
         
         function getLogoPath(fournisseur) {
@@ -1819,7 +1819,7 @@
         
         // Restaurer les données depuis localStorage au chargement
         window.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 Application ECOGIES initialisée');
+            console.log('🚀 Application LILIWATT initialisée');
             
             // Afficher les contrôles utilisateur
             const userControls = document.getElementById('userControls');
@@ -1903,9 +1903,9 @@
                 console.log('✅ Icônes déjà présentes dans localStorage');
             }
             
-            // Charger le logo ECOGIES en base64 si pas déjà fait
-            if (!localStorage.getItem('logo-ecogies-blanc')) {
-                console.log('📦 Chargement du logo ECOGIES...');
+            // Charger le logo LILIWATT en base64 si pas déjà fait
+            if (!localStorage.getItem('logo-liliwatt-blanc')) {
+                console.log('📦 Chargement du logo LILIWATT...');
                 try {
                     const img = new Image();
                     img.onload = function() {
@@ -1915,10 +1915,10 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0);
                         const base64 = canvas.toDataURL('image/png');
-                        localStorage.setItem('logo-ecogies-blanc', base64);
-                        console.log('✅ Logo ECOGIES chargé et converti en base64');
+                        localStorage.setItem('logo-liliwatt-blanc', base64);
+                        console.log('✅ Logo LILIWATT chargé et converti en base64');
                     };
-                    img.src = 'logo-ecogies-blanc.png';
+                    img.src = 'logo-liliwatt-blanc.png';
                 } catch (error) {
                     console.error('Erreur chargement logo:', error);
                 }
@@ -3427,13 +3427,13 @@ Vous pouvez maintenant:
                 selectedReferent = {
                     nom: 'Dominique Valère',
                     telephone: '06 08 00 87 74',
-                    email: 'dominique.valere@ecogies.fr'
+                    email: 'dominique.valere@liliwatt.fr'
                 };
             } else if (selectedValue === 'johan') {
                 selectedReferent = {
                     nom: 'Dominique Valère',
                     telephone: '07 80 44 54 06',
-                    email: 'dominique.valere@ecogies.fr'
+                    email: 'dominique.valere@liliwatt.fr'
                 };
             } else if (selectedValue === 'autre') {
                 const prenom = document.getElementById('referentPrenom').value;
@@ -3517,30 +3517,30 @@ Vous pouvez maintenant:
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // En-tête ECOGIES complet avec logo
+            // En-tête LILIWATT complet avec logo
             doc.setFillColor(30, 58, 138);
             doc.rect(0, 0, 210, 50, 'F');
             
-            // Ajouter le logo ECOGIES
-            const ecogiesLogo = localStorage.getItem('logo-ecogies-blanc') || 
-                               localStorage.getItem('logo_ecogies') || 
-                               localStorage.getItem('Logo-Ecogies-400x149-1');
+            // Ajouter le logo LILIWATT
+            const liliwattLogo = localStorage.getItem('logo-liliwatt-blanc') || 
+                               localStorage.getItem('logo_liliwatt') || 
+                               localStorage.getItem('Logo-Liliwatt-400x149-1');
             
-            if (ecogiesLogo) {
+            if (liliwattLogo) {
                 try {
-                    doc.addImage(ecogiesLogo, 'PNG', 15, 10, 45, 17);
+                    doc.addImage(liliwattLogo, 'PNG', 15, 10, 45, 17);
                 } catch (e) {
                     // Fallback au texte si le logo ne charge pas
                     doc.setFontSize(28);
                     doc.setTextColor(255, 255, 255);
                     doc.setFont(undefined, 'bold');
-                    doc.text('ECOGIES', 20, 25);
+                    doc.text('LILIWATT', 20, 25);
                 }
             } else {
                 doc.setFontSize(28);
                 doc.setTextColor(255, 255, 255);
                 doc.setFont(undefined, 'bold');
-                doc.text('ECOGIES', 20, 25);
+                doc.text('LILIWATT', 20, 25);
             }
             
             doc.setFontSize(14);
@@ -3549,7 +3549,7 @@ Vous pouvez maintenant:
             doc.text('COURTIER EN ÉNERGIES', 20, 35);
             
             doc.setFontSize(10);
-            doc.text('Tél: 09 84 32 74 25 | 13 Bis rue George SAND, 94500 Champigny-Sur-Marne | Email: bo@ecogies.fr', 20, 45);
+            doc.text('Tél: 09 84 32 74 25 | 13 Bis rue George SAND, 94500 Champigny-Sur-Marne | Email: bo@liliwatt.fr', 20, 45);
             
             // Titre
             doc.setFontSize(16);
@@ -3621,11 +3621,11 @@ Vous pouvez maintenant:
             doc.setFontSize(10);
             doc.setFont(undefined, 'normal');
             
-            const rgpdText = `En activant l'option ci-dessous, je donne mon accord à ECOGIES pour qu'elle puisse accéder et exploiter les informations techniques issues de mes compteurs, incluant l'historique de ma consommation, et spécifiquement pour recueillir mon adresse email dans le cadre de communications et de relances par email, en respectant les dispositions de la Réglementation Générale sur la Protection des Données (RGPD).
+            const rgpdText = `En activant l'option ci-dessous, je donne mon accord à LILIWATT pour qu'elle puisse accéder et exploiter les informations techniques issues de mes compteurs, incluant l'historique de ma consommation, et spécifiquement pour recueillir mon adresse email dans le cadre de communications et de relances par email, en respectant les dispositions de la Réglementation Générale sur la Protection des Données (RGPD).
 
-Par cette action, je donne mon consentement explicite pour que Ecogies recueille, traite, et utilise les données et informations techniques de mes compteurs à des fins d'analyse de mes habitudes de consommation et pour l'envoi d'emails personnalisés relatifs à leurs services énergétiques. Ces données, y compris mon adresse email, seront conservées le temps nécessaire, conformément aux lois applicables.
+Par cette action, je donne mon consentement explicite pour que Liliwatt recueille, traite, et utilise les données et informations techniques de mes compteurs à des fins d'analyse de mes habitudes de consommation et pour l'envoi d'emails personnalisés relatifs à leurs services énergétiques. Ces données, y compris mon adresse email, seront conservées le temps nécessaire, conformément aux lois applicables.
 
-Je suis conscient(e) que je peux retirer mon consentement concernant l'utilisation de mon adresse email et des autres données à tout moment en adressant une demande écrite à bo@ecogies.fr. La rétraction de mon consentement n'influencera pas la légitimité du traitement effectué avant cette rétraction.
+Je suis conscient(e) que je peux retirer mon consentement concernant l'utilisation de mon adresse email et des autres données à tout moment en adressant une demande écrite à bo@liliwatt.fr. La rétraction de mon consentement n'influencera pas la légitimité du traitement effectué avant cette rétraction.
 
 En activant cette option, je confirme avoir pris connaissance, compris et accepté les termes de ce consentement conforme au RGPD, incluant la collecte et l'utilisation de mon adresse email pour la relance par mailing.`;
             
@@ -3653,7 +3653,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             
             // Pied de page
             doc.setFontSize(8);
-            doc.text('Contact DPO : bo@ecogies.fr | Réclamations CNIL possibles', 20, 280);
+            doc.text('Contact DPO : bo@liliwatt.fr | Réclamations CNIL possibles', 20, 280);
             
             // Sauvegarde
             const fileName = `RGPD_${extractedData.nom_client.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
@@ -5033,15 +5033,15 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.setFillColor(30, 58, 138);
             doc.rect(0, 0, 210, 40, 'F');
             
-            // Ajouter le logo ECOGIES si disponible
-            const ecogiesLogo = localStorage.getItem('logo-ecogies-blanc') || 
-                               localStorage.getItem('logo_ecogies') || 
-                               localStorage.getItem('Logo-Ecogies-400x149-1') ||
-                               localStorage.getItem('logo_ECOGIES');
+            // Ajouter le logo LILIWATT si disponible
+            const liliwattLogo = localStorage.getItem('logo-liliwatt-blanc') || 
+                               localStorage.getItem('logo_liliwatt') || 
+                               localStorage.getItem('Logo-Liliwatt-400x149-1') ||
+                               localStorage.getItem('logo_LILIWATT');
             
-            if (ecogiesLogo) {
+            if (liliwattLogo) {
                 try {
-                    doc.addImage(ecogiesLogo, 'PNG', 15, 8, 40, 15);
+                    doc.addImage(liliwattLogo, 'PNG', 15, 8, 40, 15);
                 } catch (e) {
                     // Si le logo ne charge pas, afficher le logo simple
                     doc.setFillColor(255, 255, 255);
@@ -5049,7 +5049,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     doc.setFontSize(16);
                     doc.setTextColor(30, 58, 138);
                     doc.setFont(undefined, 'bold');
-                    doc.text('ECOGIES', 32.5, 20, { align: 'center' });
+                    doc.text('LILIWATT', 32.5, 20, { align: 'center' });
                     doc.setFontSize(9);
                     doc.text('ENERGIE', 32.5, 26, { align: 'center' });
                 }
@@ -5598,10 +5598,10 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             
             doc.setTextColor(255, 255, 255); // Texte blanc
             doc.setFontSize(8);
-            doc.text('ECOGIES - Service gratuit - Cabinet de courtage en énergie - SIREN: 907515563', 105, 293, { align: 'center' });
+            doc.text('LILIWATT - Service gratuit - Cabinet de courtage en énergie - SIREN: 907515563', 105, 293, { align: 'center' });
             
             // Sauvegarde
-            const fileName = `Comparatif_ECOGIES_${String(extractedData.nom_client || 'Client').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+            const fileName = `Comparatif_LILIWATT_${String(extractedData.nom_client || 'Client').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
             doc.save(fileName);
             
             alert('✅ PDF Comparatif professionnel généré avec succès !');
@@ -6067,7 +6067,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 
                 if (ecartCell) {
                     if (offer.isBest) {
-                        ecartCell.innerHTML = '<span style="color: green;">Référence</span>';
+                        ecartCell.innerHTML = '<span style="color: #7c3aed;">Référence</span>';
                     } else {
                         const color = ecart > 0 ? 'red' : 'green';
                         const signe = ecart > 0 ? '+' : '';
@@ -6176,31 +6176,31 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.setFillColor(30, 58, 138);
             doc.rect(0, 0, 210, 40, 'F');
             
-            // Ajouter le logo ECOGIES si disponible
-            const ecogiesLogo = localStorage.getItem('logo-ecogies-blanc') || 
-                               localStorage.getItem('logo_ecogies') || 
-                               localStorage.getItem('Logo-Ecogies-400x149-1') ||
-                               localStorage.getItem('logo_ECOGIES');
+            // Ajouter le logo LILIWATT si disponible
+            const liliwattLogo = localStorage.getItem('logo-liliwatt-blanc') || 
+                               localStorage.getItem('logo_liliwatt') || 
+                               localStorage.getItem('Logo-Liliwatt-400x149-1') ||
+                               localStorage.getItem('logo_LILIWATT');
             
-            if (ecogiesLogo) {
+            if (liliwattLogo) {
                 try {
-                    doc.addImage(ecogiesLogo, 'PNG', 15, 8, 40, 15);
-                    console.log('✅ Logo ECOGIES ajouté au PDF MEC');
+                    doc.addImage(liliwattLogo, 'PNG', 15, 8, 40, 15);
+                    console.log('✅ Logo LILIWATT ajouté au PDF MEC');
                 } catch (e) {
-                    console.log('❌ Erreur ajout logo ECOGIES:', e);
+                    console.log('❌ Erreur ajout logo LILIWATT:', e);
                     // Si le logo ne charge pas, afficher le texte
                     doc.setFontSize(24);
                     doc.setTextColor(255, 255, 255);
                     doc.setFont(undefined, 'bold');
-                    doc.text('ECOGIES', 15, 18);
+                    doc.text('LILIWATT', 15, 18);
                 }
             } else {
-                console.log('⚠️ Logo ECOGIES non trouvé dans localStorage');
-                console.log('💡 Utilisez convert-logo-ecogies.html pour charger le logo');
+                console.log('⚠️ Logo LILIWATT non trouvé dans localStorage');
+                console.log('💡 Utilisez convert-logo-liliwatt.html pour charger le logo');
                 doc.setFontSize(24);
                 doc.setTextColor(255, 255, 255);
                 doc.setFont(undefined, 'bold');
-                doc.text('ECOGIES', 15, 18);
+                doc.text('LILIWATT', 15, 18);
             }
             
             doc.setFontSize(14);
@@ -6496,7 +6496,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     'Primeo': 'primeo',
                     'OHM Énergie': 'ohm',
                     'OHM ENERGIE': 'ohm',
-                    'ECOGIES': 'ecogies',
+                    'LILIWATT': 'liliwatt',
                     'Ilek': 'ilek',
                     'ILEK': 'ilek',
                     'Wekiwi': 'wekiwi',
@@ -6704,7 +6704,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 doc.setTextColor(30, 58, 138);
                 doc.setFontSize(10);
                 doc.setFont(undefined, 'bold');
-                doc.text('RECOMMANDATION ECOGIES', 60, y + 8, { align: 'center' });
+                doc.text('RECOMMANDATION LILIWATT', 60, y + 8, { align: 'center' });
                 
                 // Texte de recommandation adapté selon le fournisseur
                 doc.setTextColor(0, 0, 0);
@@ -6712,7 +6712,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 doc.setFont(undefined, 'normal');
                 
                 // Texte uniforme pour tous les fournisseurs
-                const texteRecommandation = `À l'issue d'une analyse approfondie de votre dossier, ECOGIES vous recommande l'offre ${mainSupplier}. Ce fournisseur, en pleine phase de croissance et d'acquisition clients, pratique une politique tarifaire particulièrement compétitive, en réduisant fortement ses marges afin de proposer des prix parmi les plus attractifs du marché.`;
+                const texteRecommandation = `À l'issue d'une analyse approfondie de votre dossier, LILIWATT vous recommande l'offre ${mainSupplier}. Ce fournisseur, en pleine phase de croissance et d'acquisition clients, pratique une politique tarifaire particulièrement compétitive, en réduisant fortement ses marges afin de proposer des prix parmi les plus attractifs du marché.`;
                 
                 // Diviser le texte en lignes
                 const lignesRecommandation = doc.splitTextToSize(texteRecommandation, 80);
@@ -7005,7 +7005,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             
             y += 39;
             
-            // Section Pourquoi ECOGIES ?
+            // Section Pourquoi LILIWATT ?
             doc.setFillColor(240, 249, 255); // Fond bleu très clair
             doc.rect(15, y, 180, 42, 'F');
             doc.setDrawColor(30, 58, 138);
@@ -7015,7 +7015,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.setFontSize(10);
             doc.setFont(undefined, 'bold');
             doc.setTextColor(30, 58, 138);
-            doc.text('Pourquoi ECOGIES ?', 20, y + 6);
+            doc.text('Pourquoi LILIWATT ?', 20, y + 6);
             
             doc.setFontSize(8);
             doc.setFont(undefined, 'normal');
@@ -7255,7 +7255,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             pointsY += 5;
             doc.setFont(undefined, 'bold');
             doc.setFontSize(9);
-            doc.text('3. Reconduction tacite et suivi ECOGIES', 20, pointsY);
+            doc.text('3. Reconduction tacite et suivi LILIWATT', 20, pointsY);
             doc.setFont(undefined, 'normal');
             doc.setFontSize(8);
             pointsY += 5;
@@ -7269,7 +7269,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             
             pointsY += 3;
             doc.setTextColor(30, 58, 138);
-            doc.text('• Votre conseiller ECOGIES vous recontactera 3 mois avant chaque échéance pour', 30, pointsY);
+            doc.text('• Votre conseiller LILIWATT vous recontactera 3 mois avant chaque échéance pour', 30, pointsY);
             pointsY += 4.5;
             doc.text('  anticiper une nouvelle mise en concurrence.', 30, pointsY);
             pointsY += 4.5;
@@ -7287,7 +7287,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             
             doc.setTextColor(255, 255, 255); // Texte blanc
             doc.setFontSize(7);
-            doc.text('ECOGIES - Service gratuit - Cabinet de courtage en énergie', 105, 287, { align: 'center' });
+            doc.text('LILIWATT - Service gratuit - Cabinet de courtage en énergie', 105, 287, { align: 'center' });
             doc.setFontSize(6);
             doc.text(`Document non contractuel – Étude réalisée sur la base des marchés de gros de l'énergie (électricité : EPEX SPOT, gaz : PEG/TTF). Généré le ${new Date().toLocaleDateString('fr-FR')}.`, 105, 292, { align: 'center' });
             
@@ -7454,7 +7454,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                         <p style="margin: 0;">Demain, avec la volatilité actuelle, les tarifs peuvent augmenter de 2 à 5%.</p>
                     </div>
                     
-                    <h3>✅ Pourquoi choisir ECOGIES comme courtier ?</h3>
+                    <h3>✅ Pourquoi choisir LILIWATT comme courtier ?</h3>
                     <ul>
                         <li><strong>Accès exclusif</strong> à 48 fournisseurs d'énergie</li>
                         <li><strong>Négociation volume</strong> : Meilleurs tarifs grâce à notre pouvoir d'achat groupé</li>
@@ -7504,7 +7504,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     </div>
                     
                     <p>Cordialement,<br><br>
-                    <strong>L'équipe ECOGIES</strong><br>
+                    <strong>L'équipe LILIWATT</strong><br>
                     <em>Votre courtier en énergies</em></p>
                 </div>
             `;

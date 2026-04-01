@@ -14,7 +14,7 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || 'ecogies-secret-key-2024';
+const JWT_SECRET = process.env.JWT_SECRET || 'liliwatt-secret-key-2024';
 
 // Créer le dossier data s'il n'existe pas
 const initDataFolder = async () => {
@@ -28,15 +28,15 @@ const initDataFolder = async () => {
   if (!require('fs').existsSync(usersFile)) {
     const defaultAdmin = {
       id: Date.now().toString(),
-      email: 'sabir.bahloul@ecogies.fr',
-      password: await bcrypt.hash('Ecogies2023@', 10),
+      email: 'sabir.bahloul@liliwatt.fr',
+      password: await bcrypt.hash('Liliwatt2023@', 10),
       role: 'admin',
       name: 'Sabir Bahloul',
       createdAt: new Date().toISOString()
     };
     
     require('fs').writeFileSync(usersFile, JSON.stringify({ users: [defaultAdmin] }, null, 2));
-    console.log('✅ Admin par défaut créé: sabir.bahloul@ecogies.fr / Ecogies2023@');
+    console.log('✅ Admin par défaut créé: sabir.bahloul@liliwatt.fr / Liliwatt2023@');
   }
   
   // Créer le fichier notifications.json s'il n'existe pas
@@ -61,7 +61,7 @@ const openai = new OpenAI({
 // Route de test
 app.get('/api/test', (req, res) => {
   res.json({ 
-    message: 'API ECOGIES - GPT-4 EXTRACTION PARFAITE!', 
+    message: 'API LILIWATT - GPT-4 EXTRACTION PARFAITE!', 
     timestamp: new Date(),
     version: 'COMPLETE_V2'
   });
@@ -687,7 +687,7 @@ app.get('/api/auth/verify', verifyToken, (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`🚀 SERVEUR ECOGIES ULTRA-OPTIMISÉ démarré sur http://localhost:${port}`);
+  console.log(`🚀 SERVEUR LILIWATT ULTRA-OPTIMISÉ démarré sur http://localhost:${port}`);
   console.log(`🧪 Test API: http://localhost:${port}/api/test`);
   console.log(`🌐 Interface: http://localhost:${port}/`);
   console.log(`🤖 GPT-4 EXTRACTION ULTRA-PRÉCISE activée`);

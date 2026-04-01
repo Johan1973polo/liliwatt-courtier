@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ECOGIES - Panel Admin</title>
+    <title>LILIWATT - Panel Admin</title>
     <style>
         * {
             margin: 0;
@@ -155,7 +155,7 @@
     <div class="container">
         <div class="header">
             <div>
-                <h1 style="color: #1e3a8a;">Panel Administration ECOGIES</h1>
+                <h1 style="color: #1e3a8a;">Panel Administration LILIWATT</h1>
                 <p style="color: #64748b; margin-top: 5px;">Bienvenue, <span id="adminEmail"></span></p>
             </div>
             <div style="display: flex; gap: 10px;">
@@ -224,7 +224,7 @@
                 <input type="hidden" id="userRole" value="vendeur">
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" id="newEmail" required placeholder="email@ecogies.fr">
+                    <input type="email" id="newEmail" required placeholder="email@liliwatt.fr">
                 </div>
                 <div class="form-group">
                     <label>Mot de passe</label>
@@ -475,7 +475,7 @@
         function showAddUserModal(role) {
             document.getElementById('userRole').value = role;
             document.getElementById('modalTitle').textContent = role === 'admin' ? 'Créer un administrateur' : 'Créer un vendeur';
-            document.getElementById('newEmail').placeholder = role === 'admin' ? 'admin@ecogies.fr' : 'vendeur@ecogies.fr';
+            document.getElementById('newEmail').placeholder = role === 'admin' ? 'admin@liliwatt.fr' : 'vendeur@liliwatt.fr';
             document.getElementById('addUserModal').style.display = 'flex';
         }
         
