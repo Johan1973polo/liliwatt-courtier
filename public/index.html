@@ -3588,6 +3588,11 @@ Vous pouvez maintenant:
             
             // Informations gérant - Encadré violet clair
             yPosition += 15;
+            // Saut de page automatique si pas assez d'espace
+            if (yPosition + 65 > 270) {
+                doc.addPage();
+                yPosition = 25;
+            }
             const gerantStartY = yPosition - 5;
             doc.setFillColor(149, 92, 231); // Violet clair
             doc.rect(15, gerantStartY, 180, 60, 'F'); // Encadré sans contour
