@@ -70,7 +70,7 @@ app.get('/api/test', (req, res) => {
 // Route principale
 app.get('/', (req, res) => {
   res.send(`
-    <h1>🚀 Serveur EcoGies OPTIMISÉ</h1>
+    <h1>🚀 Serveur LILIWATT OPTIMISÉ</h1>
     <p>✅ GPT-4 Extraction Complète</p>
     <p>✅ Génération RGPD + PDF</p>
     <p>✅ Calculs optimisés</p>
@@ -133,7 +133,7 @@ app.post('/api/upload-and-extract', async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `Tu es L'EXPERT ABSOLU en extraction de factures d'énergie françaises pour EcoGies.
+          content: `Tu es L'EXPERT ABSOLU en extraction de factures d'énergie françaises pour LILIWATT.
 Tu DOIS extraire TOUTES les informations avec une PRÉCISION MAXIMALE !
 
 ⚠️ IMPORTANT POUR C4/C2 : Tu as 2 FACTURES (été + hiver) à analyser !

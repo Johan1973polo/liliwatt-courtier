@@ -3518,7 +3518,7 @@ Vous pouvez maintenant:
             const doc = new jsPDF();
             
             // En-tête LILIWATT complet avec logo
-            doc.setFillColor(30, 58, 138);
+            doc.setFillColor(124, 58, 237);
             doc.rect(0, 0, 210, 50, 'F');
             
             // Ajouter le logo LILIWATT
@@ -3589,7 +3589,7 @@ Vous pouvez maintenant:
             // Informations gérant - Encadré jaune
             yPosition += 15;
             const gerantStartY = yPosition - 5;
-            doc.setFillColor(254, 249, 195); // Jaune clair
+            doc.setFillColor(124, 58, 237); // Jaune clair
             doc.rect(15, gerantStartY, 180, 60, 'F'); // Encadré sans contour
             
             yPosition += 5;
@@ -5030,7 +5030,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 };
                 
                 // EN-TETE SANS CARACTERES SPECIAUX
-            doc.setFillColor(30, 58, 138);
+            doc.setFillColor(124, 58, 237);
             doc.rect(0, 0, 210, 40, 'F');
             
             // Ajouter le logo LILIWATT si disponible
@@ -5060,7 +5060,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 doc.setFontSize(16);
                 doc.setTextColor(30, 58, 138);
                 doc.setFont(undefined, 'bold');
-                doc.text('EcoGies', 32.5, 20, { align: 'center' });
+                doc.text('LILIWATT', 32.5, 20, { align: 'center' });
                 doc.setFontSize(9);
                 doc.text('ENERGIE', 32.5, 26, { align: 'center' });
             }
@@ -5223,7 +5223,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.text(percentText, 105, 131, { align: 'center' });
             
             // TABLEAU COMPARATIF MODERNE
-            doc.setFillColor(30, 58, 138);
+            doc.setFillColor(124, 58, 237);
             doc.rect(10, 140, 190, 10, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(12);
@@ -5237,7 +5237,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             let xPos = 10;
             
             // Colonne 1 - Poste tarifaire (Bleu foncé)
-            doc.setFillColor(30, 58, 138);
+            doc.setFillColor(124, 58, 237);
             doc.rect(xPos, startY, colWidths[0], 10, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(10);
@@ -5567,7 +5567,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             // FOOTER PROFESSIONNEL
             // Conditions commerciales (fond jaune clair)
             const footerY = 250;
-            doc.setFillColor(254, 249, 195);  // Jaune clair
+            doc.setFillColor(124, 58, 237);  // Jaune clair
             doc.rect(15, footerY, 180, 30, 'F');
             
             doc.setFontSize(9);
@@ -5593,12 +5593,12 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.text('Offre valable après acceptation de votre dossier par le fournisseur', 100, footerY + 19);
             
             // Footer bleu fin avec texte blanc jusqu'en bas de la page
-            doc.setFillColor(30, 58, 138); // Bleu foncé
+            doc.setFillColor(124, 58, 237); // Bleu foncé
             doc.rect(0, 289, 210, 8, 'F'); // Footer jusqu'au bord bas (297mm - 8mm = 289mm)
             
             doc.setTextColor(255, 255, 255); // Texte blanc
             doc.setFontSize(8);
-            doc.text('LILIWATT - Service gratuit - Cabinet de courtage en énergie - SIREN: 907515563', 105, 293, { align: 'center' });
+            doc.text('LILIWATT - Service gratuit - Cabinet de courtage en énergie - ', 105, 293, { align: 'center' });
             
             // Sauvegarde
             const fileName = `Comparatif_LILIWATT_${String(extractedData.nom_client || 'Client').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
@@ -6069,7 +6069,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     if (offer.isBest) {
                         ecartCell.innerHTML = '<span style="color: #7c3aed;">Référence</span>';
                     } else {
-                        const color = ecart > 0 ? 'red' : 'green';
+                        const color = ecart > 0 ? 'red' : '#7c3aed';
                         const signe = ecart > 0 ? '+' : '';
                         ecartCell.innerHTML = `<span style="color: ${color};">${signe}${Math.round(ecart)}€ (${signe}${ecartPercent}%)</span>`;
                     }
@@ -6173,7 +6173,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             const volumeTotal = getCurrentTotalVolume();
             
             // En-tête professionnel
-            doc.setFillColor(30, 58, 138);
+            doc.setFillColor(124, 58, 237);
             doc.rect(0, 0, 210, 40, 'F');
             
             // Ajouter le logo LILIWATT si disponible
@@ -6423,7 +6423,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             const startY = 88; // Position fixe
             
             // En-têtes du tableau
-            doc.setFillColor(30, 58, 138);
+            doc.setFillColor(124, 58, 237);
             doc.rect(15, startY, 180, 10, 'F');
             
             doc.setTextColor(255, 255, 255);
@@ -6838,7 +6838,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.addPage();
             
             // En-tête bleu comme sur la première page
-            doc.setFillColor(30, 58, 138); // Bleu foncé
+            doc.setFillColor(124, 58, 237); // Bleu foncé
             doc.rect(0, 0, 210, 25, 'F');
             
             // Titre en blanc dans l'en-tête
@@ -7037,7 +7037,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.addPage();
             
             // En-tête bleu avec titre blanc
-            doc.setFillColor(30, 58, 138); // Bleu foncé
+            doc.setFillColor(124, 58, 237); // Bleu foncé
             doc.rect(0, 0, 210, 25, 'F');
             
             doc.setFontSize(14);
@@ -7282,7 +7282,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.setTextColor(0, 0, 0);
             
             // Footer avec fond bleu et texte blanc
-            doc.setFillColor(30, 58, 138); // Bleu foncé comme les en-têtes
+            doc.setFillColor(124, 58, 237); // Bleu foncé comme les en-têtes
             doc.rect(0, 282, 210, 15, 'F'); // Footer plus bas et plus petit
             
             doc.setTextColor(255, 255, 255); // Texte blanc
