@@ -3,7 +3,6 @@ node_modules/
 .DS_Store
 *.log
 npm-debug.log*
-data/users.json
 data/notifications.json
 uploads/
 temp/

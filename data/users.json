@@ -1,0 +1,12 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "email": "johan.mallet@liliwatt.fr",
+      "password": "$2b$10$ZNQg6CJDkA8Tiw.A/kMtweiy5LRHIWN3yt3k6kbkc5fxSha7q7Mpm",
+      "role": "admin",
+      "name": "Johan Mallet",
+      "createdAt": "2026-04-02T07:52:09.922Z"
+    }
+  ]
+}
