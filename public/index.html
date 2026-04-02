@@ -3586,11 +3586,12 @@ Vous pouvez maintenant:
             yPosition += 10;
             doc.text(`• Adresse consommation : ${String(extractedData.adresse_consommation || 'N/A')}`, 20, yPosition);
             
-            // Informations gérant - Encadré jaune
+            // Informations gérant - Encadré violet clair
             yPosition += 15;
             const gerantStartY = yPosition - 5;
-            doc.setFillColor(124, 58, 237); // Jaune clair
+            doc.setFillColor(149, 92, 231); // Violet clair
             doc.rect(15, gerantStartY, 180, 60, 'F'); // Encadré sans contour
+            doc.setTextColor(255, 255, 255); // Texte blanc
             
             yPosition += 5;
             doc.setFont(undefined, 'bold');
@@ -3604,7 +3605,7 @@ Vous pouvez maintenant:
             doc.text(`• Email : ${String(formData.gerantEmail || '')}`, 20, yPosition);
             yPosition += 10;
             doc.text(`• Téléphone : ${String(formData.gerantTelephone || '')}`, 20, yPosition);
-            
+            doc.setTextColor(40, 40, 40); // Reset couleur texte
             // Nouvelle page pour le texte RGPD
             doc.addPage();
             
