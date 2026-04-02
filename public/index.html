@@ -3380,9 +3380,9 @@ Vous pouvez maintenant:
             
             // Si un référent est déjà sélectionné, pré-sélectionner l'option correspondante
             if (selectedReferent) {
-                if (selectedReferent.telephone === '06 08 00 87 74') {
+                if (selectedReferent.telephone === '07 83 10 11 29') {
                     document.querySelector('input[name="referent"][value="sabir"]').checked = true;
-                } else if (selectedReferent.telephone === '07 80 44 54 06') {
+                } else if (selectedReferent.telephone === '07 60 41 09 10') {
                     document.querySelector('input[name="referent"][value="johan"]').checked = true;
                 } else {
                     document.querySelector('input[name="referent"][value="autre"]').checked = true;
@@ -3425,15 +3425,15 @@ Vous pouvez maintenant:
             
             if (selectedValue === 'sabir') {
                 selectedReferent = {
-                    nom: 'Dominique Valère',
-                    telephone: '06 08 00 87 74',
-                    email: 'dominique.valere@liliwatt.fr'
+                    nom: 'Kevin Moreau',
+                    telephone: '07 83 10 11 29',
+                    email: 'kevin.moreau@liliwatt.fr'
                 };
             } else if (selectedValue === 'johan') {
                 selectedReferent = {
-                    nom: 'Dominique Valère',
-                    telephone: '07 80 44 54 06',
-                    email: 'dominique.valere@liliwatt.fr'
+                    nom: 'Johan Mallet',
+                    telephone: '07 60 41 09 10',
+                    email: 'johan.mallet@liliwatt.fr'
                 };
             } else if (selectedValue === 'autre') {
                 const prenom = document.getElementById('referentPrenom').value;
