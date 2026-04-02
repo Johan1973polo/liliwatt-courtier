@@ -28,15 +28,15 @@ const initDataFolder = async () => {
   if (!require('fs').existsSync(usersFile)) {
     const defaultAdmin = {
       id: Date.now().toString(),
-      email: 'sabir.bahloul@liliwatt.fr',
+      email: 'kevin.moreau@liliwatt.fr',
       password: await bcrypt.hash('Liliwatt2023@', 10),
       role: 'admin',
-      name: 'Sabir Bahloul',
+      name: 'Kevin Moreau',
       createdAt: new Date().toISOString()
     };
     
     require('fs').writeFileSync(usersFile, JSON.stringify({ users: [defaultAdmin] }, null, 2));
-    console.log('✅ Admin par défaut créé: sabir.bahloul@liliwatt.fr / Liliwatt2023@');
+    console.log('✅ Admin par défaut créé: kevin.moreau@liliwatt.fr / Liliwatt2023@');
   }
   
   // Créer le fichier notifications.json s'il n'existe pas
