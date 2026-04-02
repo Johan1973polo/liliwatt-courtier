@@ -5044,25 +5044,15 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     doc.addImage(liliwattLogo, 'PNG', 15, 8, 40, 15);
                 } catch (e) {
                     // Si le logo ne charge pas, afficher le logo simple
-                    doc.setFillColor(255, 255, 255);
-                    doc.rect(15, 10, 35, 20, 'F');
-                    doc.setFontSize(16);
-                    doc.setTextColor(30, 58, 138);
-                    doc.setFont(undefined, 'bold');
-                    doc.text('LILIWATT', 32.5, 20, { align: 'center' });
-                    doc.setFontSize(9);
-                    doc.text('ENERGIE', 32.5, 26, { align: 'center' });
+                    
+                    doc.setFontSize(22); doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.text('LILIWATT', 32.5, 20, { align: 'center' });
+                    
                 }
             } else {
                 // Logo simple
-                doc.setFillColor(255, 255, 255);
-                doc.rect(15, 10, 35, 20, 'F');
-                doc.setFontSize(16);
-                doc.setTextColor(30, 58, 138);
-                doc.setFont(undefined, 'bold');
-                doc.text('LILIWATT', 32.5, 20, { align: 'center' });
-                doc.setFontSize(9);
-                doc.text('ENERGIE', 32.5, 26, { align: 'center' });
+                
+                doc.setFontSize(22); doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.text('LILIWATT', 32.5, 20, { align: 'center' });
+                
             }
             
             // Texte ETUDE COMPARATIVE à gauche sous le logo (sans encadré)
@@ -5573,7 +5563,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.setFontSize(9);
             doc.setFont(undefined, 'bold');
             const refFournisseurName = refFournisseurNames[selectedFournisseurRef] || 'Fournisseur Réf';
-            doc.text(`CONDITIONS DE L'OFFRE ${refFournisseurName.toUpperCase()}`, 20, footerY + 8);
+            doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.text(`CONDITIONS DE L'OFFRE ${refFournisseurName.toUpperCase()}`, 20, footerY + 8);
             
             doc.setFont(undefined, 'normal');
             doc.setFontSize(8);
@@ -5587,10 +5577,10 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     if (year > derniereAnnee) derniereAnnee = year;
                 }
             });
-            doc.text(`Prix fixe garanti jusqu\'au 31/12/${derniereAnnee}`, 20, footerY + 14);
-            doc.text('Sans engagement de surconsommation', 20, footerY + 19);
-            doc.text(`Tarifs valables le ${dateJour}`, 100, footerY + 14);
-            doc.text('Offre valable après acceptation de votre dossier par le fournisseur', 100, footerY + 19);
+            doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.text(`Prix fixe garanti jusqu\'au 31/12/${derniereAnnee}`, 20, footerY + 14);
+            doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.text('Sans engagement de surconsommation', 20, footerY + 19);
+            doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.text(`Tarifs valables le ${dateJour}`, 100, footerY + 14);
+            doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.text('Offre valable après acceptation de votre dossier par le fournisseur', 100, footerY + 19);
             
             // Footer bleu fin avec texte blanc jusqu'en bas de la page
             doc.setFillColor(124, 58, 237); // Bleu foncé
