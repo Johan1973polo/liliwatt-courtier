@@ -209,7 +209,8 @@
 
       if (data.success) {
         localStorage.setItem('token', data.token);
-        localStorage.setItem('userRole', data.role);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('userRole', data.user.role);
         localStorage.setItem('userEmail', email);
         window.location.href = '/';
       } else {
