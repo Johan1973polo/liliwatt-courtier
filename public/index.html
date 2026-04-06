@@ -2117,6 +2117,13 @@ Vous pouvez maintenant:
                 console.log('✅ Référent chargé:', selectedReferent.nom);
             }
             
+            // Charger l'abonnement de référence depuis localStorage
+            const savedAbonnementRef = localStorage.getItem('abonnementRef');
+            if (savedAbonnementRef !== null) {
+                abonnementRef = parseFloat(savedAbonnementRef);
+                console.log('✅ Abonnement de référence chargé:', abonnementRef, '€/an');
+            }
+            
             // Initialiser la sélection d'énergie par défaut
             selectEnergy('electricity');
             
@@ -4105,6 +4112,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
         // Fonction pour définir l'abonnement de référence
         function setAbonnementRef(prix) {
             abonnementRef = parseFloat(prix) || 0;
+            localStorage.setItem('abonnementRef', abonnementRef);
             document.getElementById('abonnement-ref-value').textContent = abonnementRef;
             document.getElementById('abonnement-ref-display').style.display = 'block';
             
@@ -4135,6 +4143,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             // Si OHM est le fournisseur de référence, mettre à jour aussi abonnementRef
             if (selectedFournisseurRef === 'OHM') {
                 abonnementRef = prix;
+                localStorage.setItem('abonnementRef', abonnementRef);
             }
             
             document.querySelectorAll('.abonnement-option').forEach(opt => opt.classList.remove('selected'));
