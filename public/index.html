@@ -2460,34 +2460,16 @@ const avisImages = [
                         localStorage.setItem('selectedReferent', JSON.stringify(selectedReferent));
                     }
                     
-                    // Admin reprend toujours à l'étape 2 avec les données du vendeur
-                    const stepToGo = 2;
+                    // Admin reprend à l'étape 2 avec les données du vendeur
                     setTimeout(() => {
                         // Marquer étape 1 comme complète
                         const step1 = document.getElementById('step1');
                         if (step1) step1.classList.add('completed');
                         
-                        // Activer l'étape 2
-                        currentStep = 1;
-                        nextStep(2);
-                        
-                        // Afficher le récapitulatif
-                        const summary = `
-✅ MEC chargée avec succès!
-
-Client: ${extractedData?.nom_client || 'Non spécifié'}
-SIREN: ${extractedData?.siren || 'Non spécifié'}
-PDL/PCE: ${extractedData?.pdl_pce || 'Non spécifié'}
-Segment: ${extractedData?.segment || 'Non spécifié'}
-Volume: ${extractedData?.volume_total_kwh || '0'} kWh
-
-Étape actuelle: ${stepToGo}
-
-Vous pouvez maintenant:
-• Générer la MEC officielle
-• Envoyer l'email au client
-                        `;
-                        alert(summary);
+                        // Aller directement à l'étape 2 sans déclencher la cascade
+                        currentStep = 2;
+                        switchToStep(2);
+                        displayExtractedData();
                         
                         // Forcer le rafraîchissement des calculs si on est à l'étape 5 ou 6
                         if (stepToGo >= 5 && typeof calculateResults === 'function') {
