@@ -1975,8 +1975,8 @@
             
             // Charger les images d'avis OHM et ILEK si pas déjà fait
             const avisImages = [
-                { key: 'avis-ohm-base64', src: 'avis-ohm.png', txtFile: 'avis-ohm-base64.txt', name: 'Avis OHM' },
-                { key: 'avis-ilek-base64', src: 'avis-ilek.png', txtFile: 'avis-ilek-base64.txt', name: 'Avis ILEK' }
+                { key: 'avis-ohm-base64-v2', src: 'avis-ohm.png', txtFile: 'avis-ohm-base64.txt', name: 'Avis OHM' },
+                { key: 'avis-ilek-base64-v2', src: 'avis-ilek.png', txtFile: 'avis-ilek-base64.txt', name: 'Avis ILEK' }
             ];
             
             avisImages.forEach(async avis => {
@@ -6406,7 +6406,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                         '✅ Gestionnaire de compte dédié'
                     ],
                     color: [16, 185, 129],
-                    imageKey: 'avis-ohm-base64'
+                    imageKey: 'avis-ohm-base64-v2'
                 },
                 'ILEK': {
                     titre: 'ILEK - L\'énergie verte et locale',
@@ -6418,7 +6418,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                         '✅ Gestionnaire de compte dédié'
                     ],
                     color: [34, 197, 94],
-                    imageKey: 'avis-ilek-base64'
+                    imageKey: 'avis-ilek-base64-v2'
                 },
                 'WEKIWI': {
                     titre: 'WEKIWI - L\'énergie digitale et flexible',
@@ -6845,11 +6845,11 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     let imgData = null;
                     
                     if (mainSupplier === 'OHM') {
-                        imgData = localStorage.getItem('avis-ohm-base64') || 
+                        imgData = localStorage.getItem('avis-ohm-base64-v2') || 
                                  localStorage.getItem('OHM AVIS') ||
                                  localStorage.getItem('ohm-avis');
                     } else if (mainSupplier === 'ILEK') {
-                        imgData = localStorage.getItem('avis-ilek-base64') || 
+                        imgData = localStorage.getItem('avis-ilek-base64-v2') || 
                                  localStorage.getItem('ILEK AVIS') ||
                                  localStorage.getItem('ilek-avis');
                     }
