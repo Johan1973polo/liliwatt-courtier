@@ -409,7 +409,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
     
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: user.role, drive_folder_id: user.drive_folder_id || '' },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -432,7 +432,7 @@ app.post('/api/auth/login', async (req, res) => {
 // Route pour créer un utilisateur (admin only)
 app.post('/api/auth/create-user', verifyToken, isAdmin, async (req, res) => {
   try {
-    const { email, password, role = 'vendeur' } = req.body;
+    const { email, password, role = 'vendeur', drive_folder_id = '' } = req.body;
     const data = await readJSON('users.json');
     
     if (data.users.find(u => u.email === email)) {
@@ -445,6 +445,7 @@ app.post('/api/auth/create-user', verifyToken, isAdmin, async (req, res) => {
       email,
       password: hashedPassword,
       role: role,
+      drive_folder_id: drive_folder_id,
       created: new Date().toISOString(),
       created_by: req.user.id
     };
