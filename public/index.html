@@ -4794,7 +4794,10 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             
             // ABONNEMENT
             const abonnementClient = parseFloat(extractedData.prix_abonnement_eur) || 0;
-            const abonnementOhm = abonnementRef || 0;
+            // Lire l'abonnement depuis localStorage en priorité
+            const savedAbo = localStorage.getItem('abonnementRef');
+            const abonnementOhm = savedAbo !== null ? parseFloat(savedAbo) : (abonnementRef || 0);
+            console.log('📋 Abonnement OHM utilisé:', abonnementOhm, '€ (localStorage:', savedAbo, ')');
             const abonnementEconomie = abonnementClient - abonnementOhm;
             
             totalCoutClient += abonnementClient;
@@ -5330,7 +5333,10 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.text('Abonnement annuel', 18, y);
             doc.setFont(undefined, 'normal');
             const abonnementClient = parseFloat(extractedData.prix_abonnement_eur) || 0;
-            const abonnementOhm = abonnementRef || 0;
+            // Lire l'abonnement depuis localStorage en priorité
+            const savedAbo = localStorage.getItem('abonnementRef');
+            const abonnementOhm = savedAbo !== null ? parseFloat(savedAbo) : (abonnementRef || 0);
+            console.log('📋 Abonnement OHM utilisé:', abonnementOhm, '€ (localStorage:', savedAbo, ')');
             const abonnementEco = abonnementClient - abonnementOhm;
             doc.text(Math.round(abonnementClient).toLocaleString('fr-FR').replace(/\s/g, '') + ' EUR/an', 78, y);
             doc.text(Math.round(abonnementOhm).toLocaleString('fr-FR').replace(/\s/g, '') + ' EUR/an', 128, y);
