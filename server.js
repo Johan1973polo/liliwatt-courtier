@@ -776,13 +776,13 @@ app.post('/api/drive/upload', verifyToken, async (req, res) => {
     const vendeurFolderId = req.user.drive_folder_id || null;
     let attenteId;
     if (vendeurFolderId) {
-      attenteId = await findOrCreateFolder(drive, 'Clients en attente', vendeurFolderId);
+      attenteId = await findOrCreateFolder(drive, 'CLIENT EN ATTENTE', vendeurFolderId);
     } else {
       const vendeurEmail = req.user.email;
       const vendeurNom = vendeurEmail.split('@')[0].replace('.', ' ').split(' ')
         .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
       const fallbackId = await findOrCreateFolder(drive, vendeurNom, VENDEURS_FOLDER_ID);
-      attenteId = await findOrCreateFolder(drive, 'Clients en attente', fallbackId);
+      attenteId = await findOrCreateFolder(drive, 'CLIENT EN ATTENTE', fallbackId);
     }
 
     // Chercher/créer dossier client
@@ -827,14 +827,14 @@ app.post('/api/drive/create-client-folder', verifyToken, async (req, res) => {
     let attenteId;
     if (vendeurFolderId) {
       // Dossier vendeur connu → chercher/créer "Clients en attente" dedans
-      attenteId = await findOrCreateFolder(drive, 'Clients en attente', vendeurFolderId);
+      attenteId = await findOrCreateFolder(drive, 'CLIENT EN ATTENTE', vendeurFolderId);
     } else {
       // Fallback : créer dans le dossier VENDEURS principal
       const vendeurEmail = req.user.email;
       const vendeurNom = vendeurEmail.split('@')[0].replace('.', ' ').split(' ')
         .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
       const fallbackId = await findOrCreateFolder(drive, vendeurNom, VENDEURS_FOLDER_ID);
-      attenteId = await findOrCreateFolder(drive, 'Clients en attente', fallbackId);
+      attenteId = await findOrCreateFolder(drive, 'CLIENT EN ATTENTE', fallbackId);
     }
     
     const clientFolderId = await findOrCreateFolder(drive, clientName, attenteId);
