@@ -4863,9 +4863,9 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             // ABONNEMENT
             const abonnementClient = parseFloat(extractedData.prix_abonnement_eur) || 0;
             // Lire l'abonnement depuis localStorage en priorité
-            const savedAbo = localStorage.getItem('abonnementRef');
-            const abonnementOhm = savedAbo !== null ? parseFloat(savedAbo) : (abonnementRef || 0);
-            console.log('📋 Abonnement OHM utilisé:', abonnementOhm, '€ (localStorage:', savedAbo, ')');
+            const abonnementOhm = parseFloat(localStorage.getItem('abonnementRef') ?? '0');
+            console.log('📋 abonnementOhm final:', abonnementOhm);
+            // localStorage lu directement dans abonnementOhm ci-dessus
             const abonnementEconomie = abonnementClient - abonnementOhm;
             
             totalCoutClient += abonnementClient;
@@ -5402,9 +5402,9 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.setFont(undefined, 'normal');
             const abonnementClient = parseFloat(extractedData.prix_abonnement_eur) || 0;
             // Lire l'abonnement depuis localStorage en priorité
-            const savedAbo = localStorage.getItem('abonnementRef');
-            const abonnementOhm = savedAbo !== null ? parseFloat(savedAbo) : (abonnementRef || 0);
-            console.log('📋 Abonnement OHM utilisé:', abonnementOhm, '€ (localStorage:', savedAbo, ')');
+            const abonnementOhm = parseFloat(localStorage.getItem('abonnementRef') ?? '0');
+            console.log('📋 abonnementOhm final:', abonnementOhm);
+            // localStorage lu directement dans abonnementOhm ci-dessus
             const abonnementEco = abonnementClient - abonnementOhm;
             doc.text(Math.round(abonnementClient).toLocaleString('fr-FR').replace(/\s/g, '') + ' EUR/an', 78, y);
             doc.text(Math.round(abonnementOhm).toLocaleString('fr-FR').replace(/\s/g, '') + ' EUR/an', 128, y);
@@ -5919,7 +5919,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 fournisseur: selectedFournisseurRef,
                 nom: refNames[selectedFournisseurRef] || selectedFournisseurRef,
                 prices: { ...ohmPrices },
-                abonnement: abonnementRef || 240,
+                abonnement: (parseFloat(localStorage.getItem('abonnementRef') ?? '0') || abonnementRef),
                 marge: 0,
                 color: '#10b981',
                 isBest: true
@@ -5956,7 +5956,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     fournisseur: fournisseur,
                     nom: config.nom,
                     prices: fournisseurPrices,
-                    abonnement: (abonnementRef || 240) * (1 + marge / 100), // Utiliser abonnementRef au lieu de selectedAbonnement
+                    abonnement: ((parseFloat(localStorage.getItem('abonnementRef') ?? '0') || abonnementRef)) * (1 + marge / 100), // Utiliser abonnementRef au lieu de selectedAbonnement
                     marge: marge.toFixed(1),
                     color: config.color,
                     isBest: false
