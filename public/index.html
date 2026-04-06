@@ -6007,19 +6007,9 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     return fallbacks[Math.floor(Math.random() * fallbacks.length)];
                 })();
 
-                // Écart UNIQUE par fournisseur entre 8.2% et 22.4% sur le TOTAL
-                const ecartCible = 0.082 + Math.random() * (0.224 - 0.082);
-                const totalOhmRef = prixMoyenOhm * volumeTotalMWh / 100 + aboOhm;
-                const totalConcurrentCible = totalOhmRef * (1 + ecartCible);
-                const energieOhmBase = prixMoyenOhm * volumeTotalMWh / 100;
-                // Prix énergie concurrent = (total cible - abonnement concurrent) / volume
-                let ecartAleatoire;
-                if (energieOhmBase > 0) {
-                    const energieCible = totalConcurrentCible - aboConcurrent;
-                    ecartAleatoire = Math.max(energieCible / energieOhmBase, 1.05);
-                } else {
-                    ecartAleatoire = 1 + ecartCible;
-                }
+                // Écart UNIQUE et SIMPLE par fournisseur
+                // Chaque fournisseur reçoit son propre Math.random()
+                const ecartAleatoire = 1.082 + Math.random() * (1.224 - 1.082);
 
                 // Appliquer l'écart à tous les composants de prix
                 const fournisseurPrices = {};
