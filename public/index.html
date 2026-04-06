@@ -6215,6 +6215,12 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             console.log('📋 Après sélection:', selectedFournisseurs);
             
             document.getElementById('selectedCount').textContent = selectedFournisseurs.length;
+            
+            // Aperçu MEC temps réel
+            const apercu = document.getElementById('mecApercu');
+            if (apercu && apercu.style.display !== 'none') {
+                setTimeout(() => previewMEC(), 100);
+            }
         }
         
         
