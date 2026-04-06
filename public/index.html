@@ -7721,6 +7721,9 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 selectedFournisseurs = [];
                 volumeData = {};
                 prixReferenceData = {};
+                // Nettoyer aussi localStorage lors du reset
+                localStorage.removeItem('abonnementRef');
+                abonnementRef = 240;
                 validationStatus = { dataComplete: false, prixComplete: false };
                 mecInitialized = false;
                 
@@ -7846,7 +7849,8 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             
             // Initialiser OHM comme fournisseur de référence par défaut
             selectedFournisseurRef = 'OHM';
-            abonnementRef = 240;
+            // NE PAS écraser abonnementRef ici - déjà chargé depuis localStorage plus haut
+            // abonnementRef = 240; // SUPPRIMÉ - utilise la valeur chargée depuis localStorage
             
             // Gestion de la fermeture du modal en cliquant en dehors
             window.onclick = function(event) {
