@@ -956,9 +956,27 @@ h1 { color: #1e1b4b !important; }
 .btn-secondary {
   border-color: #7c3aed !important;
   color: #7c3aed !important;
+  background: white !important;
 }
 .btn-secondary:hover {
   background: #f5f3ff !important;
+}
+
+/* Boutons Suivant spécifiques → violet fond + blanc texte */
+button[onclick*="nextStep"]:not([disabled]),
+button[onclick*="goToStep"]:not([disabled]) {
+  background: linear-gradient(135deg, #7c3aed, #d946ef) !important;
+  color: white !important;
+  border: none !important;
+  opacity: 1 !important;
+}
+
+/* Bouton Retour → outline violet */
+button[onclick*="prevStep"],
+button[onclick*="previousStep"] {
+  background: transparent !important;
+  border: 2px solid #7c3aed !important;
+  color: #7c3aed !important;
 }
 
 /* Bouton warning → violet */
