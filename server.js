@@ -603,6 +603,29 @@ app.post('/api/notifications', verifyToken, async (req, res) => {
   }
 });
 
+// Route pour mettre à jour drive_folder_id d'un vendeur
+app.put('/api/auth/users/:email/drive-folder', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { drive_folder_id } = req.body;
+    
+    // Extraire l'ID depuis un lien Drive complet si nécessaire
+    const folderId = drive_folder_id.match(/folders\/([a-zA-Z0-9_-]+)/)?.[1] || drive_folder_id;
+    
+    const data = await readJSON('users.json');
+    const user = data.users.find(u => u.email === email);
+    
+    if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    
+    user.drive_folder_id = folderId;
+    await writeJSON('users.json', data);
+    
+    res.json({ success: true, email, drive_folder_id: folderId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Route pour lister les notifications (admin only)
 app.get('/api/notifications', verifyToken, isAdmin, async (req, res) => {
   try {
