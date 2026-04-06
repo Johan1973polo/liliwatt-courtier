@@ -6151,9 +6151,11 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 </tbody>
                 </table>
                 <div style="margin-top: 15px; text-align: center;">
-                    <button onclick="validateMECModifications()" class="btn-success" style="padding: 10px 20px;">
-                        ✅ Valider les modifications
-                    </button>
+                    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                        <button onclick="regenerateMEC()" style="padding:12px 24px;background:linear-gradient(135deg,#7c3aed,#d946ef);color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">🔄 Régénérer les prix</button>
+                        <button onclick="resetMECSelection()" style="padding:12px 24px;background:linear-gradient(135deg,#ef4444,#f97316);color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">↩ Recommencer la sélection</button>
+                        <button onclick="validateMECModifications()" style="padding:12px 24px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">✅ Valider</button>
+                    </div>
                 </div>
             `;
             
@@ -6251,6 +6253,29 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     }
                 }
             });
+        }
+        
+        function regenerateMEC() {
+            // Relancer le calcul avec de nouveaux prix aléatoires
+            previewMEC();
+        }
+        
+        function resetMECSelection() {
+            // Réinitialiser les fournisseurs sélectionnés
+            selectedFournisseurs = [];
+            // Décocher toutes les cards
+            document.querySelectorAll('.fournisseur-card').forEach(card => {
+                card.classList.remove('selected');
+                const checkbox = card.querySelector('.fournisseur-checkbox');
+                if (checkbox) checkbox.checked = false;
+            });
+            // Masquer le tableau aperçu
+            const apercu = document.getElementById('mecApercu');
+            if (apercu) apercu.style.display = 'none';
+            // Mettre à jour le compteur
+            const countDisplay = document.getElementById('supplier-count-display');
+            if (countDisplay) countDisplay.style.display = 'none';
+            console.log('✅ Sélection réinitialisée');
         }
         
         function validateMECModifications() {
