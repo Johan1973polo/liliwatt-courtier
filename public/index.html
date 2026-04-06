@@ -8092,6 +8092,134 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 }
             }
         });
+
+        // ===== SAISIE MANUELLE =====
+        let manualEnergie = 'ELEC';
+        let manualSegment = 'C5-BASE';
+        
+        function showManualEntry() {
+            const modal = document.getElementById('manualEntryModal');
+            modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function setManualEnergie(type) {
+            manualEnergie = type;
+            document.getElementById('btn-elec').style.background = type === 'ELEC' ? '#7c3aed' : 'white';
+            document.getElementById('btn-elec').style.color = type === 'ELEC' ? 'white' : '#7c3aed';
+            document.getElementById('btn-gaz').style.background = type === 'GAZ' ? '#7c3aed' : 'white';
+            document.getElementById('btn-gaz').style.color = type === 'GAZ' ? 'white' : '#7c3aed';
+            
+            if (type === 'GAZ') {
+                manualSegment = 'GAZ';
+                document.getElementById('segmentBlock').style.display = 'none';
+                document.getElementById('m-puissance-block').style.display = 'none';
+                updateManualFields();
+            } else {
+                document.getElementById('segmentBlock').style.display = 'block';
+                document.getElementById('m-puissance-block').style.display = 'block';
+                setManualSegment('C5-BASE');
+            }
+        }
+        
+        function setManualSegment(seg) {
+            manualSegment = seg;
+            ['c5base','c5hphc','c4','c2'].forEach(s => {
+                const btn = document.getElementById('btn-' + s);
+                if (btn) { btn.style.background = 'white'; btn.style.borderColor = '#e9d5ff'; }
+            });
+            const map = {'C5-BASE':'c5base','C5-HPHC':'c5hphc','C4':'c4','C2':'c2'};
+            const btn = document.getElementById('btn-' + map[seg]);
+            if (btn) { btn.style.background = '#7c3aed'; btn.style.color = 'white'; btn.style.borderColor = '#7c3aed'; }
+            updateManualFields();
+        }
+        
+        function updateManualFields() {
+            document.getElementById('manualFields').style.display = 'block';
+            const prixDiv = document.getElementById('manualPrixInputs');
+            const volDiv = document.getElementById('manualVolInputs');
+            
+            const seg = manualSegment;
+            let prixHtml = '', volHtml = '';
+            
+            if (seg === 'C5-BASE') {
+                prixHtml = '<div><label style="font-size:12px;color:#6b7280;">Base</label><br><input type="number" id="mp-base" step="0.01" placeholder="12.50" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"> c€/kWh</div>';
+                volHtml = '<div><label style="font-size:12px;color:#6b7280;">Base (MWh)</label><br><input type="number" id="mv-base" placeholder="23" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"></div>';
+            } else if (seg === 'C5-HPHC') {
+                prixHtml = '<div><label style="font-size:12px;color:#6b7280;">HP</label><br><input type="number" id="mp-hp" step="0.01" placeholder="13.20" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"> c€/kWh</div><div><label style="font-size:12px;color:#6b7280;">HC</label><br><input type="number" id="mp-hc" step="0.01" placeholder="9.80" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"> c€/kWh</div>';
+                volHtml = '<div><label style="font-size:12px;color:#6b7280;">HP (MWh)</label><br><input type="number" id="mv-hp" placeholder="14" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"></div><div><label style="font-size:12px;color:#6b7280;">HC (MWh)</label><br><input type="number" id="mv-hc" placeholder="9" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"></div>';
+            } else if (seg === 'C4') {
+                prixHtml = '<div><label style="font-size:12px;color:#6b7280;">HPE</label><br><input type="number" id="mp-hpe" step="0.01" placeholder="12.00" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"> c€/kWh</div><div><label style="font-size:12px;color:#6b7280;">HCE</label><br><input type="number" id="mp-hce" step="0.01" placeholder="9.00" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"> c€/kWh</div><div><label style="font-size:12px;color:#6b7280;">HPH</label><br><input type="number" id="mp-hph" step="0.01" placeholder="15.00" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"> c€/kWh</div><div><label style="font-size:12px;color:#6b7280;">HCH</label><br><input type="number" id="mp-hch" step="0.01" placeholder="10.00" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"> c€/kWh</div>';
+                volHtml = '<div><label style="font-size:12px;color:#6b7280;">HPE (MWh)</label><br><input type="number" id="mv-hpe" placeholder="8" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"></div><div><label style="font-size:12px;color:#6b7280;">HCE (MWh)</label><br><input type="number" id="mv-hce" placeholder="5" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"></div><div><label style="font-size:12px;color:#6b7280;">HPH (MWh)</label><br><input type="number" id="mv-hph" placeholder="10" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"></div><div><label style="font-size:12px;color:#6b7280;">HCH (MWh)</label><br><input type="number" id="mv-hch" placeholder="6" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"></div>';
+            } else if (seg === 'C2') {
+                prixHtml = '<div><label style="font-size:12px;color:#6b7280;">HPE</label><br><input type="number" id="mp-hpe" step="0.01" placeholder="12.00" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"> c€/kWh</div><div><label style="font-size:12px;color:#6b7280;">HCE</label><br><input type="number" id="mp-hce" step="0.01" placeholder="9.00" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"> c€/kWh</div><div><label style="font-size:12px;color:#6b7280;">HPH</label><br><input type="number" id="mp-hph" step="0.01" placeholder="15.00" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"> c€/kWh</div><div><label style="font-size:12px;color:#6b7280;">HCH</label><br><input type="number" id="mp-hch" step="0.01" placeholder="10.00" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"> c€/kWh</div><div><label style="font-size:12px;color:#6b7280;">POINTE</label><br><input type="number" id="mp-pointe" step="0.01" placeholder="20.00" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"> c€/kWh</div>';
+                volHtml = '<div><label style="font-size:12px;color:#6b7280;">HPE (MWh)</label><br><input type="number" id="mv-hpe" placeholder="8" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"></div><div><label style="font-size:12px;color:#6b7280;">HCE (MWh)</label><br><input type="number" id="mv-hce" placeholder="5" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"></div><div><label style="font-size:12px;color:#6b7280;">HPH (MWh)</label><br><input type="number" id="mv-hph" placeholder="10" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"></div><div><label style="font-size:12px;color:#6b7280;">HCH (MWh)</label><br><input type="number" id="mv-hch" placeholder="6" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"></div><div><label style="font-size:12px;color:#6b7280;">POINTE (MWh)</label><br><input type="number" id="mv-pointe" placeholder="2" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"></div>';
+            } else if (seg === 'GAZ') {
+                prixHtml = '<div><label style="font-size:12px;color:#6b7280;">Molécule (€/MWh)</label><br><input type="number" id="mp-molecule" step="0.01" placeholder="85.00" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"></div>';
+                volHtml = '<div><label style="font-size:12px;color:#6b7280;">Volume annuel (MWh)</label><br><input type="number" id="mv-molecule" placeholder="120" style="width:100%;padding:6px;border:1px solid #e9d5ff;border-radius:6px;"></div>';
+            }
+            
+            prixDiv.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' + prixHtml + '</div>';
+            volDiv.innerHTML = volHtml;
+        }
+        
+        function validateManualEntry() {
+            const nom = document.getElementById('m-nom').value || 'Client Manuel';
+            const siren = document.getElementById('m-siren').value || 'N/A';
+            const pdl = document.getElementById('m-pdl').value || 'N/A';
+            const puissance = document.getElementById('m-puissance') ? document.getElementById('m-puissance').value : null;
+            const fournisseur = document.getElementById('m-fournisseur').value || 'N/A';
+            const finContrat = document.getElementById('m-fin-contrat').value || '';
+            const seg = manualSegment;
+            
+            // Construire extractedData
+            extractedData = {
+                segment: seg,
+                nom_client: nom,
+                siren: siren,
+                pdl: pdl,
+                puissance_souscrite: puissance,
+                fournisseur_actuel: fournisseur,
+                date_fin_contrat: finContrat,
+                manuel: true
+            };
+            
+            // Récupérer les prix
+            if (seg === 'C5-BASE') {
+                extractedData.prix_base_centimes = parseFloat(document.getElementById('mp-base')?.value) || 0;
+                extractedData.volume_base_mwh = parseFloat(document.getElementById('mv-base')?.value) || 0;
+            } else if (seg === 'C5-HPHC') {
+                extractedData.prix_hp_centimes = parseFloat(document.getElementById('mp-hp')?.value) || 0;
+                extractedData.prix_hc_centimes = parseFloat(document.getElementById('mp-hc')?.value) || 0;
+                extractedData.volume_hp_mwh = parseFloat(document.getElementById('mv-hp')?.value) || 0;
+                extractedData.volume_hc_mwh = parseFloat(document.getElementById('mv-hc')?.value) || 0;
+            } else if (seg === 'C4' || seg === 'C2') {
+                extractedData.prix_hpe_centimes = parseFloat(document.getElementById('mp-hpe')?.value) || 0;
+                extractedData.prix_hce_centimes = parseFloat(document.getElementById('mp-hce')?.value) || 0;
+                extractedData.prix_hph_centimes = parseFloat(document.getElementById('mp-hph')?.value) || 0;
+                extractedData.prix_hch_centimes = parseFloat(document.getElementById('mp-hch')?.value) || 0;
+                if (seg === 'C2') {
+                    extractedData.prix_pointe_centimes = parseFloat(document.getElementById('mp-pointe')?.value) || 0;
+                }
+                extractedData.volume_hpe_mwh = parseFloat(document.getElementById('mv-hpe')?.value) || 0;
+                extractedData.volume_hce_mwh = parseFloat(document.getElementById('mv-hce')?.value) || 0;
+                extractedData.volume_hph_mwh = parseFloat(document.getElementById('mv-hph')?.value) || 0;
+                extractedData.volume_hch_mwh = parseFloat(document.getElementById('mv-hch')?.value) || 0;
+                if (seg === 'C2') {
+                    extractedData.volume_pointe_mwh = parseFloat(document.getElementById('mv-pointe')?.value) || 0;
+                }
+            } else if (seg === 'GAZ') {
+                extractedData.prix_molecule_eur_mwh = parseFloat(document.getElementById('mp-molecule')?.value) || 0;
+                extractedData.car = parseFloat(document.getElementById('mv-molecule')?.value) || 0;
+            }
+            
+            console.log('✅ Données manuelles:', extractedData);
+            
+            // Passer à l'étape 2 et afficher les données
+            goToStep(2);
+            displayExtractedData();
+            document.getElementById('manualEntryModal').style.display = 'none';
+        }
+        // ===== FIN SAISIE MANUELLE =====
     </script>
 </body>
 </html>
