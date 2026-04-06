@@ -1236,7 +1236,92 @@ button[onclick*="previousStep"] {
 }
 </style>
 
+
+<style id="loader-scanner">
+#scannerOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(245,243,255,0.97);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 24px;
+}
+#scannerOverlay.active { display: flex; }
+
+.scanner-box {
+  width: 160px;
+  height: 110px;
+  border: 2px solid #7c3aed;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  background: rgba(124,58,237,0.04);
+}
+.scanner-line {
+  position: absolute;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #d946ef, transparent);
+  box-shadow: 0 0 12px #d946ef;
+  animation: scan-move 2s ease-in-out infinite;
+}
+@keyframes scan-move { 0%{top:-3px;} 100%{top:113px;} }
+
+.scanner-corner { position: absolute; width: 16px; height: 16px; }
+.scanner-corner.tl { top:-1px; left:-1px; border-top:3px solid #7c3aed; border-left:3px solid #7c3aed; border-radius:4px 0 0 0; }
+.scanner-corner.tr { top:-1px; right:-1px; border-top:3px solid #7c3aed; border-right:3px solid #7c3aed; border-radius:0 4px 0 0; }
+.scanner-corner.bl { bottom:-1px; left:-1px; border-bottom:3px solid #7c3aed; border-left:3px solid #7c3aed; border-radius:0 0 0 4px; }
+.scanner-corner.br { bottom:-1px; right:-1px; border-bottom:3px solid #7c3aed; border-right:3px solid #7c3aed; border-radius:0 0 4px 0; }
+.scanner-icon { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:36px; opacity:0.25; }
+
+.scanner-title {
+  color: #7c3aed;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.scanner-sub {
+  color: #9ca3af;
+  font-size: 12px;
+  margin-top: -16px;
+}
+.scanner-progress {
+  width: 160px;
+  height: 3px;
+  background: #e9d5ff;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.scanner-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #d946ef);
+  border-radius: 4px;
+  animation: prog 3s ease-in-out infinite;
+}
+@keyframes prog { 0%{width:5%;} 60%{width:80%;} 80%{width:80%;} 100%{width:98%;} }
+</style>
+
 </head>
+
+<!-- Scanner Loader Overlay -->
+<div id="scannerOverlay">
+  <div class="scanner-box">
+    <div class="scanner-icon">📄</div>
+    <div class="scanner-line"></div>
+    <div class="scanner-corner tl"></div>
+    <div class="scanner-corner tr"></div>
+    <div class="scanner-corner bl"></div>
+    <div class="scanner-corner br"></div>
+  </div>
+  <div class="scanner-title">Lecture facture...</div>
+  <div class="scanner-progress"><div class="scanner-progress-fill"></div></div>
+  <div class="scanner-sub">Intelligence artificielle LILIWATT</div>
+</div>
+
 <body>
     <div class="container">
         <div class="header">
@@ -2743,7 +2828,7 @@ const avisImages = [
                 }
             }
             
-            document.getElementById('loading').style.display = 'block';
+            document.getElementById('scannerOverlay').classList.add('active');
             
             try {
                 const formData = new FormData();
@@ -2893,17 +2978,17 @@ const avisImages = [
                     // Sauvegarder les données extraites dans localStorage
                     localStorage.setItem('extractedData', JSON.stringify(extractedData));
                     
-                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('scannerOverlay').classList.remove('active');
                     displayExtractedData(); updateStep2ButtonsForRole();
                     nextStep(2);
                 } else {
                     alert('Erreur lors de l\'extraction: ' + result.error);
-                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('scannerOverlay').classList.remove('active');
                 }
                 
             } catch (error) {
                 alert('Erreur de connexion à l\'API: ' + error.message);
-                document.getElementById('loading').style.display = 'none';
+                document.getElementById('scannerOverlay').classList.remove('active');
                 
                 // FALLBACK: En cas d'erreur, données de test pour développement
                 
