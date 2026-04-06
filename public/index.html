@@ -4548,8 +4548,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             if (selectedFournisseurRef === 'OHM') {
                 const buttons = document.querySelectorAll('#ohm-abonnement-choice button');
                 buttons.forEach(btn => {
-                    btn.classList.remove('btn-primary');
-                    btn.classList.add('btn-secondary');
+                    btn.style.background='white'; btn.style.color='#7c3aed'; btn.style.border='2px solid #7c3aed';
                 });
                 
                 // Mettre en surbrillance le bouton sélectionné
@@ -6398,7 +6397,9 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             console.log('Offres:', mecPrices.map(o => o.nom));
             
             return mecPrices;
-        }
+            // Aperçu temps réel
+            if (selectedFournisseurs.length > 1) { previewMEC(); }
+                }
         
         function calculateTotalCost(offer) {
             const currentSegment = extractedData.segment;
