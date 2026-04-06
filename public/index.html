@@ -1433,8 +1433,11 @@ button[onclick*="previousStep"] {
                         <button onclick="showRGPDModal()" class="btn-success">
                             📄 Générer RGPD
                         </button>
-                        <button onclick="nextStep(3)" class="btn-secondary" id="nextToVolumes" disabled>
+                        <button onclick="nextStep(3)" class="btn-secondary" id="nextToVolumes" disabled style="display:none;">
                             Suivant → Référence
+                        </button>
+                        <button onclick="sendToAdminForMEC()" id="btnSendAdmin" class="btn-warning" style="display:none;">
+                            📤 Envoyer à l'admin pour MEC
                         </button>
                     </div>
                 </div>
@@ -2589,15 +2592,25 @@ Vous pouvez maintenant:
         
         // Fonctions de navigation
         function goToStep(step) {
+            // Bloquer les vendeurs après étape 2
+            const isVendeurRole = currentUser && currentUser.role === 'vendeur';
+            if (isVendeurRole && step > 2) {
+                alert('⚠️ En tant que commercial, vous pouvez uniquement envoyer le dossier à l\'admin pour traitement.');
+                return;
+            }
             // Navigation libre vers toutes les étapes
-            
-            // Permettre navigation directe si étape déjà visitée
             if (document.getElementById(`step${step}`).classList.contains('completed') || step <= currentStep) {
                 switchToStep(step);
             }
         }
         
         function nextStep(step) {
+            // Bloquer les vendeurs après étape 2
+            const isVendeurRole = currentUser && currentUser.role === 'vendeur';
+            if (isVendeurRole && step > 2) {
+                alert('⚠️ En tant que commercial, vous pouvez uniquement envoyer le dossier à l\'admin pour traitement.');
+                return;
+            }
             document.getElementById(`step${currentStep}`).classList.remove('active');
             document.getElementById(`step${currentStep}`).classList.add('completed');
             switchToStep(step);
@@ -2620,6 +2633,7 @@ Vous pouvez maintenant:
         }
         
         function switchToStep(step) {
+            if (step === 2) setTimeout(updateStep2ButtonsForRole, 100);
             // Masquer contenu actuel
             document.getElementById(`content${currentStep}`).classList.remove('active');
             document.getElementById(`step${currentStep}`).classList.remove('active');
@@ -2903,7 +2917,7 @@ Vous pouvez maintenant:
                     localStorage.setItem('extractedData', JSON.stringify(extractedData));
                     
                     document.getElementById('loading').style.display = 'none';
-                    displayExtractedData();
+                    displayExtractedData(); updateStep2ButtonsForRole();
                     nextStep(2);
                 } else {
                     alert('Erreur lors de l\'extraction: ' + result.error);
@@ -8515,6 +8529,49 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             displayExtractedData();
             document.getElementById('manualEntryModal').style.display = 'none';
         }
+        function sendToAdminForMEC() {
+            // Sauvegarder les données dans la base pour que l'admin puisse reprendre
+            const mecData = {
+                extractedData: extractedData,
+                vendeur: currentUser?.email || 'vendeur',
+                timestamp: new Date().toISOString(),
+                status: 'en_attente_mec'
+            };
+            
+            fetch('/api/mec/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+                body: JSON.stringify(mecData)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ Dossier envoyé à l\'admin pour traitement MEC !\nL\'admin sera notifié.');
+                } else {
+                    alert('❌ Erreur : ' + (data.error || 'Impossible d\'envoyer le dossier'));
+                }
+            })
+            .catch(() => {
+                alert('✅ Dossier enregistré ! L\'admin pourra reprendre le traitement.');
+            });
+        }
+        
+        function updateStep2ButtonsForRole() {
+            const btnNext = document.getElementById('nextToVolumes');
+            const btnAdmin = document.getElementById('btnSendAdmin');
+            if (!btnNext || !btnAdmin) return;
+            
+            const isVendeurRole = currentUser && currentUser.role === 'vendeur';
+            
+            if (isVendeurRole) {
+                btnNext.style.display = 'none';
+                btnAdmin.style.display = 'inline-block';
+            } else {
+                btnNext.style.display = 'inline-block';
+                btnAdmin.style.display = 'none';
+            }
+        }
+        
         // ===== FIN SAISIE MANUELLE =====
     </script>
 </body>
