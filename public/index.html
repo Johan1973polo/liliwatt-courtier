@@ -6007,24 +6007,18 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     return fallbacks[Math.floor(Math.random() * fallbacks.length)];
                 })();
 
-                // Écart aléatoire entre 8.2% et 22.4% sur le TOTAL annuel
+                // Écart UNIQUE par fournisseur entre 8.2% et 22.4% sur le TOTAL
                 const ecartCible = 0.082 + Math.random() * (0.224 - 0.082);
                 const totalOhmRef = prixMoyenOhm * volumeTotalMWh / 100 + aboOhm;
                 const totalConcurrentCible = totalOhmRef * (1 + ecartCible);
-                // Déduire le prix énergie pour que le TOTAL respecte la plage
-                const energieConcurrentCible = totalConcurrentCible - aboConcurrent;
                 const energieOhmBase = prixMoyenOhm * volumeTotalMWh / 100;
+                // Prix énergie concurrent = (total cible - abonnement concurrent) / volume
                 let ecartAleatoire;
-                if (volumeTotalMWh > 0 && energieOhmBase > 0 && energieConcurrentCible > energieOhmBase * 1.02) {
-                    ecartAleatoire = energieConcurrentCible / energieOhmBase;
+                if (energieOhmBase > 0) {
+                    const energieCible = totalConcurrentCible - aboConcurrent;
+                    ecartAleatoire = Math.max(energieCible / energieOhmBase, 1.05);
                 } else {
-                    // Fallback : appliquer l'écart cible sur le prix énergie
-                    // et ajuster pour compenser la diff d'abonnement
-                    const diffAbo = aboConcurrent - aboOhm;
-                    const energieCibleAjustee = energieOhmBase * (1 + ecartCible) - diffAbo;
-                    ecartAleatoire = volumeTotalMWh > 0 
-                        ? Math.max(energieCibleAjustee / energieOhmBase, 1.05)
-                        : (1 + ecartCible);
+                    ecartAleatoire = 1 + ecartCible;
                 }
 
                 // Appliquer l'écart à tous les composants de prix
