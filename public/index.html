@@ -3842,7 +3842,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 });
             } else {
                 // Générer les lignes vides pour 4 années
-                for (let year = 2025; year <= 2028; year++) {
+                for (let year = new Date().getFullYear(); year <= new Date().getFullYear() + 3; year++) {
                     addVolumeRow(year);
                 }
             }
@@ -3868,7 +3868,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                                value="${value}" 
                                onchange="updateVolumeTotal(${year})"
                                style="width: calc(100% - 30px);">
-                        ${year > 2025 ? 
+                        ${year > new Date().getFullYear() ? 
                             `<button onclick="copyPreviousYear(${year}, ${i})" 
                                      title="Copier l'année précédente" 
                                      style="position: absolute; right: 2px; top: 50%; transform: translateY(-50%); 
@@ -3879,7 +3879,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             }
             
             cellsHTML += `<td id="total-${year}"><strong>0.00 MWh</strong></td>`;
-            cellsHTML += `<td>${year > 2025 ? 
+            cellsHTML += `<td>${year > new Date().getFullYear() ? 
                 `<button onclick="copyAllPreviousYear(${year})" 
                          title="Copier toute l'année précédente" 
                          style="background: #10b981; color: white; border: none; 
@@ -4338,7 +4338,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             }
             
             // Réinitialiser le header avec années dynamiques
-            const currentYears = [2025, 2026, 2027, 2028];
+            const y = new Date().getFullYear(); const currentYears = [y, y+1, y+2, y+3];
             thead.innerHTML = `
                 <tr>
                     <th>Type de prix</th>
@@ -4752,7 +4752,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
         // NOUVELLE FONCTION : Utilise l'année de référence au lieu de la moyenne
         function getReferenceVolume(column) {
             // Ordre de priorité : année la plus récente avec des données > 0
-            const years = [2028, 2027, 2026, 2025];
+            const yCur = new Date().getFullYear(); const years = [yCur+3, yCur+2, yCur+1, yCur];
             
             // Parcourir les années de la plus récente à la plus ancienne
             for (let year of years) {
@@ -5695,7 +5695,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.setFontSize(8);
             const dateJour = new Date().toLocaleDateString('fr-FR');
             // Récupérer la dernière année avec des prix renseignés
-            let derniereAnnee = 2025;
+            let derniereAnnee = new Date().getFullYear();
             const prixInputs = document.querySelectorAll('.prix-ohm-input');
             prixInputs.forEach(input => {
                 if (input.value && parseFloat(input.value) > 0) {
