@@ -575,7 +575,9 @@ app.post('/api/notifications', verifyToken, async (req, res) => {
     if (existingNotif) {
       // Mettre à jour la notification existante au lieu d'en créer une nouvelle
       existingNotif.date = new Date().toISOString();
-      existingNotif.session_data = req.body.session_data;
+      existingNotif.extractedData = req.body.extractedData;
+      existingNotif.client_name = req.body.client_name || existingNotif.client_name;
+      existingNotif.segment = req.body.segment || existingNotif.segment;
       await writeJSON('notifications.json', data);
       
       res.json({ success: true, notification: existingNotif, updated: true });
