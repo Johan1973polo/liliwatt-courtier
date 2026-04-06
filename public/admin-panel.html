@@ -437,6 +437,9 @@
                                     <button class="btn btn-primary" onclick="editUser('${user.id}')">
                                         ✏️ Éditer
                                     </button>
+                                    <button onclick="updateDriveFolder('${user.email}')" style="padding:6px 12px;background:white;border:1.5px solid #4285f4;color:#4285f4;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;">
+                                        🗂️ Drive${user.drive_folder_id ? ' ✅' : ''}
+                                    </button>
                                     <button class="btn btn-danger" onclick="deleteUser('${user.id}', 'vendeur')">
                                         🗑️ Supprimer
                                     </button>
@@ -515,6 +518,25 @@
             } catch (error) {
                 alert('Erreur de connexion au serveur');
                 console.error('Erreur:', error);
+            }
+        }
+        
+        async function updateDriveFolder(email) {
+            const link = prompt(`Colle le lien Google Drive pour ${email} :`);
+            if (!link) return;
+            
+            const token = localStorage.getItem('token');
+            const r = await fetch(`/api/auth/users/${encodeURIComponent(email)}/drive-folder`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ drive_folder_id: link })
+            });
+            const data = await r.json();
+            if (data.success) {
+                alert(`✅ Dossier Drive mis à jour !\nID: ${data.drive_folder_id}`);
+                loadUsers();
+            } else {
+                alert('❌ Erreur : ' + data.error);
             }
         }
         
