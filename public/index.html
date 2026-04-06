@@ -1132,6 +1132,76 @@ input[type="checkbox"] { accent-color: #7c3aed !important; }
 body { background-color: #faf5ff !important; }
 .container, .main-container { background: white !important; }
 
+/* === CORRECTIONS SPÉCIFIQUES === */
+
+/* 1 - Bouton abonnement sélectionné → fond vert + texte violet */
+button[onclick*="setAbonnementRef"].active-abo,
+.abonnement-selected {
+  background: #10b981 !important;
+  color: #7c3aed !important;
+}
+
+/* 2 - Données extraites → bleu marine */
+.data-value, .extracted-value,
+[class*="data-val"] { color: #1e1b4b !important; font-weight: 600 !important; }
+
+/* 3 - Boutons Modifier → bleu */
+button[onclick*="modifier"], button[onclick*="Modifier"],
+button[onclick*="editField"], button[onclick*="editData"] {
+  background: #2563eb !important;
+  color: white !important;
+}
+
+/* 4 - Steps navigation : retirer fond violet, garder texte vert */
+.step.completed {
+  background: transparent !important;
+  border: 2px solid #10b981 !important;
+  color: #10b981 !important;
+}
+.step.completed .step-number {
+  background: #10b981 !important;
+  color: white !important;
+}
+.step.active {
+  background: transparent !important;
+  border: 2px solid #7c3aed !important;
+  color: #7c3aed !important;
+}
+.step.active .step-number {
+  background: #7c3aed !important;
+  color: white !important;
+}
+.step:not(.active):not(.completed) .step-number {
+  background: #d1d5db !important;
+  color: #6b7280 !important;
+}
+
+/* 5 - Bouton Ajouter une année → bleu */
+button[onclick*="addYear"], button[onclick*="ajouterAnnee"],
+button[onclick*="addRow"] {
+  background: #2563eb !important;
+  color: white !important;
+}
+
+/* 6 - Bouton Tout copier → vert */
+button[onclick*="copyAll"], button[onclick*="toutCopier"],
+button[onclick*="copyRow"] {
+  background: #10b981 !important;
+  color: white !important;
+}
+
+/* 7 - Headers tableau MEC → texte blanc */
+#mecApercu table thead th,
+#mecApercu table thead tr th {
+  color: white !important;
+}
+
+/* 8 - Bouton + Année dans prix ref → bleu */
+button[onclick*="addPrixYear"], button[onclick*="addPrixColumn"] {
+  background: #2563eb !important;
+  color: white !important;
+}
+
 /* TEXTE BLANC sur tous boutons colorés */
 button { color: white !important; }
 /* btn-secondary géré par règle globale */
@@ -6443,11 +6513,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 </tbody>
                 </table>
                 <div style="margin-top: 15px; text-align: center;">
-                    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-                        <button onclick="regenerateMEC()" style="padding:12px 24px;background:linear-gradient(135deg,#7c3aed,#d946ef);color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">🔄 Régénérer les prix</button>
-                        <button onclick="resetMECSelection()" style="padding:12px 24px;background:linear-gradient(135deg,#ef4444,#f97316);color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">↩ Recommencer la sélection</button>
-                        <button onclick="validateMECModifications()" style="padding:12px 24px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">✅ Valider</button>
-                    </div>
+                    
                 </div>
             `;
             
