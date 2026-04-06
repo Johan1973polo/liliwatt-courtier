@@ -985,6 +985,26 @@ button[onclick*="supprimer"] {
   background: linear-gradient(135deg, #ef4444, #dc2626) !important;
 }
 
+/* Boutons header navigation */
+button[onclick*="logout"],
+button[onclick*="logout"]:hover {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  color: white !important;
+}
+button[onclick*="admin-panel"] {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  color: white !important;
+}
+button[onclick*="admin-panel#mec"],
+button[onclick*="admin-panel.html#mec"] {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: white !important;
+}
+button[onclick*="vendeur-panel"] {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: white !important;
+}
+
 /* Garder vert pour succès */
 .btn-success,
 button.btn-success {
@@ -2118,7 +2138,7 @@ button[onclick*="previousStep"] {
                 userControls.innerHTML = `
                     <div style="text-align: right;">
                         <div style="margin-bottom: 10px;">
-                            <button onclick="window.location.href='admin-panel.html'" style="padding: 10px 20px; background: #7c3aed; color: white; border: none; border-radius: 8px; margin-right: 10px; cursor: pointer;">
+                            <button onclick="window.location.href='admin-panel.html'" style="padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 8px; margin-right: 10px; cursor: pointer;">
                                 👥 Gestion
                             </button>
                             <button onclick="window.location.href='admin-panel.html#mec'" style="padding: 10px 20px; background: #f59e0b; color: white; border: none; border-radius: 8px; margin-right: 10px; cursor: pointer; position: relative;">
