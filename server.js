@@ -734,7 +734,7 @@ try {
   console.warn('⚠️ Drive credentials non disponibles:', e.message);
   DRIVE_CREDENTIALS = null;
 }
-const VENDEURS_FOLDER_ID = '1rizhNR8RdZAmpJYEFInksrSW14opa1zp';
+const VENDEURS_FOLDER_ID = '157Sol6u32W0loIEv8CmYT3uoDaGyZ7q6';
 
 function getDriveClient() {
   const auth = new google.auth.GoogleAuth({
