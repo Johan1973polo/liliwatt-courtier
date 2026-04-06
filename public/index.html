@@ -5956,7 +5956,25 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     fournisseur: fournisseur,
                     nom: config.nom,
                     prices: fournisseurPrices,
-                    abonnement: ((parseFloat(localStorage.getItem('abonnementRef') ?? '0') || abonnementRef)) * (1 + marge / 100), // Utiliser abonnementRef au lieu de selectedAbonnement
+                    abonnement: (() => {
+                // Abonnements réels par fournisseur (indépendants d'OHM)
+                const abosReels = {
+                    'EKWATEUR': 270, 'ENGIE': 312, 'TOTALENERGIES': 294,
+                    'EDF': 336, 'VATTENFALL': 288, 'ENI': 276,
+                    'IBERDROLA': 270, 'ALPIQ': 252, 'PRIMEO': 228,
+                    'MINT': 282, 'MINTENERG': 282, 'MET': 264,
+                    'ILEK': 276, 'WEKIWI': 264, 'GAZEL': 258,
+                    'OCTOPUS': 258, 'ALTERNA': 288, 'GAZELENERG': 258
+                };
+                const nomF = (fournisseur.nom || '').toUpperCase().replace(/[\s-_]/g,'');
+                // Chercher dans la table
+                for (const [key, val] of Object.entries(abosReels)) {
+                    if (nomF.includes(key) || key.includes(nomF.substring(0,5))) return val;
+                }
+                // Fallback : abonnement OHM + marge min 15%
+                const aboOhm = parseFloat(localStorage.getItem('abonnementRef') ?? '240') || 240;
+                return Math.round(aboOhm * (1 + marge / 100)) || 252;
+            })(), // Utiliser abonnementRef au lieu de selectedAbonnement
                     marge: marge.toFixed(1),
                     color: config.color,
                     isBest: false
