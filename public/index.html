@@ -5884,12 +5884,24 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
        */
       function ajusterPrixPourEcartTotal(prixOhm, volOhm, aboOhm, aboConcurrent, margeMin, margeMax) {
         const totalOhm = prixOhm * volOhm / 100 + aboOhm;
-        // Écart aléatoire global entre 8.2% et 22.4% - totalement aléatoire
+        // Écart aléatoire global entre 8.2% et 22.4%
         const ecart = 0.082 + Math.random() * (0.224 - 0.082);
         const totalCible = totalOhm * (1 + ecart);
         // Prix énergie déduit du total cible
-        const prixEnergie = (totalCible - aboConcurrent) / volOhm * 100;
-        return Math.max(prixEnergie, prixOhm * 1.02);
+        let prixEnergie = (totalCible - aboConcurrent) / volOhm * 100;
+        // Si abonnement concurrent > OHM, le prix énergie peut être trop bas
+        // Dans ce cas on force le total à respecter l'écart cible
+        const totalAvecPrixCalc = prixEnergie * volOhm / 100 + aboConcurrent;
+        if (totalAvecPrixCalc < totalOhm * 1.082) {
+            // Recalculer pour garantir +8.2% minimum sur le total
+            const totalMin = totalOhm * (1 + ecart);
+            prixEnergie = (totalMin - aboConcurrent) / volOhm * 100;
+            // Si toujours négatif/trop bas, appliquer l'écart sur le prix énergie directement
+            if (prixEnergie < prixOhm * 1.05) {
+                prixEnergie = prixOhm * (1.082 + Math.random() * (0.224 - 0.082));
+            }
+        }
+        return prixEnergie;
       }
 
       function calculateMECPrices() {
