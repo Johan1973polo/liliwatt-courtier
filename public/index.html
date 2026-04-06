@@ -1064,74 +1064,15 @@
                         ✏️ Remplir manuellement
                     </button>
                     
-                    <!-- Modal saisie manuelle -->
-                    <div id="manualEntryModal" style="display:none;margin-top:24px;background:#f8f5ff;border-radius:16px;padding:24px;border:2px solid #e9d5ff;">
-                        <h3 style="color:#7c3aed;margin-bottom:20px;">✏️ Saisie manuelle des données</h3>
-                        
-                        <!-- Choix énergie -->
-                        <div style="margin-bottom:16px;">
-                            <label style="font-weight:700;color:#1e1b4b;">Type d'énergie :</label>
-                            <div style="display:flex;gap:12px;margin-top:8px;">
-                                <button onclick="setManualEnergie('ELEC')" id="btn-elec" style="flex:1;padding:10px;border:2px solid #7c3aed;background:#7c3aed;color:white;border-radius:8px;font-weight:700;cursor:pointer;">⚡ Électricité</button>
-                                <button onclick="setManualEnergie('GAZ')" id="btn-gaz" style="flex:1;padding:10px;border:2px solid #e9d5ff;background:white;color:#7c3aed;border-radius:8px;font-weight:700;cursor:pointer;">🔥 Gaz</button>
-                            </div>
-                        </div>
-                        
-                        <!-- Choix segment (si ELEC) -->
-                        <div id="segmentBlock" style="margin-bottom:16px;">
-                            <label style="font-weight:700;color:#1e1b4b;">Segment tarifaire :</label>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-                                <button onclick="setManualSegment('C5-BASE')" id="btn-c5base" style="padding:10px;border:2px solid #e9d5ff;background:white;color:#7c3aed;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">C5-BASE<br><small>Tarif simple</small></button>
-                                <button onclick="setManualSegment('C5-HPHC')" id="btn-c5hphc" style="padding:10px;border:2px solid #e9d5ff;background:white;color:#7c3aed;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">C5-HPHC<br><small>HP / HC</small></button>
-                                <button onclick="setManualSegment('C4')" id="btn-c4" style="padding:10px;border:2px solid #e9d5ff;background:white;color:#7c3aed;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">C4<br><small>HPE/HCE/HPH/HCH</small></button>
-                                <button onclick="setManualSegment('C2')" id="btn-c2" style="padding:10px;border:2px solid #e9d5ff;background:white;color:#7c3aed;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">C2<br><small>C4 + Pointe</small></button>
-                            </div>
-                        </div>
-                        
-                        <!-- Champs communs -->
-                        <div id="manualFields" style="display:none;">
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-                                <div>
-                                    <label style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;">Nom client</label>
-                                    <input type="text" id="m-nom" placeholder="SARL EXEMPLE" style="width:100%;padding:8px;border:1px solid #e9d5ff;border-radius:6px;margin-top:4px;">
-                                </div>
-                                <div>
-                                    <label style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;">SIREN</label>
-                                    <input type="text" id="m-siren" placeholder="123456789" style="width:100%;padding:8px;border:1px solid #e9d5ff;border-radius:6px;margin-top:4px;">
-                                </div>
-                                <div>
-                                    <label style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;">PDL / PCE</label>
-                                    <input type="text" id="m-pdl" placeholder="N° compteur" style="width:100%;padding:8px;border:1px solid #e9d5ff;border-radius:6px;margin-top:4px;">
-                                </div>
-                                <div id="m-puissance-block">
-                                    <label style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;">Puissance (kVA)</label>
-                                    <input type="number" id="m-puissance" placeholder="36" style="width:100%;padding:8px;border:1px solid #e9d5ff;border-radius:6px;margin-top:4px;">
-                                </div>
-                                <div>
-                                    <label style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;">Fournisseur actuel</label>
-                                    <input type="text" id="m-fournisseur" placeholder="EDF" style="width:100%;padding:8px;border:1px solid #e9d5ff;border-radius:6px;margin-top:4px;">
-                                </div>
-                                <div>
-                                    <label style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;">Fin de contrat</label>
-                                    <input type="date" id="m-fin-contrat" style="width:100%;padding:8px;border:1px solid #e9d5ff;border-radius:6px;margin-top:4px;">
-                                </div>
-                            </div>
-                            
-                            <!-- Prix selon segment -->
-                            <div id="manualPrixFields" style="background:white;border-radius:10px;padding:16px;border:1px solid #e9d5ff;margin-bottom:16px;">
-                                <label style="font-weight:700;color:#7c3aed;font-size:14px;">💰 Prix actuels (c€/kWh)</label>
-                                <div id="manualPrixInputs" style="margin-top:12px;"></div>
-                            </div>
-                            
-                            <!-- Volume selon segment -->
-                            <div style="background:white;border-radius:10px;padding:16px;border:1px solid #e9d5ff;margin-bottom:16px;">
-                                <label style="font-weight:700;color:#7c3aed;font-size:14px;">📊 Consommation annuelle (MWh)</label>
-                                <div id="manualVolInputs" style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
-                            </div>
-                            
-                            <button onclick="validateManualEntry()" style="width:100%;padding:14px;background:linear-gradient(135deg,#7c3aed,#d946ef);color:white;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;">
-                                ✅ Valider et continuer
-                            </button>
+                    <!-- Sélecteur segment pour saisie manuelle -->
+                    <div id="manualEntryModal" style="display:none;margin-top:16px;background:#f8f5ff;border-radius:16px;padding:20px;border:2px solid #e9d5ff;">
+                        <h3 style="color:#7c3aed;margin-bottom:16px;font-size:15px;">Choisissez votre segment :</h3>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                            <button onclick="goManual('C5-BASE')" style="padding:12px 8px;border:2px solid #e9d5ff;background:white;color:#7c3aed;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;">⚡ C5-BASE<br><small style='font-weight:400;color:#9ca3af'>Tarif simple</small></button>
+                            <button onclick="goManual('C5-HPHC')" style="padding:12px 8px;border:2px solid #e9d5ff;background:white;color:#7c3aed;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;">⚡ C5-HPHC<br><small style='font-weight:400;color:#9ca3af'>HP / HC</small></button>
+                            <button onclick="goManual('C4')" style="padding:12px 8px;border:2px solid #e9d5ff;background:white;color:#7c3aed;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;">⚡ C4<br><small style='font-weight:400;color:#9ca3af'>HPE HCE HPH HCH</small></button>
+                            <button onclick="goManual('C2')" style="padding:12px 8px;border:2px solid #e9d5ff;background:white;color:#7c3aed;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;">⚡ C2<br><small style='font-weight:400;color:#9ca3af'>C4 + Pointe</small></button>
+                            <button onclick="goManual('GAZ')" style="padding:12px 8px;border:2px solid #e9d5ff;background:white;color:#7c3aed;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;">🔥 GAZ<br><small style='font-weight:400;color:#9ca3af'>Gaz naturel</small></button>
                         </div>
                     </div>
                 </div>
@@ -8105,6 +8046,34 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
         function showManualEntry() {
             const modal = document.getElementById('manualEntryModal');
             modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function goManual(segment) {
+            // Initialiser extractedData avec le segment choisi
+            extractedData = {
+                segment: segment,
+                nom_client: '',
+                siren: '',
+                pdl: '',
+                puissance_souscrite: '',
+                fournisseur_actuel: '',
+                date_fin_contrat: '',
+                prix_base_centimes: 0,
+                prix_hp_centimes: 0,
+                prix_hc_centimes: 0,
+                prix_hpe_centimes: 0,
+                prix_hce_centimes: 0,
+                prix_hph_centimes: 0,
+                prix_hch_centimes: 0,
+                prix_pointe_centimes: 0,
+                prix_molecule_eur_mwh: 0,
+                prix_abonnement_eur: 0,
+                manuel: true
+            };
+            document.getElementById('manualEntryModal').style.display = 'none';
+            // Aller à l'étape 2 avec les champs vides
+            goToStep(2);
+            displayExtractedData();
         }
         
         function setManualEnergie(type) {
