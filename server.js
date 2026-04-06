@@ -793,22 +793,17 @@ app.post('/api/drive/upload', verifyToken, async (req, res) => {
     const { Readable } = require('stream');
     const stream = Readable.from(buffer);
 
-    // Upload le fichier sans parent d'abord
+    // Upload directement dans le dossier partagé
     const file = await drive.files.create({
       requestBody: { 
         name: fileName,
-        mimeType: 'application/pdf' 
+        mimeType: 'application/pdf',
+        parents: [clientFolderId]
       },
       media: { mimeType: 'application/pdf', body: stream },
-      fields: 'id, webViewLink'
-    });
-    
-    // Déplacer dans le bon dossier
-    await drive.files.update({
-      fileId: file.data.id,
-      addParents: clientFolderId,
+      fields: 'id, webViewLink',
       supportsAllDrives: true,
-      fields: 'id, parents'
+      includeItemsFromAllDrives: true
     });
 
     res.json({ success: true, fileId: file.data.id, link: file.data.webViewLink });
