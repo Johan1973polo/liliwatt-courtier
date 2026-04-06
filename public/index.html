@@ -1091,6 +1091,27 @@ input[type="checkbox"] { accent-color: #7c3aed !important; }
 /* Background général */
 body { background-color: #faf5ff !important; }
 .container, .main-container { background: white !important; }
+
+/* TEXTE BLANC sur tous boutons colorés */
+button { color: white !important; }
+button.btn-secondary { color: #7c3aed !important; }
+button[style*="background: white"] { color: #7c3aed !important; }
+button[style*="background:white"] { color: #7c3aed !important; }
+button[disabled] { opacity: 0.5 !important; color: white !important; }
+
+/* Header LILIWATT texte blanc */
+.header h1, .header p, .header span,
+header h1, header p, header span { color: white !important; }
+
+/* Boutons abonnement texte blanc */
+button[onclick*="setAbonnementRef"] { color: white !important; }
+
+/* Bouton Retour → outline pas fond */  
+button[onclick*="prevStep"],
+button[onclick*="previousStep"] {
+  background: transparent !important;
+  color: #7c3aed !important;
+}
 </style>
 
 </head>
