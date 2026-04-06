@@ -5959,21 +5959,30 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     abonnement: (() => {
                 // Abonnements réels par fournisseur (indépendants d'OHM)
                 const abosReels = {
-                    'EKWATEUR': 270, 'ENGIE': 312, 'TOTALENERGIES': 294,
-                    'EDF': 336, 'VATTENFALL': 288, 'ENI': 276,
-                    'IBERDROLA': 270, 'ALPIQ': 252, 'PRIMEO': 228,
-                    'MINT': 282, 'MINTENERG': 282, 'MET': 264,
-                    'ILEK': 276, 'WEKIWI': 264, 'GAZEL': 258,
-                    'OCTOPUS': 258, 'ALTERNA': 288, 'GAZELENERG': 258
+                    'EKWATEUR': 268,
+                    'ENGIE': 318,
+                    'TOTALENERG': 295,
+                    'EDF': 338,
+                    'VATTENFALL': 285,
+                    'ENI': 272,
+                    'IBERDROLA': 265,
+                    'ALPIQ': 248,
+                    'PRIMEO': 225,
+                    'MINT': 278,
+                    'MET': 260,
+                    'ILEK': 272,
+                    'WEKIWI': 258,
+                    'GAZEL': 252,
+                    'OCTOPUS': 255,
+                    'ALTERNA': 282
                 };
-                const nomF = (fournisseur.nom || '').toUpperCase().replace(/[\s-_]/g,'');
-                // Chercher dans la table
+                const nomF = (fournisseur.nom || '').toUpperCase().replace(/[\s\-_\.]/g,'');
                 for (const [key, val] of Object.entries(abosReels)) {
-                    if (nomF.includes(key) || key.includes(nomF.substring(0,5))) return val;
+                    if (nomF.startsWith(key.substring(0,4)) || nomF.includes(key)) return val;
                 }
-                // Fallback : abonnement OHM + marge min 15%
-                const aboOhm = parseFloat(localStorage.getItem('abonnementRef') ?? '240') || 240;
-                return Math.round(aboOhm * (1 + marge / 100)) || 252;
+                // Fallback varié selon index
+                const fallbacks = [252, 265, 278, 290, 305, 318];
+                return fallbacks[Math.floor(Math.random() * fallbacks.length)];
             })(), // Utiliser abonnementRef au lieu de selectedAbonnement
                     marge: marge.toFixed(1),
                     color: config.color,
