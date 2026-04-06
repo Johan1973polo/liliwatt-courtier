@@ -1285,6 +1285,23 @@ button[onclick*="previousStep"] {
 
 </head>
 
+
+<!-- Modal nom entreprise Drive -->
+<div id="clientNameModal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(245,243,255,0.95);align-items:center;justify-content:center;">
+  <div style="background:white;border:1px solid #e9d5ff;border-radius:20px;padding:32px;width:360px;box-shadow:0 4px 40px rgba(124,58,237,0.15);">
+    <div style="font-size:10px;font-weight:700;letter-spacing:3px;color:#7c3aed;text-transform:uppercase;margin-bottom:16px;">⚡ LILIWATT</div>
+    <h3 style="color:#7c3aed;font-size:16px;margin-bottom:8px;">Nom de l'entreprise</h3>
+    <p style="color:#9ca3af;font-size:12px;margin-bottom:20px;">Ce nom sera utilisé pour créer le dossier dans Google Drive</p>
+    <input type="text" id="clientNameInput" placeholder="Ex: SARL DUPONT, SCI MARTIN..." 
+      style="width:100%;padding:12px;border:1.5px solid #e9d5ff;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:16px;"
+      onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e9d5ff'">
+    <div style="display:flex;gap:10px;">
+      <button onclick="resolveClientName(null)" style="flex:1;padding:12px;background:white;border:1.5px solid #e9d5ff;border-radius:10px;color:#9ca3af;font-size:13px;cursor:pointer;">Annuler</button>
+      <button onclick="resolveClientName(document.getElementById('clientNameInput').value)" style="flex:1;padding:12px;background:linear-gradient(135deg,#7c3aed,#d946ef);border:none;border-radius:10px;color:white;font-size:13px;font-weight:700;cursor:pointer;">Confirmer →</button>
+    </div>
+  </div>
+</div>
+
 <!-- Scanner Loader Overlay -->
 <div id="scannerOverlay">
   <div class="sc-card">
@@ -2795,6 +2812,13 @@ const avisImages = [
         
         // Extraction automatique des données
         async function extractData() {
+            // Demander nom entreprise pour Drive
+            const nomEntreprise = await askClientName(extractedData?.nom_client || '');
+            if (!nomEntreprise) return;
+            currentClientName = nomEntreprise;
+            // Créer dossier Drive en arrière-plan
+            createDriveFolder(nomEntreprise);
+
             // DEBUG C4 UPLOAD
             
             // Validation selon le type de tarif
@@ -8658,6 +8682,77 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             }
         }
         
+
+        // ===== GOOGLE DRIVE =====
+        let _resolveClientName = null;
+        let currentClientDriveFolderId = null;
+        let currentClientName = null;
+
+        function askClientName(defaultName = '') {
+            return new Promise((resolve) => {
+                _resolveClientName = resolve;
+                const modal = document.getElementById('clientNameModal');
+                const input = document.getElementById('clientNameInput');
+                input.value = defaultName;
+                modal.style.display = 'flex';
+                setTimeout(() => input.focus(), 100);
+            });
+        }
+
+        function resolveClientName(value) {
+            document.getElementById('clientNameModal').style.display = 'none';
+            if (_resolveClientName) {
+                _resolveClientName(value && value.trim() ? value.trim() : null);
+                _resolveClientName = null;
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && document.getElementById('clientNameModal').style.display === 'flex') {
+                resolveClientName(document.getElementById('clientNameInput').value);
+            }
+        });
+
+        async function createDriveFolder(clientName) {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/drive/create-client-folder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ clientName })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    currentClientDriveFolderId = data.folderId;
+                    currentClientName = clientName;
+                    console.log('✅ Dossier Drive créé:', data.folderId);
+                }
+            } catch(e) {
+                console.warn('Drive folder creation failed:', e);
+            }
+        }
+
+        async function uploadToDrive(pdfBase64, fileName) {
+            try {
+                const token = localStorage.getItem('token');
+                const clientName = currentClientName || extractedData?.nom_client || 'Client';
+                const res = await fetch('/api/drive/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ pdfBase64, fileName, clientName, docType: fileName })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    console.log('✅ PDF uploadé sur Drive:', data.link);
+                    return data.link;
+                }
+            } catch(e) {
+                console.warn('Drive upload failed:', e);
+            }
+            return null;
+        }
+        // ===== FIN GOOGLE DRIVE =====
+
         // ===== FIN SAISIE MANUELLE =====
     </script>
 
