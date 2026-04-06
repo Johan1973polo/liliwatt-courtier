@@ -1974,9 +1974,14 @@
             }
             
             // Charger les images d'avis OHM et ILEK si pas déjà fait
-            const avisImages = [
-                { key: 'avis-ohm-base64-v2', src: 'avis-ohm.png', txtFile: 'avis-ohm-base64.txt', name: 'Avis OHM' },
-                { key: 'avis-ilek-base64-v2', src: 'avis-ilek.png', txtFile: 'avis-ilek-base64.txt', name: 'Avis ILEK' }
+            // Nettoyer toutes les anciennes clés au démarrage
+['avis-ohm-base64','avis-ohm-base64-v2','avis-ilek-base64','avis-ilek-base64-v2',
+ 'avis-gazel-base64','avis-mint-base64','avis-eni-base64','image-mec-base64'
+].forEach(k => localStorage.removeItem(k));
+
+const avisImages = [
+                { key: 'avis-ohm-base64-v3', src: 'avis-ohm.png', txtFile: 'avis-ohm-base64.txt', name: 'Avis OHM' },
+                { key: 'avis-ilek-base64-v3', src: 'avis-ilek.png', txtFile: 'avis-ilek-base64.txt', name: 'Avis ILEK' }
             ];
             
             avisImages.forEach(async avis => {
@@ -6434,7 +6439,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                         '✅ Gestionnaire de compte dédié'
                     ],
                     color: [16, 185, 129],
-                    imageKey: 'avis-ohm-base64-v2'
+                    imageKey: 'avis-ohm-base64-v3'
                 },
                 'ILEK': {
                     titre: 'ILEK - L\'énergie verte et locale',
@@ -6446,7 +6451,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                         '✅ Gestionnaire de compte dédié'
                     ],
                     color: [34, 197, 94],
-                    imageKey: 'avis-ilek-base64-v2'
+                    imageKey: 'avis-ilek-base64-v3'
                 },
                 'WEKIWI': {
                     titre: 'WEKIWI - L\'énergie digitale et flexible',
@@ -6470,7 +6475,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                         '✅ Gestionnaire de compte dédié'
                     ],
                     color: [236, 72, 153],
-                    imageKey: 'avis-gazel-base64'
+                    imageKey: null
                 },
                 'MINT': {
                     titre: 'MINT ENERGIE - L\'innovation au service de l\'économie',
@@ -6482,7 +6487,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                         '✅ Gestionnaire de compte dédié'
                     ],
                     color: [100, 116, 139],
-                    imageKey: 'avis-mint-base64'
+                    imageKey: null
                 },
                 'ENI': {
                     titre: 'ENI - L\'expertise internationale',
@@ -6494,7 +6499,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                         '✅ Gestionnaire de compte dédié'
                     ],
                     color: [255, 215, 0],
-                    imageKey: 'avis-eni-base64'
+                    imageKey: null
                 },
                 'EDF': {
                     titre: 'EDF - L\'opérateur historique',
@@ -6873,11 +6878,11 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     let imgData = null;
                     
                     if (mainSupplier === 'OHM') {
-                        imgData = localStorage.getItem('avis-ohm-base64-v2') || 
+                        imgData = localStorage.getItem('avis-ohm-base64-v3') || 
                                  localStorage.getItem('OHM AVIS') ||
                                  localStorage.getItem('ohm-avis');
                     } else if (mainSupplier === 'ILEK') {
-                        imgData = localStorage.getItem('avis-ilek-base64-v2') || 
+                        imgData = localStorage.getItem('avis-ilek-base64-v3') || 
                                  localStorage.getItem('ILEK AVIS') ||
                                  localStorage.getItem('ilek-avis');
                     }
