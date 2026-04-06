@@ -721,11 +721,14 @@ function getDriveClient() {
 }
 
 async function findOrCreateFolder(drive, name, parentId) {
+  // Recherche insensible à la casse
   const res = await drive.files.list({
-    q: `name='${name}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    q: `'${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
     fields: 'files(id, name)'
   });
-  if (res.data.files.length > 0) return res.data.files[0].id;
+  // Chercher un dossier avec le même nom (insensible à la casse)
+  const existing = res.data.files.find(f => f.name.toLowerCase() === name.toLowerCase());
+  if (existing) return existing.id;
   const folder = await drive.files.create({
     requestBody: { name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] },
     fields: 'id'
