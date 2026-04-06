@@ -4563,13 +4563,16 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             // Sauvegarder la moyenne calculée
             const isGaz = document.querySelector(`input[data-poste="${poste}"]`)?.dataset.isGaz === 'true';
             
+            // Nettoyer la clé : enlever _centimes et _eur pour cohérence avec ohmPrices
+            const cleanKey = poste.replace('_centimes', '').replace('_eur', '');
+            
             // Convertir et stocker selon le type
             if (!isGaz && poste !== 'prix_molecule') {
                 // Pour l'électricité, convertir €/MWh → c€/kWh (÷10) pour stockage interne
-                prixReferenceData.moyennes[poste] = moyenne / 10;
+                prixReferenceData.moyennes[cleanKey] = moyenne / 10;
             } else {
                 // Pour le gaz, garder en €/MWh
-                prixReferenceData.moyennes[poste] = moyenne;
+                prixReferenceData.moyennes[cleanKey] = moyenne;
             }
             
             // SAUVEGARDE AUTOMATIQUE IMMÉDIATE dans le bon segment
@@ -4617,7 +4620,9 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 });
                 
                 const moyenne = count > 0 ? total / count : 0;
-                prixReferenceData.moyennes[poste] = moyenne;
+                // Nettoyer la clé : enlever _centimes et _eur pour cohérence avec ohmPrices
+                const cleanKey = poste.replace('_centimes', '').replace('_eur', '');
+                prixReferenceData.moyennes[cleanKey] = moyenne;
                 
                 // Afficher la moyenne en €/MWh dans l'interface
                 const displayMoyenne = isGaz || poste === 'prix_molecule' ? moyenne : moyenne * 10;
