@@ -748,14 +748,17 @@ async function findOrCreateFolder(drive, name, parentId) {
   // Recherche insensible à la casse
   const res = await drive.files.list({
     q: `'${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-    fields: 'files(id, name)'
+    fields: 'files(id, name)',
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true
   });
   // Chercher un dossier avec le même nom (insensible à la casse)
   const existing = res.data.files.find(f => f.name.toLowerCase() === name.toLowerCase());
   if (existing) return existing.id;
   const folder = await drive.files.create({
     requestBody: { name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] },
-    fields: 'id'
+    fields: 'id',
+    supportsAllDrives: true
   });
   return folder.data.id;
 }
@@ -790,10 +793,16 @@ app.post('/api/drive/upload', verifyToken, async (req, res) => {
     const { Readable } = require('stream');
     const stream = Readable.from(buffer);
 
+    // Upload avec supportsAllDrives pour les dossiers partagés
     const file = await drive.files.create({
-      requestBody: { name: fileName, parents: [clientFolderId], mimeType: 'application/pdf' },
+      requestBody: { 
+        name: fileName, 
+        parents: [clientFolderId], 
+        mimeType: 'application/pdf' 
+      },
       media: { mimeType: 'application/pdf', body: stream },
-      fields: 'id, webViewLink'
+      fields: 'id, webViewLink',
+      supportsAllDrives: true
     });
 
     res.json({ success: true, fileId: file.data.id, link: file.data.webViewLink });
