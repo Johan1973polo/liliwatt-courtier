@@ -8049,14 +8049,18 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
         }
         
         function goManual(segment) {
-            // Initialiser extractedData avec le segment choisi
+            // Définir le type d'énergie
+            selectedEnergy = (segment === 'GAZ') ? 'gas' : 'electricity';
+            
+            // Initialiser extractedData avec les bons noms de clés
             extractedData = {
                 segment: segment,
                 nom_client: '',
                 siren: '',
-                pdl: '',
+                pdl_pce: '',
                 puissance_souscrite: '',
-                fournisseur_actuel: '',
+                fournisseur: '',
+                type_offre: '',
                 date_fin_contrat: '',
                 prix_base_centimes: 0,
                 prix_hp_centimes: 0,
@@ -8068,10 +8072,10 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 prix_pointe_centimes: 0,
                 prix_molecule_eur_mwh: 0,
                 prix_abonnement_eur: 0,
+                car: 0,
                 manuel: true
             };
             document.getElementById('manualEntryModal').style.display = 'none';
-            // Aller à l'étape 2 avec les champs vides
             goToStep(2);
             displayExtractedData();
         }
