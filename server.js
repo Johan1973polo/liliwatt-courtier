@@ -743,17 +743,20 @@ app.post('/api/drive/upload', verifyToken, async (req, res) => {
   }
   try {
     const { pdfBase64, fileName, clientName, docType } = req.body;
-    const vendeurEmail = req.user.email;
-    const vendeurNom = vendeurEmail.split('@')[0].replace('.', ' ').split(' ')
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-
     const drive = getDriveClient();
-
-    // Chercher/créer dossier vendeur
-    const vendeurFolderId = await findOrCreateFolder(drive, vendeurNom, VENDEURS_FOLDER_ID);
-
-    // Chercher/créer dossier "Clients en attente"
-    const attenteId = await findOrCreateFolder(drive, 'Clients en attente', vendeurFolderId);
+    
+    // Utiliser drive_folder_id du JWT vendeur
+    const vendeurFolderId = req.user.drive_folder_id || null;
+    let attenteId;
+    if (vendeurFolderId) {
+      attenteId = await findOrCreateFolder(drive, 'Clients en attente', vendeurFolderId);
+    } else {
+      const vendeurEmail = req.user.email;
+      const vendeurNom = vendeurEmail.split('@')[0].replace('.', ' ').split(' ')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      const fallbackId = await findOrCreateFolder(drive, vendeurNom, VENDEURS_FOLDER_ID);
+      attenteId = await findOrCreateFolder(drive, 'Clients en attente', fallbackId);
+    }
 
     // Chercher/créer dossier client
     const clientFolderId = await findOrCreateFolder(drive, clientName || 'Client inconnu', attenteId);
@@ -783,15 +786,25 @@ app.post('/api/drive/create-client-folder', verifyToken, async (req, res) => {
   }
   try {
     const { clientName } = req.body;
-    const vendeurEmail = req.user.email;
-    const vendeurNom = vendeurEmail.split('@')[0].replace('.', ' ').split(' ')
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-
     const drive = getDriveClient();
-    const vendeurFolderId = await findOrCreateFolder(drive, vendeurNom, VENDEURS_FOLDER_ID);
-    const attenteId = await findOrCreateFolder(drive, 'Clients en attente', vendeurFolderId);
+    
+    // Utiliser le dossier Drive du vendeur depuis son JWT
+    const vendeurFolderId = req.user.drive_folder_id || null;
+    
+    let attenteId;
+    if (vendeurFolderId) {
+      // Dossier vendeur connu → chercher/créer "Clients en attente" dedans
+      attenteId = await findOrCreateFolder(drive, 'Clients en attente', vendeurFolderId);
+    } else {
+      // Fallback : créer dans le dossier VENDEURS principal
+      const vendeurEmail = req.user.email;
+      const vendeurNom = vendeurEmail.split('@')[0].replace('.', ' ').split(' ')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      const fallbackId = await findOrCreateFolder(drive, vendeurNom, VENDEURS_FOLDER_ID);
+      attenteId = await findOrCreateFolder(drive, 'Clients en attente', fallbackId);
+    }
+    
     const clientFolderId = await findOrCreateFolder(drive, clientName, attenteId);
-
     res.json({ success: true, folderId: clientFolderId });
   } catch (err) {
     res.status(500).json({ error: err.message });
