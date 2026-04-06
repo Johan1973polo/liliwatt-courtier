@@ -6007,8 +6007,15 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     return fallbacks[Math.floor(Math.random() * fallbacks.length)];
                 })();
 
-                // Écart aléatoire entre 8.2% et 22.4% appliqué directement
-                const ecartAleatoire = 1 + (0.082 + Math.random() * (0.224 - 0.082));
+                // Écart aléatoire entre 8.2% et 22.4% sur le TOTAL annuel
+                const ecartCible = 0.082 + Math.random() * (0.224 - 0.082);
+                const totalOhmRef = prixMoyenOhm * volumeTotalMWh / 100 + aboOhm;
+                const totalConcurrentCible = totalOhmRef * (1 + ecartCible);
+                // Déduire le prix énergie nécessaire pour atteindre ce total
+                const energieConcurrentCible = totalConcurrentCible - aboConcurrent;
+                const ecartAleatoire = volumeTotalMWh > 0 
+                    ? Math.max((energieConcurrentCible / (prixMoyenOhm * volumeTotalMWh / 100)), 1.05)
+                    : (1 + ecartCible);
 
                 // Appliquer l'écart à tous les composants de prix
                 const fournisseurPrices = {};
@@ -6256,7 +6263,8 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
         }
         
         function regenerateMEC() {
-            // Relancer le calcul avec de nouveaux prix aléatoires
+            // Forcer le recalcul avec de nouveaux prix aléatoires
+            mecInitialized = false;
             previewMEC();
         }
         
