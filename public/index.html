@@ -1185,6 +1185,27 @@
                         </p>
                     </div>
                     
+                    <!-- Bloc tarif GAZ T1/T2/T3/T4 -->
+                    <div id="gazTarifBlock" style="display:none;margin-top:16px;padding:16px;background:#faf5ff;border-radius:12px;border:1px solid #e9d5ff;">
+                        <p style="font-weight:700;color:#7c3aed;font-size:13px;margin-bottom:10px;">⚙️ Option tarifaire acheminement GAZ :</p>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <button onclick="setGazTarif('T1')" id="btn-gazT1" class="gaz-tarif-btn" title="Moins de 6 000 kWh/an — Usage domestique léger">
+                                <strong>T1</strong><br><small>&lt; 6 MWh/an</small>
+                            </button>
+                            <button onclick="setGazTarif('T2')" id="btn-gazT2" class="gaz-tarif-btn active-tarif" title="6 000 à 300 000 kWh/an — Usage professionnel standard">
+                                <strong>T2</strong><br><small>6 - 300 MWh/an</small>
+                            </button>
+                            <button onclick="setGazTarif('T3')" id="btn-gazT3" class="gaz-tarif-btn" title="300 000 à 5 000 000 kWh/an — Usage industriel">
+                                <strong>T3</strong><br><small>300 - 5 000 MWh/an</small>
+                            </button>
+                            <button onclick="setGazTarif('T4')" id="btn-gazT4" class="gaz-tarif-btn" title="Plus de 5 000 000 kWh/an — Usage industriel intensif">
+                                <strong>T4</strong><br><small>&gt; 5 000 MWh/an</small>
+                            </button>
+                        </div>
+                        <p id="gazTarifDesc" style="margin-top:10px;font-size:12px;color:#6b7280;font-style:italic;">T2 sélectionné : entre 6 000 et 300 000 kWh/an — Usage professionnel standard</p>
+                    </div>
+
+                    
                     <table class="volume-table" id="volumeTable">
                         <thead id="volumeTableHead">
                             <!-- En-tête généré dynamiquement selon le segment -->
@@ -3705,9 +3726,56 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
         }
         
         // Étape 3 - Volumes
+        
+        // === TARIFS GAZ T1/T2/T3/T4 ===
+        window.gazTarif = localStorage.getItem('gazTarif') || 'T2';
+        
+        function setGazTarif(tarif) {
+            window.gazTarif = tarif;
+            localStorage.setItem('gazTarif', tarif);
+            
+            const descriptions = {
+                'T1': 'T1 : moins de 6 000 kWh/an — Cuisson / eau chaude (usage domestique)',
+                'T2': 'T2 : entre 6 000 et 300 000 kWh/an — Usage professionnel standard',
+                'T3': 'T3 : entre 300 000 et 5 000 000 kWh/an — Usage industriel',
+                'T4': 'T4 : plus de 5 000 000 kWh/an — Usage industriel intensif'
+            };
+            
+            // Mettre à jour les boutons
+            ['T1','T2','T3','T4'].forEach(t => {
+                const btn = document.getElementById('btn-gaz' + t);
+                if (btn) {
+                    if (t === tarif) {
+                        btn.classList.add('active-tarif');
+                    } else {
+                        btn.classList.remove('active-tarif');
+                    }
+                }
+            });
+            
+            const desc = document.getElementById('gazTarifDesc');
+            if (desc) desc.textContent = descriptions[tarif] || '';
+            
+            console.log('✅ Tarif GAZ sélectionné:', tarif);
+        }
+        
+        function updateGazTarifDisplay() {
+            const block = document.getElementById('gazTarifBlock');
+            if (block && extractedData && extractedData.segment) {
+                block.style.display = (extractedData.segment === 'GAZ') ? 'block' : 'none';
+                if (extractedData.segment === 'GAZ') {
+                    // Restaurer la sélection sauvegardée
+                    setGazTarif(window.gazTarif);
+                }
+            }
+        }
+
         function initVolumeStep() {
             const segment = extractedData.segment;
             document.getElementById('segmentDetected').textContent = segment;
+            
+            // Afficher/masquer le bloc tarif GAZ
+            updateGazTarifDisplay();
             
             // RESET COMPLET pour éviter toute contamination entre segments
             volumeData = {};
