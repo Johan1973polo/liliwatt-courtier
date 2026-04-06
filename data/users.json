@@ -5,6 +5,15 @@
       "password": "$2b$10$I4cv/PNzz3w7UforJBln0uyGucCz2quzBFSg5Mv/iFbgLOQVzXe1.",
       "role": "admin",
       "name": "Johan Mallet"
+    },
+    {
+      "id": "vendeur_1775515226078",
+      "email": "mario.ducoin@liliwatt.fr",
+      "password": "$2b$10$NPWfvSGQfa8clh0jHho74OM.dvAfNfPDXiN9ct3UBpMyQAdWzdi.m",
+      "role": "vendeur",
+      "drive_folder_id": "",
+      "created": "2026-04-06T22:40:26.078Z",
+      "created_by": "admin_liliwatt"
     }
   ]
 }
