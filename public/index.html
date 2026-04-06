@@ -5985,6 +5985,16 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     volumeTotalMWh = volHPE + volHCE + volHPH + volHCH;
                     prixMoyenOhm = (ohmPrices.hpe * volHPE + ohmPrices.hce * volHCE +
                                     ohmPrices.hph * volHPH + ohmPrices.hch * volHCH) / volumeTotalMWh;
+                } else if (currentSegment === 'C2') {
+                    const volHPE = getReferenceVolume('col0');
+                    const volHCE = getReferenceVolume('col1');
+                    const volHPH = getReferenceVolume('col2');
+                    const volHCH = getReferenceVolume('col3');
+                    const volPOINTE = getReferenceVolume('col4');
+                    volumeTotalMWh = volHPE + volHCE + volHPH + volHCH + volPOINTE;
+                    prixMoyenOhm = (ohmPrices.hpe * volHPE + ohmPrices.hce * volHCE +
+                                    ohmPrices.hph * volHPH + ohmPrices.hch * volHCH +
+                                    ohmPrices.pointe * volPOINTE) / volumeTotalMWh;
                 } else if (currentSegment === 'GAZ') {
                     prixMoyenOhm = ohmPrices.molecule;
                     volumeTotalMWh = extractedData.car || 0;
@@ -6053,12 +6063,21 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             let energyCost = 0;
             
             if (currentSegment === 'C5-BASE') {
-                const volumeMWh = getReferenceVolume('col0'); // Déjà en MWh
-                energyCost = volumeMWh * offer.prices.base * 10; // MWh * c€/kWh * 10 = €
+                const volumeMWh = getReferenceVolume('col0');
+                energyCost = volumeMWh * offer.prices.base * 10;
             } else if (currentSegment === 'C5-HPHC') {
-                const volumeHPMWh = getReferenceVolume('col0'); // Déjà en MWh
-                const volumeHCMWh = getReferenceVolume('col1'); // Déjà en MWh
+                const volumeHPMWh = getReferenceVolume('col0');
+                const volumeHCMWh = getReferenceVolume('col1');
                 energyCost = (volumeHPMWh * offer.prices.hp + volumeHCMWh * offer.prices.hc) * 10;
+            } else if (currentSegment === 'C2') {
+                const vHPE = getReferenceVolume('col0');
+                const vHCE = getReferenceVolume('col1');
+                const vHPH = getReferenceVolume('col2');
+                const vHCH = getReferenceVolume('col3');
+                const vPTE = getReferenceVolume('col4');
+                energyCost = (vHPE * offer.prices.hpe + vHCE * offer.prices.hce +
+                              vHPH * offer.prices.hph + vHCH * offer.prices.hch +
+                              vPTE * offer.prices.pointe) * 10;
             } else if (currentSegment === 'C4') {
                 const volumeHPE = getReferenceVolume('col0'); // Déjà en MWh
                 const volumeHCE = getReferenceVolume('col1');
