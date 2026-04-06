@@ -2603,7 +2603,7 @@ const avisImages = [
         }
         
         function switchToStep(step) {
-            if (step === 2) setTimeout(updateStep2ButtonsForRole, 100);
+            if (step === 2) { setTimeout(updateStep2ButtonsForRole, 100); setTimeout(updateStepLabelsForRole, 150); }
             // Masquer TOUTES les étapes
             for (let i = 1; i <= 8; i++) {
                 const c = document.getElementById(`content${i}`);
@@ -8541,6 +8541,36 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             .catch(() => {
                 alert('✅ Dossier envoyé au back-office !');
             });
+        }
+        
+        function updateStepLabelsForRole() {
+            if (!currentUser || currentUser.role !== 'vendeur') return;
+            
+            const vendeurLabels = [
+                '', // index 0 non utilisé
+                'Analyse Facture',
+                'Vérification Données',
+                'Indice Marché Amont',
+                'Profil Soutirage',
+                'Signal Prix Spot',
+                'Optimisation Multi-F.',
+                'Activation Contractuelle',
+                'Diffusion Cotations'
+            ];
+            
+            for (let i = 1; i <= 8; i++) {
+                const stepEl = document.getElementById(`step${i}`);
+                if (stepEl) {
+                    const span = stepEl.querySelector('span');
+                    if (span) span.textContent = vendeurLabels[i];
+                    // Griser les étapes 3-8 pour les vendeurs
+                    if (i >= 3) {
+                        stepEl.style.opacity = '0.4';
+                        stepEl.style.cursor = 'not-allowed';
+                        stepEl.style.pointerEvents = 'none';
+                    }
+                }
+            }
         }
         
         function updateStep2ButtonsForRole() {
