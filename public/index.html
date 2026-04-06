@@ -2000,6 +2000,7 @@
                     
                     // Sinon charger l'image PNG
                     const img = new Image();
+                    img.crossOrigin = 'anonymous';  // Éviter CORS taint du canvas
                     img.onload = function() {
                         const canvas = document.createElement('canvas');
                         canvas.width = img.width;
