@@ -3642,7 +3642,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.text('VALIDATION :', 20, 200);
             
             // Case cochée
-            doc.setFillColor(16, 185, 129);
+            doc.setFillColor(124, 58, 237);
             doc.rect(20, 210, 8, 8, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(12);
@@ -5049,13 +5049,13 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 } catch (e) {
                     // Si le logo ne charge pas, afficher le logo simple
                     
-                    doc.setFontSize(22); doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.text('LILIWATT', 32.5, 20, { align: 'center' });
+                    doc.setFontSize(22); doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.text('LILIWATT', 105, 20, { align: 'center' });
                     
                 }
             } else {
                 // Logo simple
                 
-                doc.setFontSize(22); doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.text('LILIWATT', 32.5, 20, { align: 'center' });
+                doc.setFontSize(22); doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.text('LILIWATT', 105, 20, { align: 'center' });
                 
             }
             
@@ -5091,19 +5091,19 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             }
             
             // SECTION INFORMATIONS CLIENT
-            doc.setFillColor(245, 245, 245);
+            doc.setFillColor(124, 58, 237);
             doc.rect(10, 50, 190, 50, 'F');
             doc.setDrawColor(200, 200, 200);
             doc.setLineWidth(0.5);
             doc.rect(10, 50, 190, 50);
             
             // Titre section
-            doc.setFillColor(59, 130, 246);
+            doc.setFillColor(124, 58, 237);
             doc.rect(10, 50, 190, 10, 'F');
             doc.setFontSize(11);
             doc.setTextColor(255, 255, 255);
             doc.setFont(undefined, 'bold');
-            doc.text('INFORMATIONS CLIENT', 105, 56, { align: 'center' });
+            doc.setTextColor(255,255,255); doc.text('INFORMATIONS CLIENT', 105, 56, { align: 'center' }); doc.setTextColor(0,0,0);
             
             // Informations client
             doc.setTextColor(0, 0, 0);
@@ -5188,7 +5188,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             
             // Cadre avec une seule couleur pour les économies
             if (savings >= 0) {
-                doc.setFillColor(16, 185, 129);
+                doc.setFillColor(124, 58, 237);
                 doc.rect(30, 108, 150, 25, 'F');
             } else {
                 doc.setFillColor(239, 68, 68);
@@ -5247,7 +5247,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             xPos += colWidths[1];
             
             // Colonne 3 - OHM Energie (Vert)
-            doc.setFillColor(16, 185, 129);
+            doc.setFillColor(124, 58, 237);
             doc.rect(xPos, startY, colWidths[2], 10, 'F');
             const refFournisseurNames = {
                 'OHM': 'OHM Énergie',
