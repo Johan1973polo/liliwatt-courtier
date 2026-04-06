@@ -891,7 +891,28 @@
                 width: 20px;
             }
         }
-    </style>
+    
+        .gaz-tarif-btn {
+            padding: 10px 8px;
+            border-radius: 8px;
+            border: 2px solid #e9d5ff;
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+            text-align: center;
+            transition: all 0.2s;
+            color: #1e1b4b;
+        }
+        .gaz-tarif-btn:hover {
+            border-color: #7c3aed;
+            background: #faf5ff;
+        }
+        .gaz-tarif-btn.active-tarif {
+            background: #7c3aed;
+            color: white;
+            border-color: #7c3aed;
+        }
+        </style>
 </head>
 <body>
     <div class="container">
