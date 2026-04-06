@@ -2470,13 +2470,6 @@ const avisImages = [
                         currentStep = 2;
                         switchToStep(2);
                         displayExtractedData();
-                        
-                        // Forcer le rafraîchissement des calculs si on est à l'étape 5 ou 6
-                        if (stepToGo >= 5 && typeof calculateResults === 'function') {
-                            setTimeout(() => {
-                                calculateResults();
-                            }, 1500);
-                        }
                     }, 1500);
                     
                     // Nettoyer les données temporaires
