@@ -6017,6 +6017,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 });
 
                 // Calculer la marge effective pour affichage
+                const prixMoyenAjuste = prixMoyenOhm * ecartAleatoire;
                 const totalOhm = prixMoyenOhm * volumeTotalMWh / 100 + aboOhm;
                 const totalConcurrent = prixMoyenAjuste * volumeTotalMWh / 100 + aboConcurrent;
                 const marge = ((totalConcurrent - totalOhm) / totalOhm) * 100;
