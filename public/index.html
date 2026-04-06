@@ -4551,16 +4551,19 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     btn.style.background='white'; btn.style.color='#7c3aed'; btn.style.border='2px solid #7c3aed';
                 });
                 
-                // Mettre en surbrillance le bouton sélectionné
-                if (prix == 0) {
-                    buttons[0].classList.remove('btn-secondary');
-                    buttons[0].classList.add('btn-primary');
-                } else if (prix == 120) {
-                    buttons[1].classList.remove('btn-secondary');
-                    buttons[1].classList.add('btn-primary');
-                } else if (prix == 240) {
-                    buttons[2].classList.remove('btn-secondary');
-                    buttons[2].classList.add('btn-primary');
+                // Mettre en vert le bouton sélectionné
+                if (prix == 0 && buttons[0]) {
+                    buttons[0].style.background = 'linear-gradient(135deg,#10b981,#059669)';
+                    buttons[0].style.color = 'white';
+                    buttons[0].style.border = 'none';
+                } else if (prix == 120 && buttons[1]) {
+                    buttons[1].style.background = 'linear-gradient(135deg,#10b981,#059669)';
+                    buttons[1].style.color = 'white';
+                    buttons[1].style.border = 'none';
+                } else if (prix == 240 && buttons[2]) {
+                    buttons[2].style.background = 'linear-gradient(135deg,#10b981,#059669)';
+                    buttons[2].style.color = 'white';
+                    buttons[2].style.border = 'none';
                 }
             }
             
