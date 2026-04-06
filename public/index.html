@@ -2408,18 +2408,15 @@ const avisImages = [
                                 `;
                             }
                             
-                            // Marquer les étapes comme complétées
-                            for (let i = 1; i <= 5; i++) {
-                                const stepElement = document.getElementById(`step${i}`);
-                                if (stepElement) {
-                                    stepElement.classList.add('completed');
-                                    const stepContent = document.getElementById(`content${i}`);
-                                    if (stepContent) {
-                                        stepContent.style.display = 'block';
-                                    }
-                                }
-                            }
-                        }, 500);
+                            // Marquer SEULEMENT l'étape 1 comme complétée
+                            const step1El = document.getElementById('step1');
+                            if (step1El) step1El.classList.add('completed');
+                            
+                            // Aller à l'étape 2 proprement
+                            currentStep = 1;
+                            switchToStep(2);
+                            displayExtractedData();
+                        }, 300);
                     }
                     
                     // Restaurer les volumes
