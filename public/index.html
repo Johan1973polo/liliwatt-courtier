@@ -5943,7 +5943,13 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 ohmPrices.hce = prixReferenceData.moyennes?.prix_hce || prixReferenceData.hce || 0;
                 ohmPrices.hph = prixReferenceData.moyennes?.prix_hph || prixReferenceData.hph || 0;
                 ohmPrices.hch = prixReferenceData.moyennes?.prix_hch || prixReferenceData.hch || 0;
+            } else if (currentSegment === 'C2') {
+                ohmPrices.hpe = prixReferenceData.moyennes?.prix_hpe || prixReferenceData.hpe || 0;
+                ohmPrices.hce = prixReferenceData.moyennes?.prix_hce || prixReferenceData.hce || 0;
+                ohmPrices.hph = prixReferenceData.moyennes?.prix_hph || prixReferenceData.hph || 0;
+                ohmPrices.hch = prixReferenceData.moyennes?.prix_hch || prixReferenceData.hch || 0;
                 ohmPrices.pointe = prixReferenceData.moyennes?.prix_pointe || prixReferenceData.pointe || 0;
+                console.log('C2 ohmPrices:', ohmPrices);
             } else if (currentSegment === 'GAZ') {
                 ohmPrices.molecule = prixReferenceData.moyennes?.prix_molecule || prixReferenceData.molecule || 0;
             }
