@@ -2607,15 +2607,22 @@ const avisImages = [
         
         function switchToStep(step) {
             if (step === 2) setTimeout(updateStep2ButtonsForRole, 100);
-            // Masquer contenu actuel
-            document.getElementById(`content${currentStep}`).classList.remove('active');
-            document.getElementById(`step${currentStep}`).classList.remove('active');
+            // Masquer TOUTES les étapes
+            for (let i = 1; i <= 8; i++) {
+                const c = document.getElementById(`content${i}`);
+                const s = document.getElementById(`step${i}`);
+                if (c) c.classList.remove('active');
+                if (s) s.classList.remove('active');
+            }
             
             currentStep = step;
             
-            // Afficher nouveau contenu
+            // Afficher uniquement l'étape cible
             document.getElementById(`content${currentStep}`).classList.add('active');
             document.getElementById(`step${currentStep}`).classList.add('active');
+            
+            // Scroll en haut
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             
             // Initialiser l'étape selon la nouvelle numérotation
             if (step === 4) initVolumeStep();    // Étape 4 = Volumes
