@@ -6007,19 +6007,13 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     return fallbacks[Math.floor(Math.random() * fallbacks.length)];
                 })();
 
-                // Calculer le nouveau prix moyen avec la fonction ajusterPrixPourEcartTotal
-                const prixMoyenAjuste = ajusterPrixPourEcartTotal(
-                    prixMoyenOhm, volumeTotalMWh, aboOhm, aboConcurrent,
-                    config.min, config.max
-                );
+                // Écart aléatoire entre 8.2% et 22.4% appliqué directement
+                const ecartAleatoire = 1 + (0.082 + Math.random() * (0.224 - 0.082));
 
-                // Ratio d'ajustement à appliquer à tous les prix
-                const ratioAjustement = prixMoyenAjuste / prixMoyenOhm;
-
-                // Appliquer le ratio à tous les composants de prix
+                // Appliquer l'écart à tous les composants de prix
                 const fournisseurPrices = {};
                 Object.keys(ohmPrices).forEach(key => {
-                    fournisseurPrices[key] = ohmPrices[key] * ratioAjustement;
+                    fournisseurPrices[key] = ohmPrices[key] * ecartAleatoire;
                 });
 
                 // Calculer la marge effective pour affichage
