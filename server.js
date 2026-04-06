@@ -699,7 +699,17 @@ app.listen(port, () => {
 
 // ===== GOOGLE DRIVE INTEGRATION =====
 const { google } = require('googleapis');
-const DRIVE_CREDENTIALS = require('./liliwatt-drive-credentials.json');
+let DRIVE_CREDENTIALS;
+try {
+  if (process.env.GOOGLE_DRIVE_CREDS_BASE64) {
+    DRIVE_CREDENTIALS = JSON.parse(Buffer.from(process.env.GOOGLE_DRIVE_CREDS_BASE64, 'base64').toString());
+  } else {
+    DRIVE_CREDENTIALS = require('./liliwatt-drive-credentials.json');
+  }
+} catch(e) {
+  console.warn('⚠️ Drive credentials non disponibles:', e.message);
+  DRIVE_CREDENTIALS = null;
+}
 const VENDEURS_FOLDER_ID = '1rizhNR8RdZAmpJYEFInksrSW14opa1zp';
 
 function getDriveClient() {
@@ -725,6 +735,9 @@ async function findOrCreateFolder(drive, name, parentId) {
 
 // Route upload Drive
 app.post('/api/drive/upload', verifyToken, async (req, res) => {
+  if (!DRIVE_CREDENTIALS) {
+    return res.status(503).json({ error: 'Google Drive non configuré' });
+  }
   try {
     const { pdfBase64, fileName, clientName, docType } = req.body;
     const vendeurEmail = req.user.email;
@@ -762,6 +775,9 @@ app.post('/api/drive/upload', verifyToken, async (req, res) => {
 
 // Route pour créer dossier client (lors de l'upload facture)
 app.post('/api/drive/create-client-folder', verifyToken, async (req, res) => {
+  if (!DRIVE_CREDENTIALS) {
+    return res.status(503).json({ error: 'Google Drive non configuré' });
+  }
   try {
     const { clientName } = req.body;
     const vendeurEmail = req.user.email;
