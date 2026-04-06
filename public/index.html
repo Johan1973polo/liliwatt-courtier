@@ -5168,6 +5168,8 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             // Si plusieurs PDL, afficher "Multi-puissance"
             if (pdlList.length > 1) {
                 doc.text('Multi-puissance', 135, 86);
+            } else if (extractedData.segment === 'GAZ') {
+                doc.text(String(extractedData.car || 'N/A') + ' MWh/an (CAR)', 135, 86);
             } else {
                 doc.text(String(extractedData.puissance_souscrite || 'N/A') + ' kVA', 135, 86);
             }
@@ -5859,7 +5861,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     fournisseur: fournisseur,
                     nom: config.nom,
                     prices: fournisseurPrices,
-                    abonnement: (abonnementRef || 240) * (1 + marge / 200), // Utiliser abonnementRef au lieu de selectedAbonnement
+                    abonnement: (abonnementRef || 240) * (1 + marge / 100), // Utiliser abonnementRef au lieu de selectedAbonnement
                     marge: marge.toFixed(1),
                     color: config.color,
                     isBest: false
@@ -6265,6 +6267,8 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             // Si plusieurs PDL, afficher "Multi-puissance"
             if (pdlList.length > 1) {
                 doc.text(`SIREN: ${String(extractedData.siren || 'N/A')} | Puissance: Multi-puissance`, 20, 65);
+            } else if (extractedData.segment === 'GAZ') {
+                doc.text(`SIREN: ${String(extractedData.siren || 'N/A')} | CAR: ${String(extractedData.car || 'N/A')} MWh/an`, 20, 65);
             } else {
                 doc.text(`SIREN: ${String(extractedData.siren || 'N/A')} | Puissance: ${String(extractedData.puissance_souscrite)} kVA`, 20, 65);
             }
