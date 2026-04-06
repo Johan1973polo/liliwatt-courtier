@@ -4279,16 +4279,13 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                             moyenneElement.innerHTML = `<strong>${displayValue.toFixed(2)}</strong>`;
                         }
                         
-                        // Optionnel : pré-remplir les inputs avec la moyenne
-                        // (décommenté si on veut pré-remplir tous les inputs)
-                        /*
+                        // Pré-remplir les inputs avec la moyenne sauvegardée
                         currentYears.forEach(year => {
                             const input = document.querySelector(`input[data-poste="${poste.key}"][data-year="${year}"]`);
                             if (input) {
                                 input.value = displayValue.toFixed(2);
                             }
                         });
-                        */
                     }
                 });
             }
