@@ -3962,7 +3962,7 @@ const avisImages = [
             }
         }
         
-        function generateRGPDPDF() {
+        async function generateRGPDPDF() {
             const form = document.getElementById('rgpdForm');
             
             if (!form.checkValidity()) {
@@ -4144,6 +4144,17 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             
             // Sauvegarde
             const fileName = `RGPD_${extractedData.nom_client.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+            
+            // Upload sur Drive
+            try {
+                const pdfDataUrl = doc.output('dataurlstring');
+                const pdfBase64 = pdfDataUrl.split(',')[1];
+                await uploadToDrive(pdfBase64, fileName);
+                console.log('✅ PDF RGPD uploadé sur Drive');
+            } catch(e) {
+                console.warn('Erreur upload Drive:', e);
+            }
+            
             doc.save(fileName);
             
             closeRGPDModal();
