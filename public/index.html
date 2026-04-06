@@ -4831,7 +4831,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 }
                 
                 // Vérifier aussi les prix C4
-                const prixRequired = ['prix_hpe', 'prix_hce', 'prix_hph', 'prix_hch'];
+                const prixRequired = currentSegment === 'C2' ? ['prix_hpe', 'prix_hce', 'prix_hph', 'prix_hch', 'prix_pointe'] : ['prix_hpe', 'prix_hce', 'prix_hph', 'prix_hch'];
                 const prixManquants = prixRequired.filter(p => !prixReferenceData.moyennes[p] || prixReferenceData.moyennes[p] === 0);
                 if (prixManquants.length > 0) {
                     validationError = (validationError ? validationError + '\n' : '') + 
@@ -5918,6 +5918,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 ohmPrices.hce = prixReferenceData.moyennes?.prix_hce || prixReferenceData.hce || 0;
                 ohmPrices.hph = prixReferenceData.moyennes?.prix_hph || prixReferenceData.hph || 0;
                 ohmPrices.hch = prixReferenceData.moyennes?.prix_hch || prixReferenceData.hch || 0;
+                ohmPrices.pointe = prixReferenceData.moyennes?.prix_pointe || prixReferenceData.pointe || 0;
             } else if (currentSegment === 'GAZ') {
                 ohmPrices.molecule = prixReferenceData.moyennes?.prix_molecule || prixReferenceData.molecule || 0;
             }
