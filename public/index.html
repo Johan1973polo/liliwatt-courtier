@@ -3423,17 +3423,11 @@ Vous pouvez maintenant:
             // Si 100-500€ : probablement bimestriel (2 mois) → ×6
             // Si > 5000€ : probablement déjà annuel
             
-            if (numValue < 100) {
-                // Abonnement mensuel
-                return numValue * 12;
-            } else if (numValue >= 100 && numValue < 500) {
-                // Abonnement bimestriel (2 mois)
-                return numValue * 6;
-            } else if (numValue >= 500 && numValue < 5000) {
-                // Pourrait être trimestriel ou semestriel, on suppose mensuel par défaut
+            if (numValue < 500) {
+                // Abonnement mensuel → annuel
                 return numValue * 12;
             } else {
-                // Déjà annuel
+                // Déjà annuel (> 500€)
                 return numValue;
             }
         }
