@@ -1758,6 +1758,8 @@
                 localStorage.removeItem(`volumeData_${segment}`);
                 localStorage.removeItem(`prixReferenceData_${segment}`);
             });
+            // Nettoyer aussi l'abonnement de référence
+            localStorage.removeItem('abonnementRef');
             // Garder seulement les données extraites
             console.log('✅ Données de session nettoyées (extractedData conservé)');
         }
@@ -2117,13 +2119,6 @@ Vous pouvez maintenant:
                 console.log('✅ Référent chargé:', selectedReferent.nom);
             }
             
-            // Charger l'abonnement de référence depuis localStorage
-            const savedAbonnementRef = localStorage.getItem('abonnementRef');
-            if (savedAbonnementRef !== null) {
-                abonnementRef = parseFloat(savedAbonnementRef);
-                console.log('✅ Abonnement de référence chargé:', abonnementRef, '€/an');
-            }
-            
             // Initialiser la sélection d'énergie par défaut
             selectEnergy('electricity');
             
@@ -2131,6 +2126,13 @@ Vous pouvez maintenant:
             if (!sessionStorage.getItem('sessionActive')) {
                 clearSessionData();
                 sessionStorage.setItem('sessionActive', 'true');
+            }
+            
+            // Charger l'abonnement de référence depuis localStorage (APRÈS clearSessionData)
+            const savedAbonnementRef = localStorage.getItem('abonnementRef');
+            if (savedAbonnementRef !== null) {
+                abonnementRef = parseFloat(savedAbonnementRef);
+                console.log('✅ Abonnement de référence chargé:', abonnementRef, '€/an');
             }
             
             const savedExtractedData = localStorage.getItem('extractedData');
