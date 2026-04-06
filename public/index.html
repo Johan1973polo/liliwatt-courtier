@@ -3620,7 +3620,7 @@ Vous pouvez maintenant:
             doc.addPage();
             
             // Encadré gris pour le consentement RGPD
-            doc.setFillColor(243, 244, 246); // Gris clair
+            doc.setFillColor(237, 233, 254); // Gris clair
             doc.rect(15, 25, 180, 155, 'F'); // Encadré sans contour
             
             // Titre consentement
@@ -5081,12 +5081,12 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 // Créer un encadré pour le référent
                 doc.setFillColor(255, 255, 255);
                 doc.rect(140, 8, 65, 25, 'F');
-                doc.setDrawColor(30, 58, 138);
+                doc.setDrawColor(109, 40, 217);
                 doc.setLineWidth(0.3);
                 doc.rect(140, 8, 65, 25);
                 
                 doc.setFontSize(8);
-                doc.setTextColor(30, 58, 138);
+                doc.setTextColor(109, 40, 217);
                 doc.setFont(undefined, 'bold');
                 doc.text('VOTRE REFERENT', 172.5, 13, { align: 'center' });
                 doc.setFont(undefined, 'normal');
@@ -5539,7 +5539,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             
             doc.setFont(undefined, 'bold');
             doc.setFontSize(11);
-            doc.setTextColor(30, 58, 138);  // Texte bleu foncé
+            doc.setTextColor(109, 40, 217);  // Texte bleu foncé
             doc.text('TOTAL ANNUEL HT', 18, y + 8);
             doc.setTextColor(40, 40, 40);
             doc.text(Math.round(currentCost).toLocaleString('fr-FR').replace(/\s/g, '') + '€', 70, y + 8);
@@ -6229,7 +6229,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 
                 // Textes en couleur foncée pour être visibles
                 doc.setFontSize(8);
-                doc.setTextColor(30, 58, 138);  // Bleu foncé
+                doc.setTextColor(109, 40, 217);  // Bleu foncé
                 doc.setFont(undefined, 'bold');
                 doc.text('VOTRE RÉFÉRENT', 172.5, 13, { align: 'center' });
                 
@@ -6242,10 +6242,10 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             }
             
             // Information client
-            doc.setFillColor(243, 244, 246);
+            doc.setFillColor(237, 233, 254);
             doc.rect(15, 45, 180, 25, 'F');
             
-            doc.setTextColor(30, 58, 138);
+            doc.setTextColor(109, 40, 217);
             doc.setFontSize(12);
             doc.setFont(undefined, 'bold');
             doc.text('IDENTIFICATION CLIENT', 20, 53);
@@ -6698,11 +6698,11 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             // Section recommandation et avis pour TOUS les fournisseurs
             try {
                 // Bloc de recommandation à gauche avec nouvelle couleur
-                doc.setFillColor(240, 249, 255); // Bleu très clair
+                doc.setFillColor(237, 233, 254); // Bleu très clair
                 doc.rect(15, y, 90, 55, 'F'); // Hauteur réduite de 67 à 55
                 
                 // Titre de la recommandation
-                doc.setTextColor(30, 58, 138);
+                doc.setTextColor(109, 40, 217);
                 doc.setFontSize(10);
                 doc.setFont(undefined, 'bold');
                 doc.text('RECOMMANDATION LILIWATT', 60, y + 8, { align: 'center' });
@@ -6760,7 +6760,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     doc.rect(110, y, 85, 55, 'F');
                     
                     // Titre du bloc avis
-                    doc.setTextColor(30, 58, 138);
+                    doc.setTextColor(109, 40, 217);
                     doc.setFontSize(10);
                     doc.setFont(undefined, 'bold');
                     doc.text('AVIS CLIENTS', 152.5, y + 8, { align: 'center' });
@@ -6846,7 +6846,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.setFontSize(14);
             doc.setFont(undefined, 'bold');
             doc.setTextColor(255, 255, 255);
-            doc.text('COMPRENDRE LE MARCHÉ DE L\'ÉNERGIE', 105, 15, { align: 'center' });
+            doc.setFillColor(76, 29, 149); doc.text('COMPRENDRE LE MARCHÉ DE L\'ÉNERGIE', 105, 15, { align: 'center' });
             
             y = 35; // Commencer le contenu après l'en-tête
             
@@ -7007,15 +7007,15 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             y += 39;
             
             // Section Pourquoi LILIWATT ?
-            doc.setFillColor(240, 249, 255); // Fond bleu très clair
+            doc.setFillColor(237, 233, 254); // Fond bleu très clair
             doc.rect(15, y, 180, 42, 'F');
-            doc.setDrawColor(30, 58, 138);
+            doc.setDrawColor(109, 40, 217);
             doc.setLineWidth(0.5);
             doc.rect(15, y, 180, 42, 'S');
             
             doc.setFontSize(10);
             doc.setFont(undefined, 'bold');
-            doc.setTextColor(30, 58, 138);
+            doc.setTextColor(109, 40, 217);
             doc.text('Pourquoi LILIWATT ?', 20, y + 6);
             
             doc.setFontSize(8);
@@ -7096,7 +7096,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             
             doc.setFontSize(11);
             doc.setFont(undefined, 'bold');
-            doc.setTextColor(30, 58, 138);
+            doc.setTextColor(109, 40, 217);
             doc.text('Décomposition d\'une facture d\'énergie', textStartX, textY);
             
             textY += 10;
@@ -7191,7 +7191,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             doc.rect(15, textY, 180, 140, 'F'); // Réduit à 140 pour plus d'espace avec le footer
             
             // Titre
-            doc.setTextColor(30, 58, 138);
+            doc.setTextColor(109, 40, 217);
             doc.setFontSize(11);
             doc.setFont(undefined, 'bold');
             doc.text('Points essentiels à retenir', 20, textY + 8);
@@ -7269,7 +7269,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             });
             
             pointsY += 3;
-            doc.setTextColor(30, 58, 138);
+            doc.setTextColor(109, 40, 217);
             doc.text('• Votre conseiller LILIWATT vous recontactera 3 mois avant chaque échéance pour', 30, pointsY);
             pointsY += 4.5;
             doc.text('  anticiper une nouvelle mise en concurrence.', 30, pointsY);
