@@ -557,15 +557,19 @@
                     const data = await response.json();
                     const notification = data.notifications.find(n => n.id === notifId);
                     
-                    if (notification && notification.session_data) {
-                        // Sauvegarder toutes les données de la session du vendeur
-                        localStorage.setItem('reprendre_mec_data', JSON.stringify(notification.session_data));
+                    if (notification && notification.extractedData) {
+                        // Sauvegarder les données extraites pour reprise
+                        const mecData = {
+                            extractedData: notification.extractedData
+                        };
+                        localStorage.setItem('reprendre_mec_data', JSON.stringify(mecData));
                         localStorage.setItem('reprendre_mec_id', notifId);
                         
                         // Rediriger vers l'application principale
                         window.location.href = 'index.html?reprendre=' + notifId;
                     } else {
-                        alert('Erreur : données de la MEC non trouvées');
+                        alert('Erreur : données de la MEC non trouvées dans la notification');
+                        console.log('Notification reçue:', notification);
                     }
                 }
             } catch (error) {
