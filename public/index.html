@@ -5876,7 +5876,23 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             document.getElementById('selectedCount').textContent = selectedFournisseurs.length;
         }
         
-        function calculateMECPrices() {
+        
+      /**
+       * Ajuste le prix €/MWh pour que l'écart total annuel (énergie + abo)
+       * tombe dans [margeMin, margeMax] % par rapport à OHM.
+       */
+      function ajusterPrixPourEcartTotal(prixOhm, volOhm, aboOhm, aboConcurrent, margeMin, margeMax) {
+        const totalOhm = prixOhm * volOhm / 100 + aboOhm;
+        const ecartMin = margeMin / 100;
+        const ecartMax = margeMax / 100;
+        const totalMin = totalOhm * (1 + ecartMin);
+        const totalMax = totalOhm * (1 + ecartMax);
+        const totalCible = totalMin + Math.random() * (totalMax - totalMin);
+        const prixEnergie = (totalCible - aboConcurrent) / volOhm * 100;
+        return Math.max(prixEnergie, prixOhm * 1.02);
+      }
+
+      function calculateMECPrices() {
             const mecPrices = [];
             const currentSegment = extractedData.segment;
             
