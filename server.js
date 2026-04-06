@@ -398,10 +398,26 @@ app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     const data = await readJSON('users.json');
     
-    const user = data.users.find(u => u.email === email);
-    if (!user) {
+    let user = data.users.find(u => u.email === email);
+    
+    // Si pas dans users.json, chercher dans Google Sheets (vendeurs)
+    if (!user && DRIVE_CREDENTIALS) {
+      const sheetUser = await getVendeurFromSheets(email);
+      if (sheetUser) {
+        // Vérifier le mot de passe directement (pas hashé dans Sheets)
+        if (password === sheetUser.password) {
+          const token = jwt.sign(
+            { id: 'vendeur_' + Date.now(), email: sheetUser.email, role: 'vendeur', drive_folder_id: sheetUser.drive_folder_id },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+          );
+          return res.json({ success: true, token, user: { email: sheetUser.email, role: 'vendeur', nom: sheetUser.prenom + ' ' + sheetUser.nom } });
+        }
+      }
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
     }
+    
+    if (!user) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
     
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
@@ -720,6 +736,43 @@ app.listen(port, () => {
   console.log(`🤖 GPT-4 EXTRACTION ULTRA-PRÉCISE activée`);
   console.log(`📄 Génération RGPD + PDF disponible`);
 });
+
+
+// ===== GOOGLE SHEETS AUTH =====
+const SHEETS_ID = '11gVGMBtqMUhPh70yjMgjW-yLDht6fO0KqWJAF53ASXk';
+
+async function getVendeurFromSheets(email) {
+  try {
+    const auth = new google.auth.GoogleAuth({
+      credentials: DRIVE_CREDENTIALS,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
+    });
+    const sheets = google.sheets({ version: 'v4', auth });
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEETS_ID,
+      range: 'Sheet1!A:F'
+    });
+    const rows = res.data.values || [];
+    for (const row of rows) {
+      const rowEmail = row[3] || '';
+      if (rowEmail.toLowerCase() === email.toLowerCase()) {
+        return {
+          email: rowEmail,
+          password: row[2] || '',
+          drive_folder_id: row[5] || '',
+          nom: row[0] || '',
+          prenom: row[1] || '',
+          role: 'vendeur'
+        };
+      }
+    }
+    return null;
+  } catch(e) {
+    console.error('Sheets error:', e.message);
+    return null;
+  }
+}
+// ===== FIN GOOGLE SHEETS AUTH =====
 
 // ===== GOOGLE DRIVE INTEGRATION =====
 const { google } = require('googleapis');
