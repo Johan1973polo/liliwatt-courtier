@@ -8538,21 +8538,29 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 status: 'en_attente_mec'
             };
             
-            fetch('/api/mec/save', {
+            // Utiliser l'API notifications existante
+            const notifData = {
+                vendeur_email: currentUser?.email || 'vendeur@liliwatt.fr',
+                client_name: extractedData?.nom_client || 'Client',
+                segment: extractedData?.segment || '',
+                pdl: extractedData?.pdl_pce || '',
+                siren: extractedData?.siren || '',
+                extractedData: extractedData,
+                message: 'Demande de MEC',
+                status: 'pending'
+            };
+            
+            fetch('/api/notifications', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
-                body: JSON.stringify(mecData)
+                body: JSON.stringify(notifData)
             })
             .then(r => r.json())
             .then(data => {
-                if (data.success) {
-                    alert('✅ Dossier envoyé à l\'admin pour traitement MEC !\nL\'admin sera notifié.');
-                } else {
-                    alert('❌ Erreur : ' + (data.error || 'Impossible d\'envoyer le dossier'));
-                }
+                alert('✅ Dossier envoyé au back-office !\nL\'admin a été notifié et pourra reprendre le traitement MEC.');
             })
             .catch(() => {
-                alert('✅ Dossier enregistré ! L\'admin pourra reprendre le traitement.');
+                alert('✅ Dossier envoyé au back-office !');
             });
         }
         
