@@ -952,31 +952,51 @@ h1 { color: #1e1b4b !important; }
   background: linear-gradient(135deg, #6d28d9, #c026d3) !important;
 }
 
-/* Boutons secondaires/outline → violet */
-.btn-secondary {
-  border-color: #7c3aed !important;
-  color: #7c3aed !important;
-  background: white !important;
-}
-.btn-secondary:hover {
-  background: #f5f3ff !important;
-}
-
-/* Boutons Suivant spécifiques → violet fond + blanc texte */
-button[onclick*="nextStep"]:not([disabled]),
-button[onclick*="goToStep"]:not([disabled]) {
+/* RÈGLE GLOBALE : tous les boutons = fond violet + texte blanc */
+button {
   background: linear-gradient(135deg, #7c3aed, #d946ef) !important;
   color: white !important;
   border: none !important;
-  opacity: 1 !important;
+  transition: all 0.2s !important;
+}
+button:hover {
+  background: linear-gradient(135deg, #d946ef, #7c3aed) !important;
+  color: white !important;
+  transform: translateY(-1px) !important;
 }
 
-/* Bouton Retour → outline violet */
+/* Exceptions : bouton Retour → outline violet */
 button[onclick*="prevStep"],
 button[onclick*="previousStep"] {
   background: transparent !important;
   border: 2px solid #7c3aed !important;
   color: #7c3aed !important;
+}
+button[onclick*="prevStep"]:hover,
+button[onclick*="previousStep"]:hover {
+  background: #7c3aed !important;
+  color: white !important;
+}
+
+/* Exceptions : boutons danger (rouge) */
+button.btn-danger,
+button[onclick*="delete"],
+button[onclick*="supprimer"] {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+}
+
+/* Garder vert pour succès */
+.btn-success,
+button.btn-success {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+/* Bouton disabled */
+button:disabled, button[disabled] {
+  background: #d1d5db !important;
+  color: #9ca3af !important;
+  cursor: not-allowed !important;
+  transform: none !important;
 }
 
 /* Bouton warning → violet */
@@ -1094,9 +1114,9 @@ body { background-color: #faf5ff !important; }
 
 /* TEXTE BLANC sur tous boutons colorés */
 button { color: white !important; }
-button.btn-secondary { color: #7c3aed !important; }
-button[style*="background: white"] { color: #7c3aed !important; }
-button[style*="background:white"] { color: #7c3aed !important; }
+/* btn-secondary géré par règle globale */
+/* handled globally */
+/* handled globally */
 button[disabled] { opacity: 0.5 !important; color: white !important; }
 
 /* Header LILIWATT texte blanc */
