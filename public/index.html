@@ -6222,6 +6222,29 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                         style="width: 50px; border: 1px solid #ddd; padding: 1px;"
                         step="0.01" onchange="updateMECPrice(${index}, 'hch', this.value)">
                 </div>`;
+            } else if (segment === 'C2') {
+                const hpePrice = prices.hpe || 0;
+                const hcePrice = prices.hce || 0;
+                const hphPrice = prices.hph || 0;
+                const hchPrice = prices.hch || 0;
+                const pointePrice = prices.pointe || 0;
+                return `<div style="font-size: 10px;">
+                    HPE: <input type="number" value="${hpePrice.toFixed(2)}" 
+                        style="width: 45px; border: 1px solid #ddd; padding: 1px;"
+                        step="0.01" onchange="updateMECPrice(${index}, 'hpe', this.value)">
+                    HCE: <input type="number" value="${hcePrice.toFixed(2)}" 
+                        style="width: 45px; border: 1px solid #ddd; padding: 1px;"
+                        step="0.01" onchange="updateMECPrice(${index}, 'hce', this.value)"><br>
+                    HPH: <input type="number" value="${hphPrice.toFixed(2)}" 
+                        style="width: 45px; border: 1px solid #ddd; padding: 1px;"
+                        step="0.01" onchange="updateMECPrice(${index}, 'hph', this.value)">
+                    HCH: <input type="number" value="${hchPrice.toFixed(2)}" 
+                        style="width: 45px; border: 1px solid #ddd; padding: 1px;"
+                        step="0.01" onchange="updateMECPrice(${index}, 'hch', this.value)"><br>
+                    POINTE: <input type="number" value="${pointePrice.toFixed(2)}" 
+                        style="width: 45px; border: 1px solid #ddd; padding: 1px;"
+                        step="0.01" onchange="updateMECPrice(${index}, 'pointe', this.value)">
+                </div>`;
             } else if (segment === 'GAZ') {
                 const moleculePrice = prices.molecule || 0;
                 return `<input type="number" value="${moleculePrice.toFixed(2)}" 
@@ -6343,6 +6366,8 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 return `HP: ${prices.hp.toFixed(2)}<br>HC: ${prices.hc.toFixed(2)} c€/kWh`;
             } else if (currentSegment === 'C4') {
                 return `HPE: ${prices.hpe.toFixed(2)} HCE: ${prices.hce.toFixed(2)}<br>HPH: ${prices.hph.toFixed(2)} HCH: ${prices.hch.toFixed(2)}`;
+            } else if (currentSegment === 'C2') {
+                return `HPE: ${prices.hpe.toFixed(2)} HCE: ${prices.hce.toFixed(2)}<br>HPH: ${prices.hph.toFixed(2)} HCH: ${prices.hch.toFixed(2)}<br>POINTE: ${prices.pointe.toFixed(2)}`;
             } else if (currentSegment === 'GAZ') {
                 return `${prices.molecule.toFixed(2)} €/MWh`;
             }
