@@ -6216,11 +6216,9 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             
             document.getElementById('selectedCount').textContent = selectedFournisseurs.length;
             
-            // Aperçu MEC temps réel
-            const apercu = document.getElementById('mecApercu');
-            if (apercu && apercu.style.display !== 'none') {
-                setTimeout(() => previewMEC(), 100);
-            }
+            // Aperçu MEC temps réel - toujours rafraîchir
+            mecInitialized = false;
+            setTimeout(() => previewMEC(), 50);
         }
         
         
