@@ -6853,11 +6853,16 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     doc.setFontSize(7);
                     doc.text(`HPE: ${offer.prices.hpe.toFixed(2)} HCE: ${offer.prices.hce.toFixed(2)}`, 60, y + 3);
                     doc.text(`HPH: ${offer.prices.hph.toFixed(2)} HCH: ${offer.prices.hch.toFixed(2)}`, 60, y + 7);
+                } else if (currentSegment === 'C2') {
+                    doc.setFontSize(7);
+                    doc.text(`HPE: ${offer.prices.hpe.toFixed(2)} HCE: ${offer.prices.hce.toFixed(2)}`, 60, y + 3);
+                    doc.text(`HPH: ${offer.prices.hph.toFixed(2)} HCH: ${offer.prices.hch.toFixed(2)}`, 60, y + 6);
+                    doc.text(`POINTE: ${offer.prices.pointe.toFixed(2)}`, 60, y + 9);
                 } else if (currentSegment === 'GAZ') {
                     prixText = `${offer.prices.molecule.toFixed(2)} €/MWh`;
                 }
                 
-                if (prixText && currentSegment !== 'C5-HPHC' && currentSegment !== 'C4') {
+                if (prixText && currentSegment !== 'C5-HPHC' && currentSegment !== 'C4' && currentSegment !== 'C2') {
                     doc.text(prixText, 60, y + 5);
                 }
                 
@@ -7561,6 +7566,10 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             } else if (currentSegment === 'C4') {
                 total = (getReferenceVolume('col0') + getReferenceVolume('col1') + 
                         getReferenceVolume('col2') + getReferenceVolume('col3')) * 1000;
+            } else if (currentSegment === 'C2') {
+                total = (getReferenceVolume('col0') + getReferenceVolume('col1') + 
+                        getReferenceVolume('col2') + getReferenceVolume('col3') + 
+                        getReferenceVolume('col4')) * 1000;
             } else if (currentSegment === 'GAZ') {
                 total = getReferenceVolume('col0') * 1000;
             }
