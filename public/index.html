@@ -6261,8 +6261,9 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
         }
         
         function resetMECSelection() {
-            // Réinitialiser les fournisseurs sélectionnés
+            // Réinitialiser tout
             selectedFournisseurs = [];
+            mecInitialized = false;
             // Décocher toutes les cards
             document.querySelectorAll('.fournisseur-card').forEach(card => {
                 card.classList.remove('selected');
@@ -6272,6 +6273,8 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             // Masquer le tableau aperçu
             const apercu = document.getElementById('mecApercu');
             if (apercu) apercu.style.display = 'none';
+            // Scroller vers le haut de l'étape 7
+            document.querySelector('.etape-7') && document.querySelector('.etape-7').scrollIntoView({behavior: 'smooth'});
             // Mettre à jour le compteur
             const countDisplay = document.getElementById('supplier-count-display');
             if (countDisplay) countDisplay.style.display = 'none';
