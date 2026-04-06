@@ -1134,6 +1134,15 @@ body { background-color: #faf5ff !important; }
 
 /* === CORRECTIONS SPÉCIFIQUES === */
 
+/* Boutons abonnement OHM - peuvent être surchargés par JS */
+#ohm-abonnement-choice button {
+  background: white !important;
+  color: #7c3aed !important;
+  border: 2px solid #7c3aed !important;
+  transition: all 0.2s !important;
+}
+/* Le JS setAbonnementRef override ces styles inline - on laisse le JS gérer le vert */
+
 /* 1 - Bouton abonnement sélectionné → fond vert + texte violet */
 button[onclick*="setAbonnementRef"].active-abo,
 .abonnement-selected {
@@ -4545,22 +4554,16 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             if (selectedFournisseurRef === 'OHM') {
                 const buttons = document.querySelectorAll('#ohm-abonnement-choice button');
                 buttons.forEach(btn => {
-                    btn.style.background='white'; btn.style.color='#7c3aed'; btn.style.border='2px solid #7c3aed';
+                    btn.setAttribute('style', 'flex:1; background:white !important; color:#7c3aed !important; border:2px solid #7c3aed !important;');
                 });
                 
                 // Mettre en vert le bouton sélectionné
                 if (prix == 0 && buttons[0]) {
-                    buttons[0].style.background = 'linear-gradient(135deg,#10b981,#059669)';
-                    buttons[0].style.color = 'white';
-                    buttons[0].style.border = 'none';
+                    buttons[0].setAttribute('style', 'flex:1; background:linear-gradient(135deg,#10b981,#059669) !important; color:white !important; border:none !important;');
                 } else if (prix == 120 && buttons[1]) {
-                    buttons[1].style.background = 'linear-gradient(135deg,#10b981,#059669)';
-                    buttons[1].style.color = 'white';
-                    buttons[1].style.border = 'none';
+                    buttons[1].setAttribute('style', 'flex:1; background:linear-gradient(135deg,#10b981,#059669) !important; color:white !important; border:none !important;');
                 } else if (prix == 240 && buttons[2]) {
-                    buttons[2].style.background = 'linear-gradient(135deg,#10b981,#059669)';
-                    buttons[2].style.color = 'white';
-                    buttons[2].style.border = 'none';
+                    buttons[2].setAttribute('style', 'flex:1; background:linear-gradient(135deg,#10b981,#059669) !important; color:white !important; border:none !important;');
                 }
             }
             
