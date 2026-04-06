@@ -913,6 +913,152 @@
             border-color: #7c3aed;
         }
         </style>
+
+<style id="liliwatt-theme">
+/* ===== LILIWATT THEME OVERRIDE ===== */
+:root {
+  --lili-violet: #7c3aed;
+  --lili-violet-dark: #6d28d9;
+  --lili-violet-light: #a78bfa;
+  --lili-fuchsia: #d946ef;
+  --lili-navy: #1e1b4b;
+  --lili-bg: #faf5ff;
+  --lili-border: #e9d5ff;
+}
+
+/* Titres */
+h1, h2, h3 { color: #7c3aed !important; }
+h1 { color: #1e1b4b !important; }
+
+/* Textes colorés bleus → violet */
+[style*="color: #1e3a8a"], [style*="color:#1e3a8a"],
+[style*="color: #1e40af"], [style*="color:#1e40af"],
+[style*="color: #2563eb"], [style*="color:#2563eb"],
+[style*="color: #3b82f6"], [style*="color:#3b82f6"],
+[style*="color: rgb(30, 58, 138)"] { color: #7c3aed !important; }
+
+/* Header steps */
+.step.active { background: #7c3aed !important; border-color: #7c3aed !important; }
+.step.completed { background: #6d28d9 !important; border-color: #6d28d9 !important; }
+.step-line.completed { background: #7c3aed !important; }
+
+/* Boutons principaux bleus → violet */
+.btn-primary, button[class*="btn-primary"] {
+  background: linear-gradient(135deg, #7c3aed, #d946ef) !important;
+  border-color: #7c3aed !important;
+  color: white !important;
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #6d28d9, #c026d3) !important;
+}
+
+/* Boutons secondaires/outline → violet */
+.btn-secondary {
+  border-color: #7c3aed !important;
+  color: #7c3aed !important;
+}
+.btn-secondary:hover {
+  background: #f5f3ff !important;
+}
+
+/* Bouton warning → violet */
+.btn-warning {
+  background: linear-gradient(135deg, #7c3aed, #d946ef) !important;
+  border: none !important;
+}
+
+/* Garder vert pour succès */
+.btn-success { background: linear-gradient(135deg, #10b981, #059669) !important; }
+
+/* Tables header bleu → violet */
+table thead tr, table thead th,
+th[style*="background"],
+.prix-ohm-table thead { 
+  background: linear-gradient(135deg, #7c3aed, #6d28d9) !important; 
+}
+
+/* Liens bleus → violet */
+a { color: #7c3aed !important; }
+a:hover { color: #6d28d9 !important; }
+
+/* Inputs focus → violet */
+input:focus, select:focus, textarea:focus {
+  border-color: #7c3aed !important;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15) !important;
+  outline: none !important;
+}
+
+/* Badges et tags bleus → violet */
+[style*="background: #dbeafe"], [style*="background:#dbeafe"],
+[style*="background-color: #dbeafe"] {
+  background: #ede9fe !important;
+  color: #7c3aed !important;
+}
+[style*="background: #eff6ff"] { background: #f5f3ff !important; }
+[style*="background: #1e40af"] { background: #7c3aed !important; }
+[style*="background: #2563eb"] { background: #7c3aed !important; }
+[style*="background: #3b82f6"] { background: #7c3aed !important; }
+[style*="background: #1e3a8a"] { background: #4c1d95 !important; }
+[style*="background-color: #1e40af"] { background-color: #7c3aed !important; }
+[style*="background-color: #2563eb"] { background-color: #7c3aed !important; }
+
+/* Gradient bleu header → violet */
+[style*="linear-gradient(135deg, #1e40af"],
+[style*="linear-gradient(135deg, #2563eb"],
+[style*="linear-gradient(to right, #1e40af"] {
+  background: linear-gradient(135deg, #7c3aed, #d946ef) !important;
+}
+
+/* Bordures bleues → violet */
+[style*="border-color: #3b82f6"] { border-color: #7c3aed !important; }
+[style*="border: 2px solid #3b82f6"] { border-color: #7c3aed !important; }
+[style*="border-left: 4px solid #2563eb"] { border-left-color: #7c3aed !important; }
+[style*="border-left: 3px solid #2563eb"] { border-left-color: #7c3aed !important; }
+
+/* Étapes actives */
+.step-content h2 { color: #7c3aed !important; }
+
+/* Cards sélectionnées */
+.fournisseur-ref-card.selected {
+  border-color: #7c3aed !important;
+  background: #f5f3ff !important;
+}
+
+/* Boutons inline avec background bleu */
+button[style*="background: #2563eb"],
+button[style*="background:#2563eb"],
+button[style*="background-color: #2563eb"],
+button[style*="background: #1e40af"],
+button[style*="background: #3b82f6"] {
+  background: #7c3aed !important;
+  border-color: #7c3aed !important;
+}
+
+/* Progress bar */
+.step-line { background: #e9d5ff !important; }
+.step-number { font-weight: 700 !important; }
+
+/* Texte dans les cards données */
+.data-value, [class*="data-value"] { color: #7c3aed !important; }
+
+/* Modifier buttons bleus → violet */
+button[onclick*="modifier"], button[onclick*="Modifier"],
+.btn-modifier {
+  background: #7c3aed !important;
+  border-color: #7c3aed !important;
+}
+
+/* Sélecteur segment actif */
+input[type="radio"]:checked + label,
+input[type="radio"]:checked ~ * { accent-color: #7c3aed !important; }
+input[type="radio"] { accent-color: #7c3aed !important; }
+input[type="checkbox"] { accent-color: #7c3aed !important; }
+
+/* Background général */
+body { background-color: #faf5ff !important; }
+.container, .main-container { background: white !important; }
+</style>
+
 </head>
 <body>
     <div class="container">
