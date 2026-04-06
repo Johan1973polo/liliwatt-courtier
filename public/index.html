@@ -6463,10 +6463,10 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 return;
             }
             
-            // Utiliser les prix modifiés s'ils existent, sinon calculer
-            const mecPrices = modifiedMECPrices || calculateMECPrices();
-            if (!modifiedMECPrices) {
-                modifiedMECPrices = JSON.parse(JSON.stringify(mecPrices)); // Copie profonde
+            // Recalculer si mecInitialized = false (changement de sélection)
+            if (!mecInitialized || !modifiedMECPrices) {
+                modifiedMECPrices = JSON.parse(JSON.stringify(calculateMECPrices()));
+                mecInitialized = true;
             }
             
             const preview = document.getElementById('mecPreview');
