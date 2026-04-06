@@ -696,3 +696,86 @@ app.listen(port, () => {
   console.log(`🤖 GPT-4 EXTRACTION ULTRA-PRÉCISE activée`);
   console.log(`📄 Génération RGPD + PDF disponible`);
 });
+
+// ===== GOOGLE DRIVE INTEGRATION =====
+const { google } = require('googleapis');
+const DRIVE_CREDENTIALS = require('./liliwatt-drive-credentials.json');
+const VENDEURS_FOLDER_ID = '1rizhNR8RdZAmpJYEFInksrSW14opa1zp';
+
+function getDriveClient() {
+  const auth = new google.auth.GoogleAuth({
+    credentials: DRIVE_CREDENTIALS,
+    scopes: ['https://www.googleapis.com/auth/drive']
+  });
+  return google.drive({ version: 'v3', auth });
+}
+
+async function findOrCreateFolder(drive, name, parentId) {
+  const res = await drive.files.list({
+    q: `name='${name}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    fields: 'files(id, name)'
+  });
+  if (res.data.files.length > 0) return res.data.files[0].id;
+  const folder = await drive.files.create({
+    requestBody: { name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] },
+    fields: 'id'
+  });
+  return folder.data.id;
+}
+
+// Route upload Drive
+app.post('/api/drive/upload', verifyToken, async (req, res) => {
+  try {
+    const { pdfBase64, fileName, clientName, docType } = req.body;
+    const vendeurEmail = req.user.email;
+    const vendeurNom = vendeurEmail.split('@')[0].replace('.', ' ').split(' ')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+    const drive = getDriveClient();
+
+    // Chercher/créer dossier vendeur
+    const vendeurFolderId = await findOrCreateFolder(drive, vendeurNom, VENDEURS_FOLDER_ID);
+
+    // Chercher/créer dossier "Clients en attente"
+    const attenteId = await findOrCreateFolder(drive, 'Clients en attente', vendeurFolderId);
+
+    // Chercher/créer dossier client
+    const clientFolderId = await findOrCreateFolder(drive, clientName || 'Client inconnu', attenteId);
+
+    // Upload PDF
+    const buffer = Buffer.from(pdfBase64, 'base64');
+    const { Readable } = require('stream');
+    const stream = Readable.from(buffer);
+
+    const file = await drive.files.create({
+      requestBody: { name: fileName, parents: [clientFolderId], mimeType: 'application/pdf' },
+      media: { mimeType: 'application/pdf', body: stream },
+      fields: 'id, webViewLink'
+    });
+
+    res.json({ success: true, fileId: file.data.id, link: file.data.webViewLink });
+  } catch (err) {
+    console.error('Drive upload error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Route pour créer dossier client (lors de l'upload facture)
+app.post('/api/drive/create-client-folder', verifyToken, async (req, res) => {
+  try {
+    const { clientName } = req.body;
+    const vendeurEmail = req.user.email;
+    const vendeurNom = vendeurEmail.split('@')[0].replace('.', ' ').split(' ')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+    const drive = getDriveClient();
+    const vendeurFolderId = await findOrCreateFolder(drive, vendeurNom, VENDEURS_FOLDER_ID);
+    const attenteId = await findOrCreateFolder(drive, 'Clients en attente', vendeurFolderId);
+    const clientFolderId = await findOrCreateFolder(drive, clientName, attenteId);
+
+    res.json({ success: true, folderId: clientFolderId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+// ===== FIN GOOGLE DRIVE =====
