@@ -2460,18 +2460,16 @@ const avisImages = [
                         localStorage.setItem('selectedReferent', JSON.stringify(selectedReferent));
                     }
                     
-                    // Aller directement à l'étape où le vendeur s'est arrêté
-                    const stepToGo = sessionData.currentStep || 6;
+                    // Admin reprend toujours à l'étape 2 avec les données du vendeur
+                    const stepToGo = 2;
                     setTimeout(() => {
-                        // S'assurer que toutes les étapes précédentes sont marquées comme complètes
-                        for (let i = 1; i < stepToGo; i++) {
-                            const step = document.getElementById(`step${i}`);
-                            if (step) step.classList.add('completed');
-                        }
+                        // Marquer étape 1 comme complète
+                        const step1 = document.getElementById('step1');
+                        if (step1) step1.classList.add('completed');
                         
-                        // Activer l'étape courante
-                        currentStep = stepToGo;
-                        goToStep(stepToGo);
+                        // Activer l'étape 2
+                        currentStep = 1;
+                        nextStep(2);
                         
                         // Afficher le récapitulatif
                         const summary = `
