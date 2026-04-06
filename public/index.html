@@ -5728,19 +5728,19 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
         
         // Étape 6 - MEC avec système de marges
         const fournisseurMarges = {
-            'OHM': { min: 0, max: 0, nom: 'OHM Énergie', color: '#10b981' },
-            'EKWATEUR': { min: 8, max: 12, nom: 'Ekwateur', color: '#32CD32' },
-            'ENGIE': { min: 8, max: 12, nom: 'ENGIE', color: '#00a650' },
-            'TOTALENERGIES': { min: 15, max: 18, nom: 'TotalEnergies', color: '#ff6600' },
-            'EDF': { min: 18, max: 22, nom: 'EDF', color: '#004494' },
-            'VATTENFALL': { min: 10, max: 14, nom: 'Vattenfall', color: '#8B0000' },
-            'ENI': { min: 12, max: 15, nom: 'ENI', color: '#FFD700' },
-            'IBERDROLA': { min: 10, max: 14, nom: 'Iberdrola', color: '#00CED1' },
-            'ALPIQ': { min: 12, max: 16, nom: 'Alpiq', color: '#4169E1' },
-            'PRIMEO': { min: 10, max: 14, nom: 'Priméo Energie', color: '#9333ea' },
-            'MINT': { min: 8, max: 12, nom: 'Mint Energie', color: '#64748b' },
-            'MET': { min: 9, max: 13, nom: 'MET', color: '#ef4444' },
-            'ILEK': { min: 5, max: 10, nom: 'Ilek', color: '#22c55e' }
+            'OHM':           { min: 0,    max: 0,    nom: 'OHM Énergie',      color: '#10b981' },
+            'EKWATEUR':      { min: 8.2,  max: 10.4, nom: 'Ekwateur',         color: '#32CD32' },
+            'ENGIE':         { min: 9.1,  max: 11.8, nom: 'ENGIE',            color: '#00a650' },
+            'TOTALENERGIES': { min: 13.5, max: 16.2, nom: 'TotalEnergies',    color: '#ff6600' },
+            'EDF':           { min: 18.7, max: 22.4, nom: 'EDF',              color: '#004494' },
+            'VATTENFALL':    { min: 11.1, max: 14.5, nom: 'Vattenfall',       color: '#8B0000' },
+            'ENI':           { min: 9.3,  max: 12.6, nom: 'ENI',              color: '#FFD700' },
+            'IBERDROLA':     { min: 10.0, max: 13.0, nom: 'Iberdrola',        color: '#00CED1' },
+            'ALPIQ':         { min: 14.1, max: 17.2, nom: 'Alpiq',            color: '#4169E1' },
+            'PRIMEO':        { min: 10.5, max: 13.8, nom: 'Priméo Energie',   color: '#9333ea' },
+            'MINT':          { min: 12.0, max: 15.3, nom: 'Mint Energie',     color: '#64748b' },
+            'MET':           { min: 9.5,  max: 12.5, nom: 'MET',              color: '#ef4444' },
+            'ILEK':          { min: 10.2, max: 13.7, nom: 'Ilek',             color: '#22c55e' }
         };
         
         // Variable pour tracker si MEC a déjà été initialisée
@@ -5964,48 +5964,74 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     return;
                 }
                 console.log('  -> Ajouté avec config:', config.nom);
-                
-                // Marge aléatoire entre min et max
-                const marge = config.min + Math.random() * (config.max - config.min);
-                const margeMultiplier = 1 + (marge / 100);
-                
+
+                // Calculer prix moyen pondéré OHM et volume total
+                let prixMoyenOhm = 0;
+                let volumeTotalMWh = 0;
+
+                if (currentSegment === 'C5-BASE') {
+                    prixMoyenOhm = ohmPrices.base;
+                    volumeTotalMWh = getReferenceVolume('col0');
+                } else if (currentSegment === 'C5-HPHC') {
+                    const volHP = getReferenceVolume('col0');
+                    const volHC = getReferenceVolume('col1');
+                    volumeTotalMWh = volHP + volHC;
+                    prixMoyenOhm = (ohmPrices.hp * volHP + ohmPrices.hc * volHC) / volumeTotalMWh;
+                } else if (currentSegment === 'C4') {
+                    const volHPE = getReferenceVolume('col0');
+                    const volHCE = getReferenceVolume('col1');
+                    const volHPH = getReferenceVolume('col2');
+                    const volHCH = getReferenceVolume('col3');
+                    volumeTotalMWh = volHPE + volHCE + volHPH + volHCH;
+                    prixMoyenOhm = (ohmPrices.hpe * volHPE + ohmPrices.hce * volHCE +
+                                    ohmPrices.hph * volHPH + ohmPrices.hch * volHCH) / volumeTotalMWh;
+                } else if (currentSegment === 'GAZ') {
+                    prixMoyenOhm = ohmPrices.molecule;
+                    volumeTotalMWh = extractedData.car || 0;
+                }
+
+                // Récupérer l'abonnement de référence et concurrent
+                const aboOhm = parseFloat(localStorage.getItem('abonnementRef') ?? '0') || abonnementRef;
+                const aboConcurrent = (() => {
+                    const abosReels = {
+                        'EKWATEUR': 268, 'ENGIE': 318, 'TOTALENERG': 295, 'EDF': 338,
+                        'VATTENFALL': 285, 'ENI': 272, 'IBERDROLA': 265, 'ALPIQ': 248,
+                        'PRIMEO': 225, 'MINT': 278, 'MET': 260, 'ILEK': 272,
+                        'WEKIWI': 258, 'GAZEL': 252, 'OCTOPUS': 255, 'ALTERNA': 282
+                    };
+                    const nomF = config.nom.toUpperCase().replace(/[\s\-_\.]/g,'');
+                    for (const [key, val] of Object.entries(abosReels)) {
+                        if (nomF.startsWith(key.substring(0,4)) || nomF.includes(key)) return val;
+                    }
+                    const fallbacks = [252, 265, 278, 290, 305, 318];
+                    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+                })();
+
+                // Calculer le nouveau prix moyen avec la fonction ajusterPrixPourEcartTotal
+                const prixMoyenAjuste = ajusterPrixPourEcartTotal(
+                    prixMoyenOhm, volumeTotalMWh, aboOhm, aboConcurrent,
+                    config.min, config.max
+                );
+
+                // Ratio d'ajustement à appliquer à tous les prix
+                const ratioAjustement = prixMoyenAjuste / prixMoyenOhm;
+
+                // Appliquer le ratio à tous les composants de prix
                 const fournisseurPrices = {};
                 Object.keys(ohmPrices).forEach(key => {
-                    fournisseurPrices[key] = ohmPrices[key] * margeMultiplier;
+                    fournisseurPrices[key] = ohmPrices[key] * ratioAjustement;
                 });
+
+                // Calculer la marge effective pour affichage
+                const totalOhm = prixMoyenOhm * volumeTotalMWh / 100 + aboOhm;
+                const totalConcurrent = prixMoyenAjuste * volumeTotalMWh / 100 + aboConcurrent;
+                const marge = ((totalConcurrent - totalOhm) / totalOhm) * 100;
                 
                 mecPrices.push({
                     fournisseur: fournisseur,
                     nom: config.nom,
                     prices: fournisseurPrices,
-                    abonnement: (() => {
-                // Abonnements réels par fournisseur (indépendants d'OHM)
-                const abosReels = {
-                    'EKWATEUR': 268,
-                    'ENGIE': 318,
-                    'TOTALENERG': 295,
-                    'EDF': 338,
-                    'VATTENFALL': 285,
-                    'ENI': 272,
-                    'IBERDROLA': 265,
-                    'ALPIQ': 248,
-                    'PRIMEO': 225,
-                    'MINT': 278,
-                    'MET': 260,
-                    'ILEK': 272,
-                    'WEKIWI': 258,
-                    'GAZEL': 252,
-                    'OCTOPUS': 255,
-                    'ALTERNA': 282
-                };
-                const nomF = (fournisseur.nom || '').toUpperCase().replace(/[\s\-_\.]/g,'');
-                for (const [key, val] of Object.entries(abosReels)) {
-                    if (nomF.startsWith(key.substring(0,4)) || nomF.includes(key)) return val;
-                }
-                // Fallback varié selon index
-                const fallbacks = [252, 265, 278, 290, 305, 318];
-                return fallbacks[Math.floor(Math.random() * fallbacks.length)];
-            })(), // Utiliser abonnementRef au lieu de selectedAbonnement
+                    abonnement: aboConcurrent,
                     marge: marge.toFixed(1),
                     color: config.color,
                     isBest: false
