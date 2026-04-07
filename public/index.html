@@ -2776,11 +2776,29 @@ const avisImages = [
         }
         
         // Gestion des fichiers
-        function handleFileSelect(event, fileNum) {
+        async function handleFileSelect(event, fileNum) {
             const file = event.target.files[0];
             
             if (file) {
                 selectedFiles[`file${fileNum}`] = file;
+            
+            // Demander le nom de l'entreprise dès la sélection du fichier
+            if (fileNum === 1 && !currentClientName) {
+                const nomEntreprise = await askClientName('');
+                if (nomEntreprise) {
+                    currentClientName = nomEntreprise;
+                    createDriveFolder(nomEntreprise).then(async () => {
+                        const base64 = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = e => resolve(e.target.result.split(',')[1]);
+                            reader.onerror = reject;
+                            reader.readAsDataURL(file);
+                        });
+                        await uploadToDrive(base64, 'Facture_' + file.name);
+                        console.log('✅ Facture uploadée sur Drive:', file.name);
+                    });
+                }
+            }
                 document.getElementById(`fileName${fileNum}`).textContent = '📄 ' + file.name;
             }
         }
@@ -2812,29 +2830,13 @@ const avisImages = [
         
         // Extraction automatique des données
         async function extractData() {
-            // Demander nom entreprise pour Drive
-            const nomEntreprise = await askClientName(extractedData?.nom_client || '');
-            if (!nomEntreprise) return;
-            currentClientName = nomEntreprise;
-            
-            // Créer dossier Drive puis uploader la facture originale
-            createDriveFolder(nomEntreprise).then(async () => {
-                const filesToUpload = [selectedFiles.file1, selectedFiles.file2, selectedFiles.file3].filter(Boolean);
-                for (const file of filesToUpload) {
-                    try {
-                        const base64 = await new Promise((resolve, reject) => {
-                            const reader = new FileReader();
-                            reader.onload = e => resolve(e.target.result.split(',')[1]);
-                            reader.onerror = reject;
-                            reader.readAsDataURL(file);
-                        });
-                        await uploadToDrive(base64, 'Facture_' + file.name);
-                        console.log('✅ Facture uploadée sur Drive:', file.name);
-                    } catch(err) {
-                        console.warn('Erreur upload facture:', err);
-                    }
-                }
-            });
+            // Nom entreprise déjà demandé à la sélection du fichier
+            if (!currentClientName) {
+                const nomEntreprise = await askClientName('');
+                if (!nomEntreprise) return;
+                currentClientName = nomEntreprise;
+                createDriveFolder(nomEntreprise);
+            }
 
             // DEBUG C4 UPLOAD
             
