@@ -8815,7 +8815,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
         }
         
         function updateStepLabelsForRole() {
-            if (!currentUser || currentUser.role !== 'vendeur') return;
+            if (!currentUser || (currentUser.role !== 'vendeur' && currentUser.role !== 'referent')) return;
             
             const vendeurLabels = [
                 '', // index 0 non utilisé
