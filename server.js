@@ -1456,6 +1456,23 @@ app.post('/api/drive/supprimer-client', verifyToken, isAdmin, async (req, res) =
     res.status(500).json({ error: err.message });
   }
 });
+
+// Supprimer un fichier (pas un dossier)
+app.post('/api/drive/supprimer-fichier', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { fileId } = req.body;
+    const drive = getDriveClient();
+    await drive.files.update({
+      fileId,
+      supportsAllDrives: true,
+      requestBody: { trashed: true }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ===== FIN ROUTES GESTION DOSSIERS DRIVE =====
 
 // ===== FIN GOOGLE DRIVE =====

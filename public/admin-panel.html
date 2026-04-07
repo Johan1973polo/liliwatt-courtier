@@ -1066,6 +1066,19 @@ Entrez le numéro :`);
             }
         }
 
+        async function supprimerFichier(fileId, fileName) {
+            if (!confirm(`Supprimer le fichier "${fileName}" ?`)) return;
+            const token = localStorage.getItem('token');
+            const r = await fetch('/api/drive/supprimer-fichier', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+                body: JSON.stringify({fileId})
+            });
+            const d = await r.json();
+            if (d.success) { alert('✅ Fichier supprimé'); loadPortefeuille(); }
+            else alert('❌ ' + d.error);
+        }
+
         async function supprimerClient(vendeurEmail, clientId, clientName) {
             if (!confirm(`⚠️ Supprimer définitivement le dossier "${clientName}" et tous ses documents ?
 
@@ -1134,6 +1147,7 @@ Cette action est irréversible.`)) return;
                                                 <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f9f9f9;">
                                                     <span style="font-size:12px;color:#374151;">📄 ${file.name}</span>
                                                     <button onclick="viewDoc('${file.id}')" style="padding:4px 10px;background:#7c3aed;color:white;border-radius:6px;font-size:11px;border:none;cursor:pointer;">👁 Voir</button>
+                                                    <button onclick="supprimerFichier('${file.id}','${file.name}')" style="padding:4px 8px;background:white;border:1px solid #ef4444;color:#ef4444;border-radius:6px;font-size:11px;cursor:pointer;">✕</button>
                                                 </div>
                                             `).join('')}
                                             <button onclick="openAdminUpload('${client.id}', '${client.name}')" style="margin-top:8px;width:100%;padding:7px;background:white;border:1.5px dashed #7c3aed;color:#7c3aed;border-radius:8px;font-size:12px;cursor:pointer;">
