@@ -2816,10 +2816,8 @@ const avisImages = [
             const nomEntreprise = await askClientName(extractedData?.nom_client || '');
             if (!nomEntreprise) return;
             currentClientName = nomEntreprise;
-            // Créer dossier Drive en arrière-plan
-            createDriveFolder(nomEntreprise);
             
-            // Uploader la facture originale sur Drive APRÈS création dossier
+            // Créer dossier Drive puis uploader la facture originale
             createDriveFolder(nomEntreprise).then(async () => {
                 const filesToUpload = [selectedFiles.file1, selectedFiles.file2, selectedFiles.file3].filter(Boolean);
                 for (const file of filesToUpload) {
