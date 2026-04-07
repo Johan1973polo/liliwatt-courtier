@@ -187,6 +187,34 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #faf5ff; min-
 <div class="container">
   <div class="badge-manager">👑 Manager Commercial — <span id="userEmail"></span></div>
 
+  <!-- Stats équipe -->
+  <div class="section" style="background:white;border-radius:16px;padding:20px;margin-bottom:24px;border:1px solid #e9d5ff;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="section-title" style="margin:0;">📊 Stats de mon équipe</div>
+      <select id="statsMois" onchange="loadStats()" style="padding:6px 12px;border:1px solid #e9d5ff;border-radius:8px;color:#7c3aed;font-weight:600;">
+      </select>
+    </div>
+    <div id="statsContent" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+      <div style="text-align:center;padding:12px;background:#f5f3ff;border-radius:10px;">
+        <div style="font-size:24px;font-weight:800;color:#7c3aed;" id="statTotal">-</div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">MECs soumises</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:#f0fdf4;border-radius:10px;">
+        <div style="font-size:24px;font-weight:800;color:#10b981;" id="statSignes">-</div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">✅ Clients signés</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:#fff7ed;border-radius:10px;">
+        <div style="font-size:24px;font-weight:800;color:#f59e0b;" id="statVerifies">-</div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">🔍 Vérifiées par moi</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:#fef2f2;border-radius:10px;">
+        <div style="font-size:24px;font-weight:800;color:#ef4444;" id="statConversion">-</div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">📈 Taux conversion</div>
+      </div>
+    </div>
+    <div id="statsVendeurs" style="margin-top:16px;"></div>
+  </div>
+
   <!-- MECs en attente -->
   <div class="section">
     <div class="section-title">🔔 MECs à valider</div>
@@ -543,6 +571,74 @@ async function confirmMove(toCategory) {
 // Chargement initial
 loadMECs();
 loadVendeurs();
+loadStats();
+
+async function loadStats() {
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  
+  try {
+    // Récupérer toutes les notifications pour calculer les stats
+    const res = await fetch('/api/notifications', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    
+    // Filtrer les MECs de mon équipe (vendeurs dont je suis référent)
+    const mesVendeurs = await fetch('/api/vendeurs', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(r => r.json()).then(d => d.vendeurs || []);
+    
+    const vendeursEquipe = mesVendeurs.filter(v => v.referent === user.email);
+    const emailsEquipe = vendeursEquipe.map(v => v.email);
+    
+    const mecsEquipe = (data.notifications || []).filter(n => emailsEquipe.includes(n.vendeur_email));
+    
+    // Calculer les stats
+    const total = mecsEquipe.length;
+    const verifies = mecsEquipe.filter(n => n.referent_validateur === user.email).length;
+    
+    // Récupérer les clients signés depuis les portfolios Drive
+    let signesCount = 0;
+    for (const v of vendeursEquipe) {
+      if (v.drive_folder_id) {
+        try {
+          const pRes = await fetch('/api/drive/portfolio?folderId=' + v.drive_folder_id, {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          const pData = await pRes.json();
+          signesCount += (pData.signe || []).length;
+        } catch(e) {}
+      }
+    }
+    
+    const conversion = total > 0 ? Math.round((signesCount / total) * 100) : 0;
+    
+    // Mettre à jour l'affichage
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statSignes').textContent = signesCount;
+    document.getElementById('statVerifies').textContent = verifies;
+    document.getElementById('statConversion').textContent = conversion + '%';
+    
+    // Générer les options de mois
+    const select = document.getElementById('statsMois');
+    if (select.children.length === 0) {
+      const now = new Date();
+      for (let i = 0; i < 6; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const opt = document.createElement('option');
+        opt.value = d.toISOString().slice(0, 7);
+        opt.textContent = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+        if (i === 0) opt.selected = true;
+        select.appendChild(opt);
+      }
+    }
+    
+  } catch(e) {
+    console.error('Erreur chargement stats:', e);
+  }
+}
+
 </script>
 </body>
 </html>
