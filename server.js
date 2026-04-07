@@ -692,6 +692,25 @@ app.get('/api/notifications', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+// Route notifications référent (pending_referent de ses vendeurs)
+app.get('/api/notifications/referent', verifyToken, async (req, res) => {
+  try {
+    const mesVendeurs = req.user.mes_vendeurs || [];
+    const data = JSON.parse(require('fs').readFileSync('./data/notifications.json'));
+    const pending = data.notifications.filter(n =>
+      n.status === 'pending_referent' && mesVendeurs.includes(n.vendeur_email)
+    );
+    const historique = data.notifications.filter(n =>
+      n.status !== 'pending_referent' &&
+      mesVendeurs.includes(n.vendeur_email) &&
+      (n.referent_email === req.user.email || n.referent_validateur === req.user.email)
+    );
+    res.json({ success: true, notifications: pending, historique });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Route pour récupérer une notification spécifique
 app.get('/api/notifications/:id', verifyToken, isAdmin, async (req, res) => {
   try {
@@ -1320,25 +1339,6 @@ app.post('/api/notifications/:id/valider-referent', verifyToken, async (req, res
     
     require('fs').writeFileSync('./data/notifications.json', JSON.stringify(data, null, 2));
     res.json({ success: true });
-  } catch(err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Route notifications référent (pending_referent de ses vendeurs)
-app.get('/api/notifications/referent', verifyToken, async (req, res) => {
-  try {
-    const mesVendeurs = req.user.mes_vendeurs || [];
-    const data = JSON.parse(require('fs').readFileSync('./data/notifications.json'));
-    const pending = data.notifications.filter(n => 
-      n.status === 'pending_referent' && mesVendeurs.includes(n.vendeur_email)
-    );
-    const historique = data.notifications.filter(n => 
-      n.status !== 'pending_referent' && 
-      mesVendeurs.includes(n.vendeur_email) &&
-      (n.referent_email === req.user.email || n.referent_validateur === req.user.email)
-    );
-    res.json({ success: true, notifications: pending, historique });
   } catch(err) {
     res.status(500).json({ error: err.message });
   }
