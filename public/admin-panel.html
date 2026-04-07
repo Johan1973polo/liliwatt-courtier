@@ -410,8 +410,8 @@
                                     <button class="btn btn-success" onclick="reprendreMEC('${notif.id}')">
                                         📝 Reprendre
                                     </button>
-                                    <button class="btn btn-danger" onclick="deleteMEC('${notif.id}')">
-                                        🗑️ Supprimer
+                                    <button class="btn" style="background:#10b981;color:white;" onclick="deleteMEC('${notif.id}')">
+                                        ✅ Finaliser
                                     </button>
                                 </div>
                             </div>
@@ -629,23 +629,23 @@
         }
         
         async function deleteMEC(notifId) {
-            if (!confirm('Êtes-vous sûr de vouloir supprimer cette MEC ?')) {
+            if (!confirm('Marquer cette MEC comme traitée ?')) {
                 return;
             }
-            
+
             try {
                 const response = await fetch(`/api/notifications/${notifId}`, {
-                    method: 'DELETE',
+                    method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${authToken}`
                     }
                 });
-                
+
                 if (response.ok) {
-                    alert('MEC supprimée avec succès');
+                    alert('✅ MEC marquée comme traitée');
                     loadPendingMEC();
                 } else {
-                    alert('Erreur lors de la suppression');
+                    alert('Erreur lors du traitement');
                 }
             } catch (error) {
                 alert('Erreur de connexion au serveur');

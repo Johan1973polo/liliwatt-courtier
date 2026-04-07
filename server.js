@@ -732,14 +732,21 @@ app.put('/api/notifications/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const data = await readJSON('notifications.json');
     const notif = data.notifications.find(n => n.id === req.params.id);
-    
+
     if (notif) {
       notif.status = 'completed';
       notif.completed_at = new Date().toISOString();
       notif.completed_by = req.user.id;
+      notif.historique = notif.historique || [];
+      notif.historique.push({
+        role: 'admin',
+        email: req.user.email,
+        action: 'MEC finalisée et traitée',
+        date: new Date().toISOString()
+      });
       await writeJSON('notifications.json', data);
     }
-    
+
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
