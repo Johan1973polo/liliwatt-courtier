@@ -2428,7 +2428,12 @@ button[onclick*="previousStep"] {
                     }
                 }, 1000);
             }
-            
+
+            // Appliquer les bons labels de steps dès le chargement pour vendeur/référent
+            if (currentUser && (currentUser.role === 'vendeur' || currentUser.role === 'referent')) {
+                setTimeout(updateStepLabelsForRole, 300);
+            }
+
             // Vérifier et charger les icônes si nécessaire
             const savedIcons = localStorage.getItem('pdfIconsBase64');
             if (!savedIcons) {
