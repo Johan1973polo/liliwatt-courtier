@@ -468,11 +468,9 @@ async function toggleVendeur(vi) {
                       <button class="btn-voir" onclick="viewDoc('${f.id}')">👁 Voir</button>
                     </div>
                   `).join('')}
-                  ${sec.key === 'attente' ? `
-                    <button class="btn-deplacer" onclick="openMoveModal('${client.id}', '${client.name}', '${sec.cat}', '${vendeur.drive_folder_id}')">
-                      🔄 Déplacer ce client
-                    </button>
-                  ` : ''}
+                  <button class="btn-deplacer" onclick="openMoveModal('${client.id}', '${client.name}', '${sec.cat}', '${vendeur.drive_folder_id}')">
+                    🔄 Déplacer ce client
+                  </button>
                 </div>
               </div>
             `).join('')}
