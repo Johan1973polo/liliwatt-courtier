@@ -1038,6 +1038,9 @@
                                                     <button onclick="viewDoc('${file.id}')" style="padding:4px 10px;background:#7c3aed;color:white;border-radius:6px;font-size:11px;border:none;cursor:pointer;">👁 Voir</button>
                                                 </div>
                                             `).join('')}
+                                            <button onclick="openAdminUpload('${client.id}', '${client.name}')" style="margin-top:8px;width:100%;padding:7px;background:white;border:1.5px dashed #7c3aed;color:#7c3aed;border-radius:8px;font-size:12px;cursor:pointer;">
+                                                ➕ Ajouter un document
+                                            </button>
                                         </div>
                                     </div>
                                 `).join('')}
@@ -1073,6 +1076,66 @@
                 alert('Erreur: ' + e.message);
             }
         }
+        
+        // Modal upload admin
+        let adminUploadTarget = null;
+        
+        function openAdminUpload(folderId, clientName) {
+            adminUploadTarget = { folderId, clientName };
+            document.getElementById('adminUploadClientName').textContent = clientName;
+            document.getElementById('adminUploadFile').value = '';
+            document.getElementById('adminUploadModal').style.display = 'flex';
+        }
+        
+        function closeAdminUpload() {
+            document.getElementById('adminUploadModal').style.display = 'none';
+            adminUploadTarget = null;
+        }
+        
+        async function confirmAdminUpload() {
+            const file = document.getElementById('adminUploadFile').files[0];
+            if (!file || !adminUploadTarget) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64 = e.target.result.split(',')[1];
+                try {
+                    const res = await fetch('/api/drive/upload-to-folder', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+                        body: JSON.stringify({
+                            pdfBase64: base64,
+                            fileName: file.name,
+                            folderId: adminUploadTarget.folderId
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert('✅ Document uploadé !');
+                        closeAdminUpload();
+                        loadPortefeuille();
+                    } else {
+                        alert('Erreur: ' + (data.error || 'Upload échoué'));
+                    }
+                } catch(e) {
+                    alert('Erreur: ' + e.message);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
 </script>
+
+<!-- Modal upload admin -->
+<div id="adminUploadModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:16px;padding:28px;width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <h3 style="color:#7c3aed;margin-bottom:8px;">📎 Ajouter un document</h3>
+        <p style="color:#9ca3af;font-size:12px;margin-bottom:16px;">Client : <strong id="adminUploadClientName"></strong></p>
+        <input type="file" id="adminUploadFile" style="width:100%;padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;margin-bottom:12px;font-size:14px;">
+        <div style="display:flex;gap:10px;margin-top:16px;">
+            <button onclick="closeAdminUpload()" style="flex:1;padding:10px;background:white;border:1.5px solid #e9d5ff;border-radius:8px;cursor:pointer;color:#6b7280;">Annuler</button>
+            <button onclick="confirmAdminUpload()" style="flex:1;padding:10px;background:linear-gradient(135deg,#7c3aed,#d946ef);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">Uploader</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
