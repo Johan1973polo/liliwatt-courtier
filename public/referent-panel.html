@@ -213,6 +213,42 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #faf5ff; min-
       </div>
     </div>
     <div id="statsVendeurs" style="margin-top:16px;"></div>
+        
+        <!-- Graphiques -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+            <div style="background:var(--color-bg,white);border:0.5px solid #e9d5ff;border-radius:12px;padding:16px;">
+                <div style="font-size:12px;font-weight:500;color:#9ca3af;margin-bottom:8px;">Activité mensuelle</div>
+                <div style="display:flex;gap:12px;margin-bottom:8px;font-size:11px;color:#9ca3af;">
+                    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#7c3aed;margin-right:4px;"></span>MECs</span>
+                    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#10b981;margin-right:4px;"></span>Signés</span>
+                </div>
+                <div style="position:relative;width:100%;height:140px;">
+                    <canvas id="chartActivite"></canvas>
+                </div>
+            </div>
+            <div style="background:var(--color-bg,white);border:0.5px solid #e9d5ff;border-radius:12px;padding:16px;">
+                <div style="font-size:12px;font-weight:500;color:#9ca3af;margin-bottom:8px;">Statut des dossiers</div>
+                <div style="display:flex;gap:12px;margin-bottom:8px;font-size:11px;color:#9ca3af;flex-wrap:wrap;">
+                    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f59e0b;margin-right:4px;"></span>En attente</span>
+                    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#10b981;margin-right:4px;"></span>Signés</span>
+                    <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#ef4444;margin-right:4px;"></span>Perdus</span>
+                </div>
+                <div style="position:relative;width:100%;height:140px;">
+                    <canvas id="chartStatut"></canvas>
+                </div>
+            </div>
+        </div>
+        <div style="background:var(--color-bg,white);border:0.5px solid #e9d5ff;border-radius:12px;padding:16px;margin-top:16px;">
+            <div style="font-size:12px;font-weight:500;color:#9ca3af;margin-bottom:8px;">Performance par vendeur</div>
+            <div style="display:flex;gap:12px;margin-bottom:8px;font-size:11px;color:#9ca3af;">
+                <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#7c3aed;margin-right:4px;"></span>MECs</span>
+                <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#10b981;margin-right:4px;"></span>Signés</span>
+                <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f59e0b;margin-right:4px;"></span>Vérifiées</span>
+            </div>
+            <div style="position:relative;width:100%;height:100px;" id="chartVendeursWrap">
+                <canvas id="chartVendeurs"></canvas>
+            </div>
+        </div>
   </div>
 
   <!-- MECs en attente -->
@@ -620,6 +656,40 @@ async function loadStats() {
     document.getElementById('statVerifies').textContent = verifies;
     document.getElementById('statConversion').textContent = conversion + '%';
     
+    // Préparer données pour graphiques
+    const now = new Date();
+    const moisLabels = [];
+    const mecsCounts = [];
+    const signesCounts = [];
+    
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const label = d.toLocaleDateString('fr-FR', { month: 'short' });
+        moisLabels.push(label);
+        const moisMecs = mecsEquipe.filter(n => {
+            const nd = new Date(n.date);
+            return nd.getMonth() === d.getMonth() && nd.getFullYear() === d.getFullYear();
+        }).length;
+        mecsCounts.push(moisMecs);
+        signesCounts.push(0); // sera enrichi plus tard avec Drive
+    }
+    
+    // Stats par vendeur
+    const vendeurLabels = vendeursEquipe.map(v => v.nom || v.email.split('@')[0]);
+    const vendeurMecs = vendeursEquipe.map(v => mecsEquipe.filter(n => n.vendeur_email === v.email).length);
+    const vendeurSignes = vendeursEquipe.map(() => 0);
+    const vendeurVerifies = vendeursEquipe.map(v => mecsEquipe.filter(n => n.referent_validateur === user.email && n.vendeur_email === v.email).length);
+    
+    if (typeof updateCharts === 'function') {
+        updateCharts({
+            moisLabels, mecsCounts, signesCounts,
+            attenteTotal: mecsEquipe.filter(n => n.status === 'pending').length,
+            signesTotal: signesCount,
+            perdusTotal: mecsEquipe.filter(n => n.status === 'completed').length,
+            vendeurLabels, vendeurMecs, vendeurSignes, vendeurVerifies
+        });
+    }
+    
     // Générer les options de mois
     const select = document.getElementById('statsMois');
     if (select.children.length === 0) {
@@ -639,6 +709,63 @@ async function loadStats() {
   }
 }
 
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+let chartActiviteInst, chartStatutInst, chartVendeursInst;
+
+function updateCharts(statsData) {
+    const { moisLabels, mecsCounts, signesCounts, attenteTotal, signesTotal, perdusTotal, vendeurLabels, vendeurMecs, vendeurSignes, vendeurVerifies } = statsData;
+    
+    if (chartActiviteInst) chartActiviteInst.destroy();
+    if (chartStatutInst) chartStatutInst.destroy();
+    if (chartVendeursInst) chartVendeursInst.destroy();
+    
+    const ctx1 = document.getElementById('chartActivite');
+    const ctx2 = document.getElementById('chartStatut');
+    const ctx3 = document.getElementById('chartVendeurs');
+    if (!ctx1 || !ctx2 || !ctx3) return;
+    
+    chartActiviteInst = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: moisLabels || [],
+            datasets: [
+                { label: 'MECs', data: mecsCounts || [], backgroundColor: '#7c3aed', borderRadius: 4 },
+                { label: 'Signés', data: signesCounts || [], backgroundColor: '#10b981', borderRadius: 4 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+            scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 } } } } }
+    });
+    
+    chartStatutInst = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: ['En attente', 'Signés', 'Perdus'],
+            datasets: [{ data: [attenteTotal||0, signesTotal||0, perdusTotal||0], backgroundColor: ['#f59e0b','#10b981','#ef4444'], borderWidth: 0 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '60%' }
+    });
+    
+    const wrap = document.getElementById('chartVendeursWrap');
+    if (wrap && vendeurLabels) wrap.style.height = Math.max(80, vendeurLabels.length * 40) + 'px';
+    
+    chartVendeursInst = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+            labels: vendeurLabels || [],
+            datasets: [
+                { label: 'MECs', data: vendeurMecs || [], backgroundColor: '#7c3aed', borderRadius: 4 },
+                { label: 'Signés', data: vendeurSignes || [], backgroundColor: '#10b981', borderRadius: 4 },
+                { label: 'Vérifiées', data: vendeurVerifies || [], backgroundColor: '#f59e0b', borderRadius: 4 }
+            ]
+        },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+            scales: { x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 } } }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } } }
+    });
+}
 </script>
 </body>
 </html>
