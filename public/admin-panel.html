@@ -953,7 +953,7 @@
             try {
                 // Récupérer tous les vendeurs
                 const usersRes = await fetch('/api/auth/users', {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
                 });
                 const usersData = await usersRes.json();
                 const vendeurs = (usersData.users || []).filter(u => u.role === 'vendeur');
@@ -1004,7 +1004,7 @@
                 
                 try {
                     const res = await fetch('/api/drive/list-documents-admin?vendeurId=' + encodeURIComponent(vendeur.id), {
-                        headers: { 'Authorization': 'Bearer ' + token }
+                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
                     });
                     const data = await res.json();
                     
@@ -1063,7 +1063,7 @@
             try {
                 const token = localStorage.getItem('token');
                 const res = await fetch('/api/drive/download/' + fileId, {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
                 });
                 if (!res.ok) throw new Error('Non autorisé');
                 const blob = await res.blob();
