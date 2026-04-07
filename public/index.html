@@ -986,23 +986,41 @@ button[onclick*="supprimer"] {
 }
 
 /* Boutons header navigation */
-button[onclick*="logout"],
-button[onclick*="logout"]:hover {
+button[onclick*="logout"] {
   background: linear-gradient(135deg, #ef4444, #dc2626) !important;
   color: white !important;
+  border: none !important;
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
 }
-button[onclick*="admin-panel"] {
+button[onclick*="admin-panel"]:not([onclick*="mec"]) {
   background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
   color: white !important;
+  border: none !important;
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
 }
-button[onclick*="admin-panel#mec"],
 button[onclick*="admin-panel.html#mec"] {
   background: linear-gradient(135deg, #f59e0b, #d97706) !important;
   color: white !important;
+  border: none !important;
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
 }
 button[onclick*="vendeur-panel"] {
   background: linear-gradient(135deg, #10b981, #059669) !important;
   color: white !important;
+  border: none !important;
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
 }
 
 /* Garder vert pour succès */
