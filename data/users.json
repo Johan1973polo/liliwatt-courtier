@@ -7,15 +7,6 @@
       "name": "Johan Mallet"
     },
     {
-      "id": "vendeur_1775515226078",
-      "email": "mario.ducoin@liliwatt.fr",
-      "password": "$2b$10$NPWfvSGQfa8clh0jHho74OM.dvAfNfPDXiN9ct3UBpMyQAdWzdi.m",
-      "role": "vendeur",
-      "drive_folder_id": "1JTVUVIvatUlX74F6XRg5uDOuyFkbyaK9",
-      "created": "2026-04-06T22:40:26.078Z",
-      "created_by": "admin_liliwatt"
-    },
-    {
       "id": "vendeur_17755163099850.8208961138599152",
       "email": "chloe.didier@liliwatt.fr",
       "password": "$2b$10$cBS.FMvmDlm8NN0ptuAfV.7g/DMeY4fEXdnKL5V68qWKR2MSzl8ue",
