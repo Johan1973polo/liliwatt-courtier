@@ -1383,6 +1383,17 @@ button[onclick*="previousStep"] {
                 <h2 style="color: #7c3aed; margin-bottom: 30px;">📄 Étape 1 : Extraction des données</h2>
                 
                 <div class="upload-section">
+                    <!-- Nom de la société -->
+                    <div style="margin-bottom:24px;">
+                        <label style="font-weight:700;color:#7c3aed;font-size:14px;display:block;margin-bottom:8px;">🏢 Nom de la société <span style="color:#ef4444;">*</span></label>
+                        <input type="text" id="nomSocieteInput" placeholder="Ex: SARL DUPONT, SCI MARTIN..." 
+                            style="width:100%;padding:12px 16px;border:2px solid #e9d5ff;border-radius:10px;font-size:15px;outline:none;box-sizing:border-box;transition:border-color 0.2s;"
+                            onfocus="this.style.borderColor='#7c3aed'" 
+                            onblur="this.style.borderColor='#e9d5ff'"
+                            oninput="currentClientName=this.value.trim()">
+                        <small style="color:#9ca3af;font-size:11px;">Ce nom sera utilisé pour créer le dossier dans Google Drive</small>
+                    </div>
+                    
                     <h3>Sélection du type d'énergie</h3>
                     <div class="energy-selection">
                         <div class="energy-option" onclick="selectEnergy('electricity')">
@@ -2779,15 +2790,25 @@ const avisImages = [
         async function handleFileSelect(event, fileNum) {
             const file = event.target.files[0];
             
+            // Vérifier que le nom de la société est renseigné
+            const nomInput = document.getElementById('nomSocieteInput');
+            const nomSociete = nomInput ? nomInput.value.trim() : currentClientName;
+            
+            if (!nomSociete) {
+                alert('⚠️ Merci de renseigner le nom de la société avant de sélectionner une facture.');
+                event.target.value = ''; // Reset input file
+                nomInput && nomInput.focus();
+                return;
+            }
+            
+            currentClientName = nomSociete;
+            
             if (file) {
                 selectedFiles[`file${fileNum}`] = file;
-            
-            // Demander le nom de l'entreprise dès la sélection du fichier
-            if (fileNum === 1 && !currentClientName) {
-                const nomEntreprise = await askClientName('');
-                if (nomEntreprise) {
-                    currentClientName = nomEntreprise;
-                    createDriveFolder(nomEntreprise).then(async () => {
+                
+                // Créer dossier Drive et uploader la facture immédiatement
+                if (fileNum === 1) {
+                    createDriveFolder(nomSociete).then(async () => {
                         const base64 = await new Promise((resolve, reject) => {
                             const reader = new FileReader();
                             reader.onload = e => resolve(e.target.result.split(',')[1]);
@@ -2798,7 +2819,6 @@ const avisImages = [
                         console.log('✅ Facture uploadée sur Drive:', file.name);
                     });
                 }
-            }
                 document.getElementById(`fileName${fileNum}`).textContent = '📄 ' + file.name;
             }
         }
@@ -2830,12 +2850,13 @@ const avisImages = [
         
         // Extraction automatique des données
         async function extractData() {
-            // Nom entreprise déjà demandé à la sélection du fichier
+            // Récupérer nom société depuis le champ input si pas encore défini
+            const nomInput = document.getElementById('nomSocieteInput');
+            if (nomInput && nomInput.value.trim()) currentClientName = nomInput.value.trim();
             if (!currentClientName) {
-                const nomEntreprise = await askClientName('');
-                if (!nomEntreprise) return;
-                currentClientName = nomEntreprise;
-                createDriveFolder(nomEntreprise);
+                alert('⚠️ Merci de renseigner le nom de la société.');
+                nomInput && nomInput.focus();
+                return;
             }
 
             // DEBUG C4 UPLOAD
@@ -8365,6 +8386,9 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
         }
         
         function nouvelleAnalyse() {
+            const nomInput = document.getElementById('nomSocieteInput');
+            if (nomInput) nomInput.value = '';
+            currentClientName = null;
             if (confirm('Voulez-vous commencer une nouvelle analyse ? Toutes les données actuelles seront perdues.')) {
                 // Effacer toutes les données de la session actuelle
                 clearSessionData();
