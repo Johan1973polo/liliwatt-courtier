@@ -1125,7 +1125,7 @@ app.get('/api/drive/download/:fileId', verifyToken, async (req, res) => {
 });
 
 // Route liste documents admin - pour un vendeur spécifique
-app.get('/api/drive/list-documents-admin', verifyToken, isAdmin, async (req, res) => {
+app.get('/api/drive/list-documents-admin', verifyToken, async (req, res) => {
   if (!DRIVE_CREDENTIALS) return res.status(503).json({ error: 'Drive non configuré' });
   try {
     const { vendeurId, vendeurEmail } = req.query;
