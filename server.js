@@ -293,12 +293,12 @@ Si une donnée n'existe pas, mets "N/A" pour texte ou 0 pour nombres.`
         }
       }
       
-      // Nettoyer les caractères parasites (*, backticks orphelins, etc.)
+      // Nettoyer le JSON GPT-4
       cleanedResponse = cleanedResponse
         .trim()
-        .replace(/\*\*/g, '')  // Retirer les ** (markdown bold)
-        .replace(/\*/g, '')    // Retirer les * (markdown italic)
-        .replace(/`/g, '');    // Retirer les backticks orphelins
+        .replace(/(\d+)\s*\*\s*(\d+)/g, (m, a, b) => String(parseInt(a) * parseInt(b))) // Évaluer 1279*1000 → 1279000
+        .replace(/\*\*/g, '')   // Retirer ** markdown bold
+        .replace(/`/g, '');     // Retirer backticks orphelins
 
       result = JSON.parse(cleanedResponse);
       console.log('🎯 JSON parsé avec succès:', result);
