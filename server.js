@@ -1060,15 +1060,26 @@ app.get('/api/drive/download/:fileId', verifyToken, async (req, res) => {
 app.get('/api/drive/list-documents-admin', verifyToken, isAdmin, async (req, res) => {
   if (!DRIVE_CREDENTIALS) return res.status(503).json({ error: 'Drive non configuré' });
   try {
-    const { vendeurId } = req.query;
-    const data = await readJSON('users.json');
-    const vendeur = data.users.find(u => u.id === vendeurId);
-    if (!vendeur || !vendeur.drive_folder_id) {
+    const { vendeurId, vendeurEmail } = req.query;
+    let vendeurFolderId = null;
+    
+    if (vendeurEmail) {
+      // Chercher dans Sheets
+      const vendeurs = await getVendeursFromSheets();
+      const vendeur = vendeurs.find(v => v.email === vendeurEmail);
+      vendeurFolderId = vendeur?.drive_folder_id;
+    } else if (vendeurId) {
+      // Fallback: chercher dans users.json
+      const data = await readJSON('users.json');
+      const vendeur = data.users.find(u => u.id === vendeurId);
+      vendeurFolderId = vendeur?.drive_folder_id;
+    }
+    
+    if (!vendeurFolderId) {
       return res.json({ success: true, attente: [], signe: [], perdu: [], error: 'Pas de dossier Drive configuré' });
     }
     
     const drive = getDriveClient();
-    const vendeurFolderId = vendeur.drive_folder_id;
 
     async function listFolder(parentId, folderName) {
       const folderRes = await drive.files.list({
