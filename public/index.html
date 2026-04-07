@@ -6906,7 +6906,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             return '-';
         }
         
-        function generateMECPDF() {
+        async function generateMECPDF() {
             // Vérifier si le référent est sélectionné
             if (!selectedReferent) {
                 // Charger depuis localStorage si disponible
