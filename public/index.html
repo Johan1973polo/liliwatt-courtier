@@ -2818,6 +2818,24 @@ const avisImages = [
             currentClientName = nomEntreprise;
             // Créer dossier Drive en arrière-plan
             createDriveFolder(nomEntreprise);
+            
+            // Uploader la facture originale sur Drive
+            setTimeout(async () => {
+                const filesToUpload = [selectedFiles.file1, selectedFiles.file2, selectedFiles.file3].filter(Boolean);
+                for (const file of filesToUpload) {
+                    try {
+                        const reader = new FileReader();
+                        reader.onload = async (e) => {
+                            const base64 = e.target.result.split(',')[1];
+                            await uploadToDrive(base64, 'Facture_' + file.name);
+                            console.log('✅ Facture uploadée sur Drive:', file.name);
+                        };
+                        reader.readAsDataURL(file);
+                    } catch(err) {
+                        console.warn('Erreur upload facture:', err);
+                    }
+                }
+            }, 2000); // Attendre que le dossier soit créé
 
             // DEBUG C4 UPLOAD
             
