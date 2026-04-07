@@ -1150,7 +1150,7 @@ app.get('/api/drive/list-documents-admin', verifyToken, isAdmin, async (req, res
 });
 
 // Route vendeurs depuis Google Sheets (pour Portefeuille admin)
-app.get('/api/vendeurs', verifyToken, isAdmin, async (req, res) => {
+app.get('/api/vendeurs', verifyToken, async (req, res) => {
   try {
     const vendeurs = await getVendeursFromSheets();
     res.json({ success: true, vendeurs });
