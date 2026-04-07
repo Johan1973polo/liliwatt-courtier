@@ -84,7 +84,13 @@
             background: #fef3c7;
             border: 2px solid #f59e0b;
         }
-        
+
+        .mec-item.referent-validated {
+            background: #fff7ed;
+            border: 3px solid #f59e0b;
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+        }
+
         .section {
             margin-bottom: 30px;
             padding: 20px;
@@ -400,11 +406,12 @@
                         pendingDiv.innerHTML = '<p style="color: #64748b;">Aucune MEC en attente</p>';
                     } else {
                         pendingDiv.innerHTML = pendingNotifs.map(notif => `
-                            <div class="mec-item pending">
+                            <div class="mec-item ${notif.referent_validateur ? 'referent-validated' : 'pending'}">
                                 <div>
                                     <strong>👤 ${notif.vendeur_email}</strong><br>
                                     <strong style="color: #1e3a8a;">🏢 ${notif.client_name || 'Non spécifié'}</strong><br>
                                     <small style="color: #64748b;">📅 ${new Date(notif.date).toLocaleString('fr-FR')}</small>
+                                    ${notif.referent_validateur ? `<br><small style="color: #f59e0b;font-weight:600;">✅ Validé par ${notif.referent_validateur}</small>` : ''}
                                 </div>
                                 <div style="display: flex; gap: 10px;">
                                     <button class="btn btn-success" onclick="reprendreMEC('${notif.id}')">
