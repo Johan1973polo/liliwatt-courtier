@@ -2625,11 +2625,16 @@ const avisImages = [
                         displayExtractedData();
                     }, 1500);
                     
-                    // Nettoyer les données temporaires
+                    // Nettoyer reprendre_mec_data après chargement
                     localStorage.removeItem('reprendre_mec_data');
+                    // Note: reprendre_mec_id reste pour être utilisé par sendToAdminForMEC()
                 }
+            } else {
+                // Pas en mode reprise : nettoyer les vieux reprendre_mec_id qui traînent
+                localStorage.removeItem('reprendre_mec_id');
+                localStorage.removeItem('reprendre_mec_data');
             }
-            
+
             // Charger le référent depuis localStorage
             const savedReferent = localStorage.getItem('selectedReferent');
             if (savedReferent && !selectedReferent) {
@@ -8786,8 +8791,11 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
 
             // Mode reprise : on met à jour la notification existante
             const repriseId = localStorage.getItem('reprendre_mec_id');
+            const urlParams = new URLSearchParams(window.location.search);
+            const hasReprendre = urlParams.has('reprendre');
 
-            if (repriseId) {
+            // IMPORTANT: Mode reprise SEULEMENT si on a reprendre_mec_id ET le rôle référent/admin ET le param URL
+            if (repriseId && hasReprendre && (currentUser?.role === 'referent' || isAdmin)) {
                 // Référent valide → POST sur /valider-referent pour mettre à jour la notification de Mario
                 fetch('/api/notifications/' + repriseId + '/valider-referent', {
                     method: 'POST',
