@@ -308,7 +308,7 @@ function renderSection(containerId, countId, clients, section) {
                 <span style="color:#9ca3af;font-size:11px;">${file.size}</span>
               </div>
               <div class="doc-actions">
-                <a href="/api/drive/download/${file.id}" target="_blank" class="btn-download">👁 Voir</a>
+                <button onclick="viewDoc('${file.id}')" class="btn-download" style="border:none;cursor:pointer;">👁 Voir</button>
               </div>
             </li>
           `).join('')}
@@ -371,6 +371,21 @@ async function uploadDocument() {
 }
 
 loadDocuments();
+
+        async function viewDoc(fileId) {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/drive/download/' + fileId, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) throw new Error('Non autorisé');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            } catch(e) {
+                alert('Erreur: ' + e.message);
+            }
+        }
 </script>
 </body>
 </html>
