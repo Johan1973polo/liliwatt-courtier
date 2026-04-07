@@ -1031,8 +1031,7 @@
             const vendeurs = (data.users || []).filter(u => u.role === 'vendeur' && u.email !== vendeurEmail);
             if (!vendeurs.length) { alert('Aucun autre vendeur disponible'); return; }
             
-            const options = vendeurs.map((v, i) => `${i+1}. ${v.email}`).join('
-');
+            const options = vendeurs.map((v, i) => `${i+1}. ${v.email}`).join('\n');
             const choix = prompt(`Vers quel vendeur déplacer "${clientName}" ?
 
 ${options}
