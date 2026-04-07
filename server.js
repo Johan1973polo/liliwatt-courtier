@@ -402,18 +402,37 @@ app.post('/api/auth/login', async (req, res) => {
     let user = data.users.find(u => u.email === email);
     
     console.log('🔍 Login tentative:', email, '- user dans JSON:', !!user);
-    // Si pas dans users.json, chercher dans Google Sheets (vendeurs)
+    // Si pas dans users.json, chercher dans Google Sheets (vendeurs/référents)
     if (!user && DRIVE_CREDENTIALS) {
       const sheetUser = await getVendeurFromSheets(email);
       if (sheetUser) {
-        // Vérifier le mot de passe directement (pas hashé dans Sheets)
         if (password === sheetUser.password) {
+          // Détecter si c'est un référent (son email apparaît dans colonne G d'autres vendeurs)
+          const allUsers = await getVendeursFromSheets();
+          const isReferent = allUsers.some(u => u.referent_email === email);
+          const mesVendeurs = isReferent ? allUsers.filter(u => u.referent_email === email).map(u => u.email) : [];
+          const role = isReferent ? 'referent' : 'vendeur';
+          
           const token = jwt.sign(
-            { id: 'vendeur_' + Date.now(), email: sheetUser.email, role: 'vendeur', drive_folder_id: sheetUser.drive_folder_id },
+            { 
+              id: 'user_' + Date.now(), 
+              email: sheetUser.email, 
+              role,
+              drive_folder_id: sheetUser.drive_folder_id,
+              mes_vendeurs: mesVendeurs
+            },
             JWT_SECRET,
             { expiresIn: '24h' }
           );
-          return res.json({ success: true, token, user: { email: sheetUser.email, role: 'vendeur', nom: sheetUser.prenom + ' ' + sheetUser.nom } });
+          return res.json({ 
+            success: true, token, 
+            user: { 
+              email: sheetUser.email, 
+              role, 
+              nom: sheetUser.prenom + ' ' + sheetUser.nom,
+              mes_vendeurs: mesVendeurs
+            } 
+          });
         }
       }
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
@@ -1156,9 +1175,116 @@ async function getVendeursFromSheets() {
     .map(row => ({
       id: row[3],
       email: row[3],
-      nom: row[0] + ' ' + row[1],
-      drive_folder_id: row[5] || ''
+      nom: row[1] + ' ' + row[0],
+      drive_folder_id: row[5] || '',
+      referent_email: row[6] || ''
     }));
 }
+
+// Route notifications pour référent (filtrées par ses vendeurs)
+app.get('/api/notifications/referent', verifyToken, async (req, res) => {
+  try {
+    const mesVendeurs = req.user.mes_vendeurs || [];
+    const data = JSON.parse(require('fs').readFileSync('./data/notifications.json'));
+    const notifications = data.notifications.filter(n => 
+      n.status === 'pending' && mesVendeurs.includes(n.vendeur_email)
+    );
+    res.json({ success: true, notifications });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Route liste documents pour référent (ses vendeurs)
+app.get('/api/drive/list-documents-referent', verifyToken, async (req, res) => {
+  if (!DRIVE_CREDENTIALS) return res.status(503).json({ error: 'Drive non configuré' });
+  try {
+    const { vendeurEmail } = req.query;
+    const mesVendeurs = req.user.mes_vendeurs || [];
+    
+    // Vérifier que le vendeur appartient au référent
+    if (!mesVendeurs.includes(vendeurEmail)) {
+      return res.status(403).json({ error: 'Accès refusé' });
+    }
+    
+    const vendeurs = await getVendeursFromSheets();
+    const vendeur = vendeurs.find(v => v.email === vendeurEmail);
+    if (!vendeur?.drive_folder_id) {
+      return res.json({ success: true, attente: [], signe: [], perdu: [] });
+    }
+    
+    const drive = getDriveClient();
+    const vendeurFolderId = vendeur.drive_folder_id;
+
+    async function listFolder(parentId, folderName) {
+      const folderRes = await drive.files.list({
+        q: `'${parentId}' in parents and name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+        fields: 'files(id, name)',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true
+      });
+      if (!folderRes.data.files.length) return [];
+      const folderId = folderRes.data.files[0].id;
+      const clientsRes = await drive.files.list({
+        q: `'${folderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+        fields: 'files(id, name)',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true
+      });
+      const clients = await Promise.all(clientsRes.data.files.map(async (client) => {
+        const filesRes = await drive.files.list({
+          q: `'${client.id}' in parents and trashed=false`,
+          fields: 'files(id, name, size, webViewLink)',
+          supportsAllDrives: true,
+          includeItemsFromAllDrives: true
+        });
+        return {
+          id: client.id,
+          name: client.name,
+          files: filesRes.data.files.map(f => ({
+            id: f.id, name: f.name,
+            size: f.size ? Math.round(f.size/1024) + ' Ko' : '—'
+          }))
+        };
+      }));
+      return clients;
+    }
+
+    const [attente, signe, perdu] = await Promise.all([
+      listFolder(vendeurFolderId, 'CLIENT EN ATTENTE'),
+      listFolder(vendeurFolderId, 'Clients signés'),
+      listFolder(vendeurFolderId, 'Clients perdus')
+    ]);
+
+    res.json({ success: true, attente, signe, perdu });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Route déplacer dossier Drive (référent/admin)
+app.post('/api/drive/move-folder', verifyToken, async (req, res) => {
+  if (!DRIVE_CREDENTIALS) return res.status(503).json({ error: 'Drive non configuré' });
+  try {
+    const { folderId, vendeurFolderId, fromCategory, toCategory } = req.body;
+    const drive = getDriveClient();
+    
+    // Trouver les IDs des dossiers source et destination
+    const fromId = await findOrCreateFolder(drive, fromCategory, vendeurFolderId);
+    const toId = await findOrCreateFolder(drive, toCategory, vendeurFolderId);
+    
+    await drive.files.update({
+      fileId: folderId,
+      addParents: toId,
+      removeParents: fromId,
+      supportsAllDrives: true,
+      fields: 'id, parents'
+    });
+    
+    res.json({ success: true });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ===== FIN GOOGLE DRIVE =====
