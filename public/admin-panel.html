@@ -1113,14 +1113,14 @@ Cette action est irréversible.`)) return;
                                 <div style="font-weight:700;color:${sec.color};font-size:13px;margin-bottom:6px;">${sec.label} (${clients.length})</div>
                                 ${clients.map((client, ci) => `
                                     <div style="background:#f9f9ff;border:1px solid #e9d5ff;border-radius:8px;margin-bottom:6px;overflow:hidden;">
-                                        <div onclick="togglePortClient('${vi}_${ci}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;">
+                                        <div onclick="togglePortClient('${vi}_${sec.key}_${ci}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;">
                                             <span style="font-weight:600;color:#374151;font-size:13px;">🏢 ${client.name}</span>
                                             <span style="display:flex;align-items:center;gap:8px;">
                                                 <span style="color:#9ca3af;font-size:11px;">${client.files?.length || 0} doc(s)</span>
-                                                <span id="port-cchevron-${vi}_${ci}" style="color:#9ca3af;font-size:11px;">▼</span>
+                                                <span id="port-cchevron-${vi}_${sec.key}_${ci}" style="color:#9ca3af;font-size:11px;">▼</span>
                                             </span>
                                         </div>
-                                        <div id="port-cbody-${vi}_${ci}" style="display:none;padding:0 14px 10px;border-top:1px solid #f3f4f6;">
+                                        <div id="port-cbody-${vi}_${sec.key}_${ci}" style="display:none;padding:0 14px 10px;border-top:1px solid #f3f4f6;">
                                             ${(client.files || []).map(file => `
                                                 <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f9f9f9;">
                                                     <span style="font-size:12px;color:#374151;">📄 ${file.name}</span>
