@@ -609,13 +609,27 @@
                     const notification = data.notifications.find(n => n.id === notifId);
                     
                     if (notification && notification.extractedData) {
+                        // Récupérer le drive_folder_id du vendeur depuis Sheets
+                        let vendeurDriveId = '';
+                        if (notification.vendeur_email) {
+                            try {
+                                const vRes = await fetch('/api/vendeurs', {
+                                    headers: { 'Authorization': 'Bearer ' + authToken }
+                                });
+                                const vData = await vRes.json();
+                                const vendeur = (vData.vendeurs || []).find(v => v.email === notification.vendeur_email);
+                                if (vendeur) vendeurDriveId = vendeur.drive_folder_id || '';
+                                console.log('📁 Drive folder récupéré pour', notification.vendeur_email, ':', vendeurDriveId);
+                            } catch(e) { console.warn('Erreur récupération Drive vendeur:', e); }
+                        }
+                        
                         // Sauvegarder les données extraites pour reprise
                         const mecData = {
                             extractedData: notification.extractedData,
                             volumes: notification.volumes || null,
                             prix: notification.prix || null,
                             referent: notification.referent || null,
-                            vendeur_drive_folder_id: notification.vendeur_drive_folder_id || '',
+                            vendeur_drive_folder_id: vendeurDriveId,
                             vendeur_email: notification.vendeur_email || '',
                             nom_client: notification.client_name || notification.extractedData?.nom_client || ''
                         };
