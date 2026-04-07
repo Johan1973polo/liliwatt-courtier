@@ -606,6 +606,7 @@ app.post('/api/notifications', verifyToken, async (req, res) => {
         id: `notif_${Date.now()}`,
         vendeur_id: req.user.id,
         vendeur_email: req.user.email,
+        vendeur_drive_folder_id: req.user.drive_folder_id || '',
         date: new Date().toISOString(),
         status: 'pending',
         ...req.body
