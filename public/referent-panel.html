@@ -634,18 +634,23 @@ async function loadStats() {
     const total = mecsEquipe.length;
     const verifies = mecsEquipe.filter(n => n.referent_validateur === user.email).length;
     
-    // Récupérer les clients signés depuis les portfolios Drive
-    let signesCount = 0;
+    // Récupérer les clients signés/attente/perdus depuis Drive pour chaque vendeur
+    let signesCount = 0, attenteCount = 0, perdusCount = 0;
+    const vendeurSignesData = [];
     for (const v of vendeursEquipe) {
-      if (v.drive_folder_id) {
-        try {
-          const pRes = await fetch('/api/drive/portfolio?folderId=' + v.drive_folder_id, {
-            headers: { 'Authorization': 'Bearer ' + token }
-          });
-          const pData = await pRes.json();
-          signesCount += (pData.signe || []).length;
-        } catch(e) {}
-      }
+      if (!v.drive_folder_id) { vendeurSignesData.push(0); continue; }
+      try {
+        const dr = await fetch('/api/drive/list-documents-admin?vendeurEmail=' + encodeURIComponent(v.email), {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const dd = await dr.json();
+        if (dd.success) {
+          signesCount += (dd.signe || []).length;
+          attenteCount += (dd.attente || []).length;
+          perdusCount += (dd.perdu || []).length;
+          vendeurSignesData.push((dd.signe || []).length);
+        } else { vendeurSignesData.push(0); }
+      } catch(e) { vendeurSignesData.push(0); }
     }
     
     const conversion = total > 0 ? Math.round((signesCount / total) * 100) : 0;
@@ -683,10 +688,12 @@ async function loadStats() {
     if (typeof updateCharts === 'function') {
         updateCharts({
             moisLabels, mecsCounts, signesCounts,
-            attenteTotal: mecsEquipe.filter(n => n.status === 'pending').length,
+            attenteTotal: attenteCount,
             signesTotal: signesCount,
-            perdusTotal: mecsEquipe.filter(n => n.status === 'completed').length,
-            vendeurLabels, vendeurMecs, vendeurSignes, vendeurVerifies
+            perdusTotal: perdusCount,
+            vendeurLabels, vendeurMecs, 
+            vendeurSignes: vendeurSignesData,
+            vendeurVerifies
         });
     }
     
