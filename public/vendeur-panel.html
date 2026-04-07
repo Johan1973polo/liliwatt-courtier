@@ -216,7 +216,7 @@
         let passwordsVisible = {};
         
         // Vérifier l'authentification
-        if (!authToken || currentUser.role !== 'vendeur') {
+        if (!authToken || (currentUser.role !== 'vendeur' && currentUser.role !== 'referent')) {
             alert('Accès non autorisé');
             window.location.href = 'login.html';
         }
