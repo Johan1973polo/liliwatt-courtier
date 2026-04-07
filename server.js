@@ -630,6 +630,7 @@ app.post('/api/notifications', verifyToken, async (req, res) => {
       } catch(e) {}
 
       const notification = {
+        ...req.body,
         id: `notif_${Date.now()}`,
         vendeur_id: req.user.id,
         vendeur_email: req.user.email,
@@ -643,8 +644,7 @@ app.post('/api/notifications', verifyToken, async (req, res) => {
           email: req.user.email,
           action: 'Soumission MEC',
           date: new Date().toISOString()
-        }],
-        ...req.body
+        }]
       };
 
       data.notifications.push(notification);
