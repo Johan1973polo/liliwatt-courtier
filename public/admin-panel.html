@@ -1003,10 +1003,19 @@
         }
         
         async function changerStatutClient(vendeurEmail, clientId, clientName, statutActuel) {
-            const statuts = { 'attente': 'signe', 'signe': 'perdu', 'perdu': 'attente' };
             const labels = { 'attente': '🕐 En attente', 'signe': '✅ Signé', 'perdu': '❌ Perdu' };
-            const nouveauStatut = statuts[statutActuel];
-            if (!confirm(`Déplacer "${clientName}" vers ${labels[nouveauStatut]} ?`)) return;
+            // Proposer les 2 autres statuts possibles
+            const choix = {
+                'attente': ['signe', 'perdu'],
+                'signe':   ['attente', 'perdu'],
+                'perdu':   ['attente', 'signe']
+            };
+            const options = choix[statutActuel];
+            const msg = `Déplacer "${clientName}" vers :\n\n1. ${labels[options[0]]}\n2. ${labels[options[1]]}\n\nEntrez 1 ou 2 :`;
+            const rep = prompt(msg);
+            if (!rep) return;
+            const nouveauStatut = rep.trim() === '1' ? options[0] : rep.trim() === '2' ? options[1] : null;
+            if (!nouveauStatut) { alert('Choix invalide'); return; }
             
             const token = localStorage.getItem('token');
             const r = await fetch('/api/drive/changer-statut', {
@@ -1132,10 +1141,10 @@ Cette action est irréversible.`)) return;
                                             </button>
                                             <div style="display:flex;gap:6px;margin-top:6px;">
                                                 <button onclick="changerStatutClient('${vendeur.email}','${client.id}','${client.name}','${sec.key}')" style="flex:1;padding:6px;background:white;border:1.5px solid #7c3aed;color:#7c3aed;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">
-                                                    🔄 Statut
+                                                    📂 Déplacer
                                                 </button>
                                                 <button onclick="deplacerClient('${vendeur.email}','${client.id}','${client.name}','${sec.key}')" style="flex:1;padding:6px;background:white;border:1.5px solid #2563eb;color:#2563eb;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">
-                                                    📦 Déplacer
+                                                    🔀 Transférer
                                                 </button>
                                                 <button onclick="supprimerClient('${vendeur.email}','${client.id}','${client.name}')" style="flex:1;padding:6px;background:white;border:1.5px solid #ef4444;color:#ef4444;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">
                                                     🗑️ Supprimer
