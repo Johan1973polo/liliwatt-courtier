@@ -293,7 +293,13 @@ Si une donnée n'existe pas, mets "N/A" pour texte ou 0 pour nombres.`
         }
       }
       
-      cleanedResponse = cleanedResponse.trim();
+      // Nettoyer les caractères parasites (*, backticks orphelins, etc.)
+      cleanedResponse = cleanedResponse
+        .trim()
+        .replace(/\*\*/g, '')  // Retirer les ** (markdown bold)
+        .replace(/\*/g, '')    // Retirer les * (markdown italic)
+        .replace(/`/g, '');    // Retirer les backticks orphelins
+
       result = JSON.parse(cleanedResponse);
       console.log('🎯 JSON parsé avec succès:', result);
     } catch (parseError) {
