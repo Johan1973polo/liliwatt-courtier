@@ -316,6 +316,9 @@ function renderSection(containerId, countId, clients, section) {
         <button class="btn-upload-doc" onclick="openUploadModal('${client.id}', '${client.name}', '${section}')">
           ➕ Ajouter un document
         </button>
+        <button onclick="deplacerClientVendeur('${client.id}', '${client.name}', '${section}')" style="margin-top:8px;width:100%;padding:8px;background:white;border:1.5px solid #7c3aed;color:#7c3aed;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+          📂 Déplacer
+        </button>
       </div>
     </div>
   `).join('');
@@ -385,6 +388,32 @@ loadDocuments();
             } catch(e) {
                 alert('Erreur: ' + e.message);
             }
+        }
+
+        async function deplacerClientVendeur(clientId, clientName, statutActuel) {
+            const labels = { 'attente': '🕐 En attente', 'signe': '✅ Signé', 'perdu': '❌ Perdu' };
+            const choix = {
+                'attente': ['signe', 'perdu'],
+                'signe':   ['attente', 'perdu'],
+                'perdu':   ['attente', 'signe']
+            };
+            const options = choix[statutActuel] || ['signe', 'perdu'];
+            const msg = `Déplacer "${clientName}" vers :\n\n1. ${labels[options[0]]}\n2. ${labels[options[1]]}\n\nEntrez 1 ou 2 :`;
+            const rep = prompt(msg);
+            if (!rep) return;
+            const nouveauStatut = rep.trim() === '1' ? options[0] : rep.trim() === '2' ? options[1] : null;
+            if (!nouveauStatut) { alert('Choix invalide'); return; }
+            
+            const token = localStorage.getItem('token');
+            const userEmail = JSON.parse(localStorage.getItem('user') || '{}').email;
+            const r = await fetch('/api/drive/changer-statut', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+                body: JSON.stringify({ vendeurEmail: userEmail, clientId, clientName, statutActuel, nouveauStatut })
+            });
+            const d = await r.json();
+            if (d.success) { alert(`✅ "${clientName}" déplacé vers ${labels[nouveauStatut]}`); location.reload(); }
+            else alert('❌ ' + d.error);
         }
 </script>
 </body>
