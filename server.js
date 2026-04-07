@@ -1368,8 +1368,8 @@ app.post('/api/drive/changer-statut', verifyToken, isAdmin, async (req, res) => 
     const drive = getDriveClient();
     
     // Récupérer drive_folder_id du vendeur
-    const users = await readJSON('users.json');
-    const vendeur = users.users.find(u => u.email === vendeurEmail);
+    const vendeurs = await getVendeursFromSheets();
+    const vendeur = vendeurs.find(v => v.email === vendeurEmail);
     if (!vendeur?.drive_folder_id) return res.status(404).json({ error: 'Vendeur sans dossier Drive' });
     
     const nomsStatuts = {
@@ -1403,10 +1403,9 @@ app.post('/api/drive/deplacer-client', verifyToken, isAdmin, async (req, res) =>
   try {
     const { vendeurEmailSource, vendeurEmailDest, clientId, clientName, statut } = req.body;
     const drive = getDriveClient();
-    const users = await readJSON('users.json');
-    
-    const vendeurSrc = users.users.find(u => u.email === vendeurEmailSource);
-    const vendeurDst = users.users.find(u => u.email === vendeurEmailDest);
+    const vendeurs = await getVendeursFromSheets();
+    const vendeurSrc = vendeurs.find(v => v.email === vendeurEmailSource);
+    const vendeurDst = vendeurs.find(v => v.email === vendeurEmailDest);
     
     if (!vendeurSrc?.drive_folder_id || !vendeurDst?.drive_folder_id) {
       return res.status(404).json({ error: 'Dossier Drive manquant pour un des vendeurs' });

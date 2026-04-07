@@ -1026,9 +1026,9 @@
         async function deplacerClient(vendeurEmail, clientId, clientName, statut) {
             const token = localStorage.getItem('token');
             // Récupérer la liste des vendeurs
-            const r = await fetch('/api/auth/users', { headers: { 'Authorization': 'Bearer ' + token } });
+            const r = await fetch('/api/vendeurs', { headers: { 'Authorization': 'Bearer ' + token } });
             const data = await r.json();
-            const vendeurs = (data.users || []).filter(u => u.role === 'vendeur' && u.email !== vendeurEmail);
+            const vendeurs = (data.vendeurs || []).filter(v => v.email !== vendeurEmail);
             if (!vendeurs.length) { alert('Aucun autre vendeur disponible'); return; }
             
             const options = vendeurs.map((v, i) => `${i+1}. ${v.email}`).join('\n');
