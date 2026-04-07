@@ -3150,11 +3150,17 @@ const avisImages = [
                 }
                 
             } catch (error) {
-                alert('Erreur de connexion à l\'API: ' + error.message);
-                stopScannerLoader();
-                
+                console.warn('Erreur extraction:', error.message);
+                failScannerLoader(() => {
+                    // Basculer vers saisie manuelle avec segment détecté
+                    const segFallback = selectedTariff === 'gas' ? 'GAZ' :
+                                        selectedTariff === 'other' ? 'C4' : 'C5-BASE';
+                    goManual(segFallback);
+                });
+                return;
+
                 // FALLBACK: En cas d'erreur, données de test pour développement
-                
+
                 if (selectedEnergy === 'gas') {
                     extractedData = {
                         nom_client: 'SARL HOTEL SAINTE SUZANNE',
@@ -9075,6 +9081,32 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
     const overlay = document.getElementById('scannerOverlay');
     if (overlay) overlay.classList.remove('active');
     cancelAnimationFrame(scanRAF);
+  };
+  
+  window.failScannerLoader = function(callback) {
+    // Afficher ❌ Échec pendant 2 secondes puis callback
+    cancelAnimationFrame(scanRAF);
+    const cur = document.getElementById('scCurrent');
+    const title = document.querySelector('.sc-title');
+    const prog = document.getElementById('scProg');
+    if (cur) cur.textContent = 'Extraction impossible';
+    if (title) { title.textContent = '❌ Échec'; title.style.color = '#ef4444'; }
+    if (prog) { prog.style.background = '#ef4444'; prog.style.width = '100%'; }
+    // Ajouter ligne d'erreur dans les steps
+    const stepsEl = document.getElementById('scSteps');
+    if (stepsEl) {
+      const row = document.createElement('div');
+      row.className = 'sc-row';
+      row.style.opacity = '1';
+      row.style.background = '#fef2f2';
+      row.style.borderColor = '#fecaca';
+      row.innerHTML = '<span style="color:#ef4444;font-size:14px;">✗</span><span class="sc-label" style="color:#ef4444;">Basculement vers saisie manuelle...</span>';
+      stepsEl.appendChild(row);
+    }
+    setTimeout(() => {
+      window.stopScannerLoader();
+      if (callback) callback();
+    }, 2000);
   };
 })();
 </script>
