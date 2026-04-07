@@ -3145,10 +3145,15 @@ const avisImages = [
                     
                     nextStep(2);
                 } else {
-                    alert('Erreur lors de l\'extraction: ' + result.error);
-                    stopScannerLoader();
+                    // Erreur GPT-4 (parsing JSON échoué)
+                    console.warn('Erreur GPT-4:', result.error);
+                    failScannerLoader(() => {
+                        const segFallback = selectedTariff === 'gas' ? 'GAZ' :
+                                            selectedTariff === 'other' ? 'C4' : 'C5-BASE';
+                        goManual(segFallback);
+                    });
                 }
-                
+
             } catch (error) {
                 console.warn('Erreur extraction:', error.message);
                 failScannerLoader(() => {

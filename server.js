@@ -305,10 +305,11 @@ Si une donnée n'existe pas, mets "N/A" pour texte ou 0 pour nombres.`
     } catch (parseError) {
       console.error('❌ Erreur parsing JSON:', parseError);
       console.error('📝 Texte reçu:', responseText);
-      return res.status(500).json({ 
-        success: false, 
-        error: 'GPT-4 n\'a pas retourné un JSON valide',
-        raw: responseText 
+      return res.status(200).json({
+        success: false,
+        gpt_error: true,
+        error: 'extraction_failed',
+        raw: responseText
       });
     }
     
