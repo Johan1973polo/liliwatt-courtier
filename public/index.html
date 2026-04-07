@@ -8812,7 +8812,8 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                     body: JSON.stringify({
-                        note: 'Vérifié et validé par le référent'
+                        note: 'Vérifié et validé par le référent',
+                        extractedData: extractedData
                     })
                 })
                 .then(r => r.json())

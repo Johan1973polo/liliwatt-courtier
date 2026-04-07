@@ -1325,7 +1325,7 @@ app.post('/api/drive/move-folder', verifyToken, async (req, res) => {
 // Route validation MEC par référent
 app.post('/api/notifications/:id/valider-referent', verifyToken, async (req, res) => {
   try {
-    const { note } = req.body;
+    const { note, extractedData } = req.body;
     const data = JSON.parse(require('fs').readFileSync('./data/notifications.json'));
     const notif = data.notifications.find(n => n.id === req.params.id);
     
@@ -1342,6 +1342,11 @@ app.post('/api/notifications/:id/valider-referent', verifyToken, async (req, res
     notif.date_validation_referent = new Date().toISOString();
     notif.referent_validateur = req.user.email;
     notif.note_referent = note || '';
+    // Sauvegarder les données modifiées par le référent
+    if (extractedData) {
+      notif.extractedData = extractedData;
+      console.log('💾 Données référent sauvegardées pour:', notif.client_name);
+    }
     notif.historique = notif.historique || [];
     notif.historique.push({
       role: 'referent',
