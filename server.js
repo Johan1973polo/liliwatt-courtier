@@ -1119,4 +1119,35 @@ app.get('/api/drive/list-documents-admin', verifyToken, isAdmin, async (req, res
   }
 });
 
+// Route vendeurs depuis Google Sheets (pour Portefeuille admin)
+app.get('/api/vendeurs', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const vendeurs = await getVendeursFromSheets();
+    res.json({ success: true, vendeurs });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+async function getVendeursFromSheets() {
+  const auth = new google.auth.GoogleAuth({
+    credentials: DRIVE_CREDENTIALS,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
+  });
+  const sheets = google.sheets({ version: 'v4', auth });
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEETS_ID,
+    range: 'A:F'
+  });
+  const rows = res.data.values || [];
+  return rows
+    .filter(row => row[3] && row[3].includes('@'))
+    .map(row => ({
+      id: row[3],
+      email: row[3],
+      nom: row[0] + ' ' + row[1],
+      drive_folder_id: row[5] || ''
+    }));
+}
+
 // ===== FIN GOOGLE DRIVE =====

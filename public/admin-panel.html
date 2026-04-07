@@ -952,11 +952,11 @@
             
             try {
                 // Récupérer tous les vendeurs
-                const usersRes = await fetch('/api/auth/users', {
+                const usersRes = await fetch('/api/vendeurs', {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
                 });
                 const usersData = await usersRes.json();
-                const vendeurs = (usersData.users || []).filter(u => u.role === 'vendeur');
+                const vendeurs = usersData.vendeurs || [];
                 
                 loading.style.display = 'none';
                 
@@ -1003,7 +1003,7 @@
                 const vendeur = window._portVendeurs[vi];
                 
                 try {
-                    const res = await fetch('/api/drive/list-documents-admin?vendeurId=' + encodeURIComponent(vendeur.id), {
+                    const res = await fetch('/api/drive/list-documents-admin?vendeurEmail=' + encodeURIComponent(vendeur.email), {
                         headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
                     });
                     const data = await res.json();
