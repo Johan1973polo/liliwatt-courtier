@@ -2381,6 +2381,12 @@ button[onclick*="previousStep"] {
                             <button onclick="window.location.href='referent-panel.html'" style="padding:10px 20px;background:#7c3aed!important;color:white!important;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">
                                 👥 Mon Équipe
                             </button>
+                            <button onclick="window.location.href='vendeur-panel.html'" style="padding:10px 20px;background:#10b981!important;color:white!important;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">
+                                📋 Mes Infos
+                            </button>
+                            <button onclick="window.location.href='mes-documents.html'" style="padding:10px 20px;background:#2563eb!important;color:white!important;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">
+                                📁 Mes Documents
+                            </button>
                             <button onclick="logout()" style="padding:10px 20px;background:#ef4444!important;color:white!important;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">
                                 🚪 Déconnexion
                             </button>
@@ -2714,7 +2720,7 @@ const avisImages = [
         // Fonctions de navigation
         function goToStep(step) {
             // Bloquer les vendeurs après étape 2
-            const isVendeurRole = currentUser && currentUser.role === 'vendeur';
+            const isVendeurRole = currentUser && (currentUser.role === 'vendeur' || currentUser.role === 'referent');
             if (isVendeurRole && step > 2) {
                 alert('⚠️ En tant que commercial, vous pouvez uniquement envoyer le dossier à l\'admin pour traitement.');
                 return;
@@ -2727,7 +2733,7 @@ const avisImages = [
         
         function nextStep(step) {
             // Bloquer les vendeurs après étape 2
-            const isVendeurRole = currentUser && currentUser.role === 'vendeur';
+            const isVendeurRole = currentUser && (currentUser.role === 'vendeur' || currentUser.role === 'referent');
             if (isVendeurRole && step > 2) {
                 alert('⚠️ En tant que commercial, vous pouvez uniquement envoyer le dossier à l\'admin pour traitement.');
                 return;
@@ -8846,7 +8852,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             const btnAdmin = document.getElementById('btnSendAdmin');
             if (!btnNext || !btnAdmin) return;
             
-            const isVendeurRole = currentUser && currentUser.role === 'vendeur';
+            const isVendeurRole = currentUser && (currentUser.role === 'vendeur' || currentUser.role === 'referent');
             
             if (isVendeurRole) {
                 btnNext.style.display = 'none';
