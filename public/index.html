@@ -2127,6 +2127,8 @@ button[onclick*="previousStep"] {
         let selectedReferent = null; // Stockage des infos du référent
         let pendingPDFAction = null; // Pour savoir quelle action PDF est en attente
         let pdlList = []; // Liste des PDL pour multi-sites
+        let currentClientName = null; // Nom du client pour Drive
+        let vendeurDriveFolderId = null; // Override Drive pour MEC reprise par admin
         
         // Configuration des logos fournisseurs
         const logosFournisseurs = {
@@ -8812,8 +8814,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
         // ===== GOOGLE DRIVE =====
         let _resolveClientName = null;
         let currentClientDriveFolderId = null;
-        let currentClientName = null;
-        let vendeurDriveFolderId = null; // Override pour MEC reprise par admin
+        // currentClientName et vendeurDriveFolderId déclarés en haut avec les variables globales
 
         function askClientName(defaultName = '') {
             return new Promise((resolve) => {
