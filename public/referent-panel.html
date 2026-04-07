@@ -625,7 +625,7 @@ async function loadStats() {
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(r => r.json()).then(d => d.vendeurs || []);
     
-    const vendeursEquipe = mesVendeurs.filter(v => v.referent === user.email);
+    const vendeursEquipe = mesVendeurs.filter(v => v.referent_email === user.email);
     const emailsEquipe = vendeursEquipe.map(v => v.email);
     
     const mecsEquipe = (data.notifications || []).filter(n => emailsEquipe.includes(n.vendeur_email));
