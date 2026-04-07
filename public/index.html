@@ -2514,7 +2514,7 @@ const avisImages = [
             // Vérifier si on reprend une MEC (admin)
             const urlParams = new URLSearchParams(window.location.search);
             const reprendreMecId = urlParams.get('reprendre');
-            if (reprendreMecId && isAdmin) {
+            if (reprendreMecId && (isAdmin || currentUser.role === 'referent')) {
                 const mecData = localStorage.getItem('reprendre_mec_data');
                 if (mecData) {
                     const sessionData = JSON.parse(mecData);
