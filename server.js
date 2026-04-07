@@ -1351,4 +1351,98 @@ app.post('/api/notifications/:id/valider-referent', verifyToken, async (req, res
   }
 });
 
+
+// ===== ROUTES GESTION DOSSIERS DRIVE =====
+
+// Changer statut client (déplacer entre attente/signé/perdu)
+app.post('/api/drive/changer-statut', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { vendeurEmail, clientId, clientName, statutActuel, nouveauStatut } = req.body;
+    const drive = getDriveClient();
+    
+    // Récupérer drive_folder_id du vendeur
+    const users = await readJSON('users.json');
+    const vendeur = users.users.find(u => u.email === vendeurEmail);
+    if (!vendeur?.drive_folder_id) return res.status(404).json({ error: 'Vendeur sans dossier Drive' });
+    
+    const nomsStatuts = {
+      'attente': 'CLIENT EN ATTENTE',
+      'signe': 'CLIENTS SIGNÉS',
+      'perdu': 'CLIENTS PERDUS'
+    };
+    
+    // Trouver le dossier source
+    const sourceFolderId = await findOrCreateFolder(drive, nomsStatuts[statutActuel], vendeur.drive_folder_id);
+    const destFolderId = await findOrCreateFolder(drive, nomsStatuts[nouveauStatut], vendeur.drive_folder_id);
+    
+    // Déplacer le dossier client
+    await drive.files.update({
+      fileId: clientId,
+      addParents: destFolderId,
+      removeParents: sourceFolderId,
+      supportsAllDrives: true,
+      fields: 'id, parents'
+    });
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Changer statut error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Déplacer client vers un autre vendeur
+app.post('/api/drive/deplacer-client', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { vendeurEmailSource, vendeurEmailDest, clientId, clientName, statut } = req.body;
+    const drive = getDriveClient();
+    const users = await readJSON('users.json');
+    
+    const vendeurSrc = users.users.find(u => u.email === vendeurEmailSource);
+    const vendeurDst = users.users.find(u => u.email === vendeurEmailDest);
+    
+    if (!vendeurSrc?.drive_folder_id || !vendeurDst?.drive_folder_id) {
+      return res.status(404).json({ error: 'Dossier Drive manquant pour un des vendeurs' });
+    }
+    
+    const nomsStatuts = { 'attente': 'CLIENT EN ATTENTE', 'signe': 'CLIENTS SIGNÉS', 'perdu': 'CLIENTS PERDUS' };
+    const nomStatut = nomsStatuts[statut] || 'CLIENT EN ATTENTE';
+    
+    const sourceFolderId = await findOrCreateFolder(drive, nomStatut, vendeurSrc.drive_folder_id);
+    const destFolderId = await findOrCreateFolder(drive, nomStatut, vendeurDst.drive_folder_id);
+    
+    await drive.files.update({
+      fileId: clientId,
+      addParents: destFolderId,
+      removeParents: sourceFolderId,
+      supportsAllDrives: true,
+      fields: 'id, parents'
+    });
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Déplacer client error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Supprimer dossier client
+app.delete('/api/drive/supprimer-client', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { clientId } = req.body;
+    const drive = getDriveClient();
+    
+    await drive.files.delete({
+      fileId: clientId,
+      supportsAllDrives: true
+    });
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Supprimer client error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+// ===== FIN ROUTES GESTION DOSSIERS DRIVE =====
+
 // ===== FIN GOOGLE DRIVE =====

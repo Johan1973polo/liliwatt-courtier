@@ -1002,6 +1002,82 @@
             }
         }
         
+        async function changerStatutClient(vendeurEmail, clientId, clientName, statutActuel) {
+            const statuts = { 'attente': 'signe', 'signe': 'perdu', 'perdu': 'attente' };
+            const labels = { 'attente': '🕐 En attente', 'signe': '✅ Signé', 'perdu': '❌ Perdu' };
+            const nouveauStatut = statuts[statutActuel];
+            if (!confirm(`Déplacer "${clientName}" vers ${labels[nouveauStatut]} ?`)) return;
+            
+            const token = localStorage.getItem('token');
+            const r = await fetch('/api/drive/changer-statut', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ vendeurEmail, clientId, clientName, statutActuel, nouveauStatut })
+            });
+            const data = await r.json();
+            if (data.success) {
+                alert(`✅ "${clientName}" déplacé vers ${labels[nouveauStatut]}`);
+                loadPortefeuille();
+            } else {
+                alert('❌ Erreur : ' + data.error);
+            }
+        }
+
+        async function deplacerClient(vendeurEmail, clientId, clientName, statut) {
+            const token = localStorage.getItem('token');
+            // Récupérer la liste des vendeurs
+            const r = await fetch('/api/auth/users', { headers: { 'Authorization': 'Bearer ' + token } });
+            const data = await r.json();
+            const vendeurs = (data.users || []).filter(u => u.role === 'vendeur' && u.email !== vendeurEmail);
+            if (!vendeurs.length) { alert('Aucun autre vendeur disponible'); return; }
+            
+            const options = vendeurs.map((v, i) => `${i+1}. ${v.email}`).join('
+');
+            const choix = prompt(`Vers quel vendeur déplacer "${clientName}" ?
+
+${options}
+
+Entrez le numéro :`);
+            if (!choix) return;
+            
+            const idx = parseInt(choix) - 1;
+            if (idx < 0 || idx >= vendeurs.length) { alert('Choix invalide'); return; }
+            
+            const nouveauVendeur = vendeurs[idx];
+            const res = await fetch('/api/drive/deplacer-client', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ vendeurEmailSource: vendeurEmail, vendeurEmailDest: nouveauVendeur.email, clientId, clientName, statut })
+            });
+            const d = await res.json();
+            if (d.success) {
+                alert(`✅ "${clientName}" déplacé vers ${nouveauVendeur.email}`);
+                loadPortefeuille();
+            } else {
+                alert('❌ Erreur : ' + d.error);
+            }
+        }
+
+        async function supprimerClient(vendeurEmail, clientId, clientName) {
+            if (!confirm(`⚠️ Supprimer définitivement le dossier "${clientName}" et tous ses documents ?
+
+Cette action est irréversible.`)) return;
+            
+            const token = localStorage.getItem('token');
+            const r = await fetch('/api/drive/supprimer-client', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ vendeurEmail, clientId, clientName })
+            });
+            const data = await r.json();
+            if (data.success) {
+                alert(`✅ Dossier "${clientName}" supprimé`);
+                loadPortefeuille();
+            } else {
+                alert('❌ Erreur : ' + data.error);
+            }
+        }
+
         async function togglePortVendeur(vi) {
             const body = document.getElementById('port-body-' + vi);
             const chevron = document.getElementById('port-chevron-' + vi);
@@ -1055,6 +1131,17 @@
                                             <button onclick="openAdminUpload('${client.id}', '${client.name}')" style="margin-top:8px;width:100%;padding:7px;background:white;border:1.5px dashed #7c3aed;color:#7c3aed;border-radius:8px;font-size:12px;cursor:pointer;">
                                                 ➕ Ajouter un document
                                             </button>
+                                            <div style="display:flex;gap:6px;margin-top:6px;">
+                                                <button onclick="changerStatutClient('${vendeur.email}','${client.id}','${client.name}','${sec.key}')" style="flex:1;padding:6px;background:white;border:1.5px solid #7c3aed;color:#7c3aed;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">
+                                                    🔄 Statut
+                                                </button>
+                                                <button onclick="deplacerClient('${vendeur.email}','${client.id}','${client.name}','${sec.key}')" style="flex:1;padding:6px;background:white;border:1.5px solid #2563eb;color:#2563eb;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">
+                                                    📦 Déplacer
+                                                </button>
+                                                <button onclick="supprimerClient('${vendeur.email}','${client.id}','${client.name}')" style="flex:1;padding:6px;background:white;border:1.5px solid #ef4444;color:#ef4444;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">
+                                                    🗑️ Supprimer
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 `).join('')}
