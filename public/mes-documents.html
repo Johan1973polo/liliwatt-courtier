@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LILIWATT — Mes Documents</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #faf5ff; min-height: 100vh; }
+
+.header {
+  background: linear-gradient(135deg, #4c1d95, #7c3aed);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header h1 { color: white; font-size: 20px; font-weight: 800; letter-spacing: 2px; }
+.header-right { display: flex; gap: 10px; align-items: center; }
+.btn-back { padding: 8px 16px; background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; cursor: pointer; font-size: 13px; text-decoration: none; }
+.btn-back:hover { background: rgba(255,255,255,0.25); }
+.user-email { color: rgba(255,255,255,0.8); font-size: 13px; }
+
+.container { max-width: 900px; margin: 32px auto; padding: 0 20px; }
+
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #7c3aed;
+  margin-bottom: 12px;
+  padding: 8px 0;
+  border-bottom: 2px solid #e9d5ff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section { margin-bottom: 28px; }
+
+.client-card {
+  background: white;
+  border: 1px solid #e9d5ff;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(124,58,237,0.06);
+}
+
+.client-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.client-header:hover { background: #faf5ff; }
+
+.client-name {
+  font-weight: 700;
+  color: #1e1b4b;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.client-chevron {
+  color: #9ca3af;
+  font-size: 12px;
+  transition: transform 0.2s;
+}
+.client-chevron.open { transform: rotate(180deg); }
+
+.client-body {
+  display: none;
+  padding: 0 18px 14px;
+  border-top: 1px solid #f3f4f6;
+}
+.client-body.open { display: block; }
+
+.doc-list { list-style: none; }
+.doc-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f9f9f9;
+}
+.doc-item:last-child { border-bottom: none; }
+
+.doc-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.doc-actions { display: flex; gap: 6px; }
+
+.btn-download {
+  padding: 5px 10px;
+  background: #7c3aed;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn-download:hover { background: #6d28d9; }
+
+.btn-upload-doc {
+  margin-top: 10px;
+  padding: 8px 14px;
+  background: white;
+  border: 1.5px dashed #7c3aed;
+  color: #7c3aed;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+}
+.btn-upload-doc:hover { background: #faf5ff; }
+
+.empty-state {
+  text-align: center;
+  padding: 32px;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.loading {
+  text-align: center;
+  padding: 48px;
+  color: #9ca3af;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e9d5ff;
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-attente { background: #fef3c7; color: #d97706; }
+.badge-signe { background: #d1fae5; color: #059669; }
+.badge-perdu { background: #fee2e2; color: #dc2626; }
+
+/* Modal upload */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  width: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.modal h3 { color: #7c3aed; margin-bottom: 16px; }
+.modal-input {
+  width: 100%;
+  padding: 10px;
+  border: 1.5px solid #e9d5ff;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+.modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+.btn-cancel { flex: 1; padding: 10px; background: white; border: 1.5px solid #e9d5ff; border-radius: 8px; cursor: pointer; color: #6b7280; }
+.btn-confirm { flex: 1; padding: 10px; background: linear-gradient(135deg, #7c3aed, #d946ef); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚡ LILIWATT — Mes Documents</h1>
+  <div class="header-right">
+    <span class="user-email" id="userEmail"></span>
+    <a href="/" class="btn-back">← Retour</a>
+    <button onclick="logout()" style="padding:8px 16px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;">Déconnexion</button>
+  </div>
+</div>
+
+<div class="container">
+  <div id="loadingState" class="loading">
+    <div class="spinner"></div>
+    Chargement de vos documents...
+  </div>
+  
+  <div id="content" style="display:none;">
+    <!-- CLIENT EN ATTENTE -->
+    <div class="section">
+      <div class="section-title">🕐 Clients en attente <span id="countAttente" style="color:#d97706;font-size:13px;"></span></div>
+      <div id="listAttente"></div>
+    </div>
+    
+    <!-- CLIENTS SIGNÉS -->
+    <div class="section">
+      <div class="section-title">✅ Clients signés <span id="countSigne" style="color:#059669;font-size:13px;"></span></div>
+      <div id="listSigne"></div>
+    </div>
+    
+    <!-- CLIENTS PERDUS -->
+    <div class="section">
+      <div class="section-title">❌ Clients perdus <span id="countPerdu" style="color:#dc2626;font-size:13px;"></span></div>
+      <div id="listPerdu"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal upload document -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <h3>📎 Ajouter un document</h3>
+    <p style="color:#9ca3af;font-size:12px;margin-bottom:16px;">Client : <strong id="modalClientName"></strong></p>
+    <input type="file" id="modalFile" class="modal-input" accept=".pdf,.jpg,.png,.doc,.docx">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeUploadModal()">Annuler</button>
+      <button class="btn-confirm" onclick="uploadDocument()">Uploader</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+let currentUploadClient = null;
+let currentUploadSection = null;
+
+document.getElementById('userEmail').textContent = user.email || '';
+
+if (!token) window.location.href = '/login.html';
+
+function logout() {
+  localStorage.clear();
+  window.location.href = '/login.html';
+}
+
+async function loadDocuments() {
+  try {
+    const res = await fetch('/api/drive/list-documents', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    
+    if (!data.success) throw new Error(data.error);
+    
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    
+    renderSection('listAttente', 'countAttente', data.attente || [], 'attente');
+    renderSection('listSigne', 'countSigne', data.signe || [], 'signe');
+    renderSection('listPerdu', 'countPerdu', data.perdu || [], 'perdu');
+    
+  } catch(e) {
+    document.getElementById('loadingState').innerHTML = `<p style="color:#ef4444;">Erreur: ${e.message}</p>`;
+  }
+}
+
+function renderSection(containerId, countId, clients, section) {
+  const container = document.getElementById(containerId);
+  const countEl = document.getElementById(countId);
+  
+  countEl.textContent = clients.length > 0 ? `(${clients.length})` : '';
+  
+  if (clients.length === 0) {
+    container.innerHTML = '<div class="empty-state">Aucun client dans cette catégorie</div>';
+    return;
+  }
+  
+  container.innerHTML = clients.map(client => `
+    <div class="client-card">
+      <div class="client-header" onclick="toggleClient('${client.id}')">
+        <div class="client-name">
+          🏢 ${client.name}
+          <span style="color:#9ca3af;font-weight:400;font-size:12px;">${client.files?.length || 0} document(s)</span>
+        </div>
+        <span class="client-chevron" id="chevron-${client.id}">▼</span>
+      </div>
+      <div class="client-body" id="body-${client.id}">
+        <ul class="doc-list">
+          ${(client.files || []).map(file => `
+            <li class="doc-item">
+              <div class="doc-name">
+                📄 ${file.name}
+                <span style="color:#9ca3af;font-size:11px;">${file.size}</span>
+              </div>
+              <div class="doc-actions">
+                <a href="${file.webViewLink}" target="_blank" class="btn-download">👁 Voir</a>
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+        <button class="btn-upload-doc" onclick="openUploadModal('${client.id}', '${client.name}', '${section}')">
+          ➕ Ajouter un document
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleClient(clientId) {
+  const body = document.getElementById('body-' + clientId);
+  const chevron = document.getElementById('chevron-' + clientId);
+  body.classList.toggle('open');
+  chevron.classList.toggle('open');
+}
+
+function openUploadModal(clientId, clientName, section) {
+  currentUploadClient = { id: clientId, name: clientName, section };
+  document.getElementById('modalClientName').textContent = clientName;
+  document.getElementById('modalFile').value = '';
+  document.getElementById('uploadModal').classList.add('open');
+}
+
+function closeUploadModal() {
+  document.getElementById('uploadModal').classList.remove('open');
+  currentUploadClient = null;
+}
+
+async function uploadDocument() {
+  const file = document.getElementById('modalFile').files[0];
+  if (!file || !currentUploadClient) return;
+  
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result.split(',')[1];
+    try {
+      const res = await fetch('/api/drive/upload-to-folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({
+          pdfBase64: base64,
+          fileName: file.name,
+          folderId: currentUploadClient.id
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('✅ Document uploadé !');
+        closeUploadModal();
+        loadDocuments();
+      }
+    } catch(e) {
+      alert('Erreur upload: ' + e.message);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+loadDocuments();
+</script>
+</body>
+</html>
