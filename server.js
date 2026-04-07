@@ -1443,9 +1443,11 @@ app.post('/api/drive/supprimer-client', verifyToken, isAdmin, async (req, res) =
     const { clientId } = req.body;
     const drive = getDriveClient();
     
-    await drive.files.delete({
+    // Mettre à la corbeille plutôt que supprimer définitivement
+    await drive.files.update({
       fileId: clientId,
-      supportsAllDrives: true
+      supportsAllDrives: true,
+      requestBody: { trashed: true }
     });
     
     res.json({ success: true });
