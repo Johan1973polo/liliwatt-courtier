@@ -5579,7 +5579,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             tbody.appendChild(totalRow);
         }
         
-        function generateComparatifPDF() {
+        async function generateComparatifPDF() {
             console.log('📊 Fonction generateComparatifPDF appelée');
             
             // Vérifier si le référent est sélectionné
@@ -6633,7 +6633,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
         // Stocker les prix MEC modifiés
         let modifiedMECPrices = null;
         
-        function previewMEC() {
+        async function previewMEC() {
             if (selectedFournisseurs.length === 0) {
                 alert('Veuillez sélectionner au moins un fournisseur');
                 return;
