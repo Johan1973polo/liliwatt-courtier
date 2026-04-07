@@ -604,10 +604,10 @@ app.post('/api/notifications', verifyToken, async (req, res) => {
     const data = await readJSON('notifications.json');
     
     // Vérifier si une notification existe déjà pour ce client et ce vendeur
-    const existingNotif = data.notifications.find(n => 
-      n.vendeur_id === req.user.id && 
+    const existingNotif = data.notifications.find(n =>
+      n.vendeur_id === req.user.id &&
       n.client_name === req.body.client_name &&
-      n.status === 'pending'
+      (n.status === 'pending' || n.status === 'pending_referent')
     );
     
     if (existingNotif) {
@@ -621,16 +621,32 @@ app.post('/api/notifications', verifyToken, async (req, res) => {
       res.json({ success: true, notification: existingNotif, updated: true });
     } else {
       // Créer une nouvelle notification
+      // Chercher le référent du vendeur
+      let referent_email = '';
+      try {
+        const allUsers = await getVendeursFromSheets();
+        const vendeur = allUsers.find(u => u.email === req.user.email);
+        referent_email = vendeur?.referent_email || '';
+      } catch(e) {}
+
       const notification = {
         id: `notif_${Date.now()}`,
         vendeur_id: req.user.id,
         vendeur_email: req.user.email,
         vendeur_drive_folder_id: req.user.drive_folder_id || '',
+        referent_email,
         date: new Date().toISOString(),
-        status: 'pending',
+        date_soumission_vendeur: new Date().toISOString(),
+        status: referent_email ? 'pending_referent' : 'pending',
+        historique: [{
+          role: 'vendeur',
+          email: req.user.email,
+          action: 'Soumission MEC',
+          date: new Date().toISOString()
+        }],
         ...req.body
       };
-      
+
       data.notifications.push(notification);
       await writeJSON('notifications.json', data);
       
@@ -668,7 +684,7 @@ app.put('/api/auth/users/:email/drive-folder', verifyToken, isAdmin, async (req,
 app.get('/api/notifications', verifyToken, isAdmin, async (req, res) => {
   try {
     const data = await readJSON('notifications.json');
-    const pending = data.notifications.filter(n => n.status === 'pending');
+    const pending = data.notifications.filter(n => n.status === 'pending' || n.status === 'pending_referent');
     
     res.json({ success: true, notifications: pending });
   } catch (error) {
@@ -1181,20 +1197,6 @@ async function getVendeursFromSheets() {
     }));
 }
 
-// Route notifications pour référent (filtrées par ses vendeurs)
-app.get('/api/notifications/referent', verifyToken, async (req, res) => {
-  try {
-    const mesVendeurs = req.user.mes_vendeurs || [];
-    const data = JSON.parse(require('fs').readFileSync('./data/notifications.json'));
-    const notifications = data.notifications.filter(n => 
-      n.status === 'pending' && mesVendeurs.includes(n.vendeur_email)
-    );
-    res.json({ success: true, notifications });
-  } catch(err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // Route liste documents pour référent (ses vendeurs)
 app.get('/api/drive/list-documents-referent', verifyToken, async (req, res) => {
   if (!DRIVE_CREDENTIALS) return res.status(503).json({ error: 'Drive non configuré' });
@@ -1282,6 +1284,61 @@ app.post('/api/drive/move-folder', verifyToken, async (req, res) => {
     });
     
     res.json({ success: true });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Route validation MEC par référent
+app.post('/api/notifications/:id/valider-referent', verifyToken, async (req, res) => {
+  try {
+    const { note } = req.body;
+    const data = JSON.parse(require('fs').readFileSync('./data/notifications.json'));
+    const notif = data.notifications.find(n => n.id === req.params.id);
+    
+    if (!notif) return res.status(404).json({ error: 'Notification non trouvée' });
+    
+    // Vérifier que c'est bien le référent du vendeur
+    const mesVendeurs = req.user.mes_vendeurs || [];
+    if (req.user.role !== 'admin' && !mesVendeurs.includes(notif.vendeur_email)) {
+      return res.status(403).json({ error: 'Accès refusé' });
+    }
+    
+    // Mettre à jour le statut et l'historique
+    notif.status = 'pending';
+    notif.date_validation_referent = new Date().toISOString();
+    notif.referent_validateur = req.user.email;
+    notif.note_referent = note || '';
+    notif.historique = notif.historique || [];
+    notif.historique.push({
+      role: 'referent',
+      email: req.user.email,
+      action: 'Validation et envoi à l\'admin',
+      note: note || '',
+      date: new Date().toISOString()
+    });
+    
+    require('fs').writeFileSync('./data/notifications.json', JSON.stringify(data, null, 2));
+    res.json({ success: true });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Route notifications référent (pending_referent de ses vendeurs)
+app.get('/api/notifications/referent', verifyToken, async (req, res) => {
+  try {
+    const mesVendeurs = req.user.mes_vendeurs || [];
+    const data = JSON.parse(require('fs').readFileSync('./data/notifications.json'));
+    const pending = data.notifications.filter(n => 
+      n.status === 'pending_referent' && mesVendeurs.includes(n.vendeur_email)
+    );
+    const historique = data.notifications.filter(n => 
+      n.status !== 'pending_referent' && 
+      mesVendeurs.includes(n.vendeur_email) &&
+      (n.referent_email === req.user.email || n.referent_validateur === req.user.email)
+    );
+    res.json({ success: true, notifications: pending, historique });
   } catch(err) {
     res.status(500).json({ error: err.message });
   }
