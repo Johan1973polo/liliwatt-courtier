@@ -1280,8 +1280,8 @@ app.get('/api/drive/list-documents-referent', verifyToken, async (req, res) => {
 
     const [attente, signe, perdu] = await Promise.all([
       listFolder(vendeurFolderId, 'CLIENT EN ATTENTE'),
-      listFolder(vendeurFolderId, 'Clients signés'),
-      listFolder(vendeurFolderId, 'Clients perdus')
+      listFolder(vendeurFolderId, 'CLIENTS SIGNÉS'),
+      listFolder(vendeurFolderId, 'CLIENTS PERDUS')
     ]);
 
     res.json({ success: true, attente, signe, perdu });
