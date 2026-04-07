@@ -3086,6 +3086,31 @@ const avisImages = [
                     
                     stopScannerLoader();
                     displayExtractedData(); updateStep2ButtonsForRole();
+                    
+                    // Proposer renommage dossier Drive si nom différent
+                    const nomExtrait = extractedData.nom_client;
+                    const nomSaisi = document.getElementById('nomSocieteInput')?.value?.trim();
+                    if (nomExtrait && nomSaisi && nomExtrait.toUpperCase() !== nomSaisi.toUpperCase()) {
+                        setTimeout(async () => {
+                            const ok = window.confirm(`L'algorithme LILIWATT a identifié : "${nomExtrait}"\nVoulez-vous mettre à jour le nom du dossier ?`);
+                            if (ok) {
+                                try {
+                                    const token = localStorage.getItem('token');
+                                    const payload = { oldName: nomSaisi, newName: nomExtrait };
+                                    if (vendeurDriveFolderId) payload.vendeurDriveFolderId = vendeurDriveFolderId;
+                                    await fetch('/api/drive/rename-folder', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                                        body: JSON.stringify(payload)
+                                    });
+                                    document.getElementById('nomSocieteInput').value = nomExtrait;
+                                    currentClientName = nomExtrait;
+                                    console.log('✅ Dossier renommé:', nomSaisi, '→', nomExtrait);
+                                } catch(e) { console.warn('Erreur renommage:', e); }
+                            }
+                        }, 500);
+                    }
+                    
                     nextStep(2);
                 } else {
                     alert('Erreur lors de l\'extraction: ' + result.error);
