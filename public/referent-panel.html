@@ -189,8 +189,14 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #faf5ff; min-
 
   <!-- MECs en attente -->
   <div class="section">
-    <div class="section-title">🔔 MECs en attente de mon équipe</div>
+    <div class="section-title">🔔 MECs à valider</div>
     <div id="mecsList"><div class="spinner"></div></div>
+  </div>
+
+  <!-- Historique MECs -->
+  <div class="section">
+    <div class="section-title">📋 Historique des MECs de mon équipe</div>
+    <div id="mecsHistorique"><div class="spinner"></div></div>
   </div>
 
   <!-- Portefeuille équipe -->
@@ -211,6 +217,20 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #faf5ff; min-
       <button class="btn-perdu" onclick="confirmMove('CLIENTS PERDUS')">❌ Client perdu</button>
     </div>
     <button class="btn-annuler" onclick="closeMoveModal()">Annuler</button>
+  </div>
+</div>
+
+<!-- Modal validation référent -->
+<div id="validationModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:16px;padding:28px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+    <h3 style="color:#7c3aed;margin-bottom:8px;">✅ Valider et envoyer à l'admin</h3>
+    <p style="color:#9ca3af;font-size:13px;margin-bottom:16px;">Client : <strong id="validationClientName"></strong></p>
+    <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;">💬 Note pour l'admin (optionnel)</label>
+    <textarea id="validationNote" rows="3" placeholder="Ex: Client sérieux, à traiter en priorité..." style="width:100%;padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;resize:none;"></textarea>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button onclick="closeValidationModal()" style="flex:1;padding:10px;background:white;border:1.5px solid #e9d5ff;border-radius:8px;cursor:pointer;color:#6b7280;">Annuler</button>
+      <button onclick="confirmerValidation()" style="flex:1;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">✅ Envoyer à l'admin</button>
+    </div>
   </div>
 </div>
 
@@ -237,26 +257,96 @@ async function loadMECs() {
     });
     const data = await res.json();
     const container = document.getElementById('mecsList');
+    const historiqueContainer = document.getElementById('mecsHistorique');
     
+    // MECs en attente (pending_referent)
     if (!data.notifications?.length) {
-      container.innerHTML = '<p class="empty">Aucune MEC en attente</p>';
-      return;
+      container.innerHTML = '<p class="empty">Aucune MEC en attente de validation</p>';
+    } else {
+      container.innerHTML = data.notifications.map(n => `
+        <div class="mec-card">
+          <div class="mec-info">
+            <strong>${n.client_name || 'Client'}</strong>
+            <span>— ${n.vendeur_email}</span>
+            <span>${new Date(n.date).toLocaleDateString('fr-FR')}</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn-reprendre" onclick="reprendreMEC('${n.id}')" style="background:linear-gradient(135deg,#7c3aed,#d946ef);">
+              👁 Consulter
+            </button>
+            <button class="btn-reprendre" onclick="openValidationModal('${n.id}', '${n.client_name || 'Client'}')">
+              ✅ Valider → Admin
+            </button>
+          </div>
+        </div>
+      `).join('');
     }
     
-    container.innerHTML = data.notifications.map(n => `
-      <div class="mec-card">
-        <div class="mec-info">
-          <strong>${n.client_name || 'Client'}</strong>
-          <span>— ${n.vendeur_email}</span>
-          <span>${new Date(n.date).toLocaleDateString('fr-FR')}</span>
-        </div>
-        <button class="btn-reprendre" onclick="reprendreMEC('${n.id}')">
-          📋 Reprendre
-        </button>
-      </div>
-    `).join('');
+    // Historique MECs
+    if (historiqueContainer) {
+      if (!data.historique?.length) {
+        historiqueContainer.innerHTML = '<p class="empty">Aucun historique</p>';
+      } else {
+        historiqueContainer.innerHTML = data.historique.map(n => {
+          const hist = n.historique || [];
+          const refValidation = hist.find(h => h.role === 'referent');
+          return `
+            <div style="background:white;border:1px solid #e9d5ff;border-radius:10px;padding:14px 18px;margin-bottom:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <div>
+                  <strong style="color:#1e1b4b;">${n.client_name || 'Client'}</strong>
+                  <span style="color:#9ca3af;font-size:12px;margin-left:8px;">— ${n.vendeur_email}</span>
+                </div>
+                <span style="font-size:11px;padding:3px 10px;border-radius:12px;background:${n.status === 'completed' ? '#d1fae5' : '#fef3c7'};color:${n.status === 'completed' ? '#059669' : '#d97706'};">
+                  ${n.status === 'completed' ? '✅ Traitée' : '⏳ En cours'}
+                </span>
+              </div>
+              <div style="font-size:12px;color:#6b7280;">
+                📅 Soumis : ${new Date(n.date).toLocaleDateString('fr-FR')}
+                ${refValidation ? `<br>👔 Validé par vous le ${new Date(refValidation.date).toLocaleDateString('fr-FR')}` : ''}
+                ${refValidation?.note ? `<br>💬 Votre note : "${refValidation.note}"` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
   } catch(e) {
     document.getElementById('mecsList').innerHTML = '<p style="color:#ef4444;">Erreur: ' + e.message + '</p>';
+  }
+}
+
+let validationTarget = null;
+
+function openValidationModal(notifId, clientName) {
+  validationTarget = notifId;
+  document.getElementById('validationClientName').textContent = clientName;
+  document.getElementById('validationNote').value = '';
+  document.getElementById('validationModal').style.display = 'flex';
+}
+
+function closeValidationModal() {
+  document.getElementById('validationModal').style.display = 'none';
+  validationTarget = null;
+}
+
+async function confirmerValidation() {
+  if (!validationTarget) return;
+  const note = document.getElementById('validationNote').value.trim();
+  try {
+    const res = await fetch('/api/notifications/' + validationTarget + '/valider-referent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ note })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('✅ MEC envoyée à l\'admin !');
+      closeValidationModal();
+      loadMECs();
+    }
+  } catch(e) {
+    alert('Erreur: ' + e.message);
   }
 }
 
