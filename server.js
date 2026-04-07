@@ -400,6 +400,7 @@ app.post('/api/auth/login', async (req, res) => {
     
     let user = data.users.find(u => u.email === email);
     
+    console.log('🔍 Login tentative:', email, '- user dans JSON:', !!user);
     // Si pas dans users.json, chercher dans Google Sheets (vendeurs)
     if (!user && DRIVE_CREDENTIALS) {
       const sheetUser = await getVendeurFromSheets(email);
@@ -750,7 +751,7 @@ async function getVendeurFromSheets(email) {
     const sheets = google.sheets({ version: 'v4', auth });
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEETS_ID,
-      range: 'Sheet1!A:F'
+      range: 'A:F'
     });
     const rows = res.data.values || [];
     for (const row of rows) {
@@ -768,7 +769,7 @@ async function getVendeurFromSheets(email) {
     }
     return null;
   } catch(e) {
-    console.error('Sheets error:', e.message);
+    console.error('Sheets error:', e.message, e.stack);
     return null;
   }
 }
