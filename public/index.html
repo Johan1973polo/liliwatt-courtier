@@ -8782,15 +8782,32 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             document.getElementById('manualEntryModal').style.display = 'none';
         }
         function sendToAdminForMEC() {
-            // Sauvegarder les données dans la base pour que l'admin puisse reprendre
-            const mecData = {
-                extractedData: extractedData,
-                vendeur: currentUser?.email || 'vendeur',
-                timestamp: new Date().toISOString(),
-                status: 'en_attente_mec'
-            };
-            
-            // Utiliser l'API notifications existante
+            const token = localStorage.getItem('token');
+
+            // Mode reprise : on met à jour la notification existante
+            const repriseId = localStorage.getItem('reprendre_mec_id');
+
+            if (repriseId) {
+                // Référent valide → POST sur /valider-referent pour mettre à jour la notification de Mario
+                fetch('/api/notifications/' + repriseId + '/valider-referent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({
+                        note: 'Vérifié et validé par le référent'
+                    })
+                })
+                .then(r => r.json())
+                .then(() => {
+                    localStorage.removeItem('reprendre_mec_id');
+                    localStorage.removeItem('reprendre_mec_data');
+                    alert('✅ Dossier vérifié et envoyé à l\'admin !');
+                    window.location.href = 'referent-panel.html';
+                })
+                .catch(() => alert('Erreur lors de l\'envoi'));
+                return;
+            }
+
+            // Mode normal : vendeur crée une nouvelle notification
             const notifData = {
                 vendeur_email: currentUser?.email || 'vendeur@liliwatt.fr',
                 client_name: extractedData?.nom_client || 'Client',
@@ -8801,10 +8818,10 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 message: 'Demande de MEC',
                 status: 'pending'
             };
-            
+
             fetch('/api/notifications', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                 body: JSON.stringify(notifData)
             })
             .then(r => r.json())
