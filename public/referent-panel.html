@@ -350,8 +350,42 @@ async function confirmerValidation() {
   }
 }
 
-function reprendreMEC(notifId) {
-  window.location.href = '/index.html?reprendre=' + notifId;
+async function reprendreMEC(notifId) {
+  try {
+    // Récupérer la notification complète
+    const response = await fetch('/api/notifications/referent', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const notification = data.notifications.find(n => n.id === notifId);
+
+      if (notification && notification.extractedData) {
+        // Sauvegarder les données extraites pour reprise
+        const mecData = {
+          extractedData: notification.extractedData,
+          volumes: notification.volumes || null,
+          prix: notification.prix || null,
+          referent: notification.referent || null,
+          vendeur_drive_folder_id: notification.vendeur_drive_folder_id || '',
+          vendeur_email: notification.vendeur_email || '',
+          nom_client: notification.extractedData?.nom_client || ''
+        };
+        localStorage.setItem('reprendre_mec_data', JSON.stringify(mecData));
+        localStorage.setItem('reprendre_mec_id', notifId);
+
+        // Rediriger vers l'application principale
+        window.location.href = '/index.html?reprendre=' + notifId;
+      } else {
+        alert('Erreur : données de la MEC non trouvées');
+        console.log('Notification reçue:', notification);
+      }
+    }
+  } catch (error) {
+    console.error('Erreur récupération MEC:', error);
+    alert('Erreur lors de la récupération de la MEC');
+  }
 }
 
 async function loadVendeurs() {
