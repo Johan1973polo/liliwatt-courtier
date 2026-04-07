@@ -165,6 +165,9 @@
                 <button class="btn btn-warning" onclick="showSection('mec')" style="position: relative;">
                     🔔 MEC <span id="mecCount" style="font-weight: bold;">(0)</span>
                 </button>
+                <button onclick="showSection('portefeuille')" style="padding:10px 20px;background:#f59e0b;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">
+                    💼 Portefeuille
+                </button>
                 <button class="btn btn-danger" onclick="logout()">
                     🚪 Déconnexion
                 </button>
@@ -206,6 +209,16 @@
             <div id="pendingMecList">
                 <p style="color: #64748b;">Aucune MEC en attente</p>
             </div>
+        </div>
+        
+        <!-- Section Portefeuille -->
+        <div id="portefeuilleSection" class="section" style="display: none;">
+            <h2 style="color: #1e3a8a; margin-bottom: 20px;">💼 Portefeuille Clients</h2>
+            <div id="portefeuilleLoading" style="text-align:center;padding:32px;color:#9ca3af;">
+                <div style="width:32px;height:32px;border:3px solid #e9d5ff;border-top-color:#7c3aed;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px;"></div>
+                Chargement...
+            </div>
+            <div id="portefeuilleContent"></div>
         </div>
         
         <!-- Bouton retour à l'application -->
@@ -348,6 +361,8 @@
         function showSection(section) {
             document.getElementById('gestionSection').style.display = section === 'gestion' ? 'block' : 'none';
             document.getElementById('mecSection').style.display = section === 'mec' ? 'block' : 'none';
+            document.getElementById('portefeuilleSection').style.display = section === 'portefeuille' ? 'block' : 'none';
+            if (section === 'portefeuille') loadPortefeuille();
             
             if (section === 'mec') {
                 loadPendingMEC();
@@ -927,6 +942,121 @@
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = 'login.html';
+        }
+        
+        async function loadPortefeuille() {
+            const loading = document.getElementById('portefeuilleLoading');
+            const portContent = document.getElementById('portefeuilleContent');
+            loading.style.display = 'block';
+            portContent.innerHTML = '';
+            
+            try {
+                // Récupérer tous les vendeurs
+                const usersRes = await fetch('/api/auth/users', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const usersData = await usersRes.json();
+                const vendeurs = (usersData.users || []).filter(u => u.role === 'vendeur');
+                
+                loading.style.display = 'none';
+                
+                if (!vendeurs.length) {
+                    portContent.innerHTML = '<p style="color:#9ca3af;text-align:center;padding:32px;">Aucun vendeur</p>';
+                    return;
+                }
+                
+                portContent.innerHTML = vendeurs.map((v, vi) => `
+                    <div style="background:white;border:1px solid #e9d5ff;border-radius:12px;margin-bottom:10px;overflow:hidden;">
+                        <div onclick="togglePortVendeur(${vi})" style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;background:#faf5ff;">
+                            <div style="font-weight:700;color:#1e1b4b;font-size:15px;">👤 ${v.email}</div>
+                            <span id="port-chevron-${vi}" style="color:#9ca3af;font-size:12px;transition:transform 0.2s;">▼</span>
+                        </div>
+                        <div id="port-body-${vi}" style="display:none;padding:0 18px 14px;">
+                            <div id="port-content-${vi}" style="color:#9ca3af;font-size:13px;padding:12px 0;">
+                                Cliquez pour charger les documents...
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Stocker les vendeurs pour référence
+                window._portVendeurs = vendeurs;
+                
+            } catch(e) {
+                loading.style.display = 'none';
+                portContent.innerHTML = `<p style="color:#ef4444;">Erreur: ${e.message}</p>`;
+            }
+        }
+        
+        async function togglePortVendeur(vi) {
+            const body = document.getElementById('port-body-' + vi);
+            const chevron = document.getElementById('port-chevron-' + vi);
+            const contentDiv = document.getElementById('port-content-' + vi);
+            
+            const isOpen = body.style.display !== 'none';
+            body.style.display = isOpen ? 'none' : 'block';
+            chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+            
+            if (!isOpen && contentDiv.textContent.includes('Cliquez')) {
+                // Charger les docs du vendeur
+                contentDiv.innerHTML = '<div style="color:#9ca3af;padding:8px;">Chargement...</div>';
+                const vendeur = window._portVendeurs[vi];
+                
+                try {
+                    const res = await fetch('/api/drive/list-documents-admin?vendeurId=' + encodeURIComponent(vendeur.id), {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    const data = await res.json();
+                    
+                    if (!data.success) throw new Error(data.error || 'Erreur');
+                    
+                    const sections = [
+                        { key: 'attente', label: '🕐 Clients en attente', color: '#d97706' },
+                        { key: 'signe', label: '✅ Clients signés', color: '#059669' },
+                        { key: 'perdu', label: '❌ Clients perdus', color: '#dc2626' }
+                    ];
+                    
+                    contentDiv.innerHTML = sections.map(sec => {
+                        const clients = data[sec.key] || [];
+                        if (!clients.length) return '';
+                        return `
+                            <div style="margin-bottom:12px;">
+                                <div style="font-weight:700;color:${sec.color};font-size:13px;margin-bottom:6px;">${sec.label} (${clients.length})</div>
+                                ${clients.map((client, ci) => `
+                                    <div style="background:#f9f9ff;border:1px solid #e9d5ff;border-radius:8px;margin-bottom:6px;overflow:hidden;">
+                                        <div onclick="togglePortClient('${vi}_${ci}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;">
+                                            <span style="font-weight:600;color:#374151;font-size:13px;">🏢 ${client.name}</span>
+                                            <span style="display:flex;align-items:center;gap:8px;">
+                                                <span style="color:#9ca3af;font-size:11px;">${client.files?.length || 0} doc(s)</span>
+                                                <span id="port-cchevron-${vi}_${ci}" style="color:#9ca3af;font-size:11px;">▼</span>
+                                            </span>
+                                        </div>
+                                        <div id="port-cbody-${vi}_${ci}" style="display:none;padding:0 14px 10px;border-top:1px solid #f3f4f6;">
+                                            ${(client.files || []).map(file => `
+                                                <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f9f9f9;">
+                                                    <span style="font-size:12px;color:#374151;">📄 ${file.name}</span>
+                                                    <a href="/api/drive/download/${file.id}" target="_blank" style="padding:4px 10px;background:#7c3aed;color:white;border-radius:6px;font-size:11px;text-decoration:none;">👁 Voir</a>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }).join('') || '<p style="color:#9ca3af;font-size:13px;">Aucun document</p>';
+                    
+                } catch(e) {
+                    contentDiv.innerHTML = `<p style="color:#ef4444;font-size:13px;">Erreur: ${e.message}</p>`;
+                }
+            }
+        }
+        
+        function togglePortClient(id) {
+            const body = document.getElementById('port-cbody-' + id);
+            const chevron = document.getElementById('port-cchevron-' + id);
+            const isOpen = body.style.display !== 'none';
+            body.style.display = isOpen ? 'none' : 'block';
+            chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
         }
     </script>
 </body>
