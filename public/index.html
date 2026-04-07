@@ -6214,6 +6214,14 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             
             // Sauvegarde
             const fileName = `Comparatif_LILIWATT_${String(extractedData.nom_client || 'Client').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+            
+            // Upload sur Drive
+            try {
+                const pdfBase64 = doc.output('dataurlstring').split(',')[1];
+                await uploadToDrive(pdfBase64, fileName);
+                console.log('✅ Comparatif uploadé sur Drive');
+            } catch(e) { console.warn('Erreur upload Drive comparatif:', e); }
+            
             doc.save(fileName);
             
             alert('✅ PDF Comparatif professionnel généré avec succès !');
@@ -8056,6 +8064,14 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             
             // Sauvegarder le PDF
             const fileName = `MEC_${extractedData.segment}_${extractedData.nom_client.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+            
+            // Upload sur Drive
+            try {
+                const pdfBase64 = doc.output('dataurlstring').split(',')[1];
+                await uploadToDrive(pdfBase64, fileName);
+                console.log('✅ MEC uploadée sur Drive');
+            } catch(e) { console.warn('Erreur upload Drive MEC:', e); }
+            
             doc.save(fileName);
             
             alert('✅ MEC générée et téléchargée avec succès !');
