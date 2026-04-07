@@ -2823,16 +2823,42 @@ const avisImages = [
             }
         }
         
-        function handleDrop(event, fileNum) {
+        async function handleDrop(event, fileNum) {
             event.preventDefault();
             event.stopPropagation();
             event.currentTarget.classList.remove('dragover');
+            
+            // Vérifier que le nom de la société est renseigné
+            const nomInput = document.getElementById('nomSocieteInput');
+            const nomSociete = nomInput ? nomInput.value.trim() : currentClientName;
+            
+            if (!nomSociete) {
+                alert('⚠️ Merci de renseigner le nom de la société avant de déposer une facture.');
+                nomInput && nomInput.focus();
+                return;
+            }
+            
+            currentClientName = nomSociete;
             
             const file = event.dataTransfer.files[0];
             
             if (file) {
                 selectedFiles[`file${fileNum}`] = file;
                 document.getElementById(`fileName${fileNum}`).textContent = '📄 ' + file.name;
+                
+                // Créer dossier Drive et uploader la facture
+                if (fileNum === 1) {
+                    createDriveFolder(nomSociete).then(async () => {
+                        const base64 = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = e => resolve(e.target.result.split(',')[1]);
+                            reader.onerror = reject;
+                            reader.readAsDataURL(file);
+                        });
+                        await uploadToDrive(base64, 'Facture_' + file.name);
+                        console.log('✅ Facture drag&drop uploadée sur Drive:', file.name);
+                    });
+                }
             }
         }
         
