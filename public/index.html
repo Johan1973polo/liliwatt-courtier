@@ -2819,23 +2819,24 @@ const avisImages = [
             // Créer dossier Drive en arrière-plan
             createDriveFolder(nomEntreprise);
             
-            // Uploader la facture originale sur Drive
-            setTimeout(async () => {
+            // Uploader la facture originale sur Drive APRÈS création dossier
+            createDriveFolder(nomEntreprise).then(async () => {
                 const filesToUpload = [selectedFiles.file1, selectedFiles.file2, selectedFiles.file3].filter(Boolean);
                 for (const file of filesToUpload) {
                     try {
-                        const reader = new FileReader();
-                        reader.onload = async (e) => {
-                            const base64 = e.target.result.split(',')[1];
-                            await uploadToDrive(base64, 'Facture_' + file.name);
-                            console.log('✅ Facture uploadée sur Drive:', file.name);
-                        };
-                        reader.readAsDataURL(file);
+                        const base64 = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = e => resolve(e.target.result.split(',')[1]);
+                            reader.onerror = reject;
+                            reader.readAsDataURL(file);
+                        });
+                        await uploadToDrive(base64, 'Facture_' + file.name);
+                        console.log('✅ Facture uploadée sur Drive:', file.name);
                     } catch(err) {
                         console.warn('Erreur upload facture:', err);
                     }
                 }
-            }, 2000); // Attendre que le dossier soit créé
+            });
 
             // DEBUG C4 UPLOAD
             
@@ -8756,6 +8757,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                     currentClientName = clientName;
                     console.log('✅ Dossier Drive créé:', data.folderId);
                 }
+                return data;
             } catch(e) {
                 console.warn('Drive folder creation failed:', e);
             }
