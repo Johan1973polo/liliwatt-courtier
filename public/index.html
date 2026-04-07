@@ -2355,7 +2355,7 @@ button[onclick*="previousStep"] {
                 `;
                 // Charger le nombre de notifications
                 loadNotificationCount();
-            } else {
+            } else if (currentUser.role === 'vendeur') {
                 userControls.innerHTML = `
                     <div style="text-align:right;">
                         <div style="margin-bottom:10px;display:flex;gap:8px;justify-content:flex-end;">
@@ -2374,7 +2374,26 @@ button[onclick*="previousStep"] {
                         </div>
                     </div>
                 `;
-                
+            } else if (currentUser.role === 'referent') {
+                userControls.innerHTML = `
+                    <div style="text-align:right;">
+                        <div style="margin-bottom:10px;display:flex;gap:8px;justify-content:flex-end;">
+                            <button onclick="window.location.href='referent-panel.html'" style="padding:10px 20px;background:#7c3aed!important;color:white!important;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">
+                                👥 Mon Équipe
+                            </button>
+                            <button onclick="logout()" style="padding:10px 20px;background:#ef4444!important;color:white!important;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">
+                                🚪 Déconnexion
+                            </button>
+                        </div>
+                        <div style="color:white;font-size:14px;">
+                            👑 Manager Commercial — ${currentUser.email}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Restrictions pour les vendeurs et référents
+            if (currentUser.role === 'vendeur' || currentUser.role === 'referent') {
                 // Restrictions pour les vendeurs
                 // Ils ne peuvent pas générer la MEC finale ni envoyer l'email
                 setTimeout(() => {
