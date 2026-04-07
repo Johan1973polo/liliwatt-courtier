@@ -2333,20 +2333,20 @@ button[onclick*="previousStep"] {
             const userControls = document.getElementById('userControls');
             if (isAdmin) {
                 userControls.innerHTML = `
-                    <div style="text-align: right;">
-                        <div style="margin-bottom: 10px;">
-                            <button onclick="window.location.href='admin-panel.html'" style="padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 8px; margin-right: 10px; cursor: pointer;">
+                    <div style="text-align:right;">
+                        <div style="margin-bottom:10px;display:flex;gap:8px;justify-content:flex-end;">
+                            <button onclick="window.location.href='admin-panel.html'" style="padding:10px 20px;background:#2563eb!important;color:white!important;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">
                                 👥 Gestion
                             </button>
-                            <button onclick="window.location.href='admin-panel.html#mec'" style="padding: 10px 20px; background: #f59e0b; color: white; border: none; border-radius: 8px; margin-right: 10px; cursor: pointer; position: relative;">
+                            <button onclick="window.location.href='admin-panel.html#mec'" style="padding:10px 20px;background:#f59e0b!important;color:white!important;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;position:relative;">
                                 🔔 MEC
-                                <span id="notifBadge" style="position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; width: 20px; height: 20px; display: none; align-items: center; justify-content: center; font-size: 12px;"></span>
+                                <span id="notifBadge" style="position:absolute;top:-5px;right:-5px;background:red;color:white;border-radius:50%;width:20px;height:20px;display:none;align-items:center;justify-content:center;font-size:12px;"></span>
                             </button>
-                            <button onclick="logout()" style="padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                            <button onclick="logout()" style="padding:10px 20px;background:#ef4444!important;color:white!important;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">
                                 🚪 Déconnexion
                             </button>
                         </div>
-                        <div style="color: white; font-size: 14px;">
+                        <div style="color:white;font-size:14px;">
                             👑 ${currentUser.email}
                         </div>
                     </div>
@@ -2355,16 +2355,16 @@ button[onclick*="previousStep"] {
                 loadNotificationCount();
             } else {
                 userControls.innerHTML = `
-                    <div style="text-align: right;">
-                        <div style="margin-bottom: 10px;">
-                            <button onclick="window.location.href='vendeur-panel.html'" style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 8px; margin-right: 10px; cursor: pointer;">
+                    <div style="text-align:right;">
+                        <div style="margin-bottom:10px;display:flex;gap:8px;justify-content:flex-end;">
+                            <button onclick="window.location.href='vendeur-panel.html'" style="padding:10px 20px;background:#10b981!important;color:white!important;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">
                                 📋 Mes Infos
                             </button>
-                            <button onclick="logout()" style="padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                            <button onclick="logout()" style="padding:10px 20px;background:#ef4444!important;color:white!important;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">
                                 🚪 Déconnexion
                             </button>
                         </div>
-                        <div style="color: white; font-size: 14px;">
+                        <div style="color:white;font-size:14px;">
                             👤 ${currentUser.email}
                         </div>
                     </div>
