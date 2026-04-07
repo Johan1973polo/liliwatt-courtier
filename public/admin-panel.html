@@ -1064,7 +1064,7 @@ Cette action est irréversible.`)) return;
             
             const token = localStorage.getItem('token');
             const r = await fetch('/api/drive/supprimer-client', {
-                method: 'DELETE',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                 body: JSON.stringify({ vendeurEmail, clientId, clientName })
             });

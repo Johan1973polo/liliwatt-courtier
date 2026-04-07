@@ -1433,7 +1433,7 @@ app.post('/api/drive/deplacer-client', verifyToken, isAdmin, async (req, res) =>
 });
 
 // Supprimer dossier client
-app.delete('/api/drive/supprimer-client', verifyToken, isAdmin, async (req, res) => {
+app.post('/api/drive/supprimer-client', verifyToken, isAdmin, async (req, res) => {
   try {
     const { clientId } = req.body;
     const drive = getDriveClient();
