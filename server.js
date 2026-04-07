@@ -772,7 +772,7 @@ async function getVendeurFromSheets(email) {
     const sheets = google.sheets({ version: 'v4', auth });
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEETS_ID,
-      range: 'A:F'
+      range: 'A:G'
     });
     const rows = res.data.values || [];
     for (const row of rows) {
@@ -1167,7 +1167,7 @@ async function getVendeursFromSheets() {
   const sheets = google.sheets({ version: 'v4', auth });
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEETS_ID,
-    range: 'A:F'
+    range: 'A:G'
   });
   const rows = res.data.values || [];
   return rows
