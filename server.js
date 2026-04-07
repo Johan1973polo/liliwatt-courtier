@@ -1367,7 +1367,7 @@ app.post('/api/notifications/:id/valider-referent', verifyToken, async (req, res
 // ===== ROUTES GESTION DOSSIERS DRIVE =====
 
 // Changer statut client (déplacer entre attente/signé/perdu)
-app.post('/api/drive/changer-statut', verifyToken, isAdmin, async (req, res) => {
+app.post('/api/drive/changer-statut', verifyToken, async (req, res) => {
   try {
     const { vendeurEmail, clientId, clientName, statutActuel, nouveauStatut } = req.body;
     const drive = getDriveClient();
