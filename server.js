@@ -904,4 +904,44 @@ app.post('/api/drive/create-client-folder', verifyToken, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// Route renommage dossier client Drive
+app.post('/api/drive/rename-folder', verifyToken, async (req, res) => {
+  if (!DRIVE_CREDENTIALS) return res.status(503).json({ error: 'Drive non configuré' });
+  try {
+    const { oldName, newName, vendeurDriveFolderId } = req.body;
+    const drive = getDriveClient();
+    
+    const vendeurFolderId = vendeurDriveFolderId || req.user.drive_folder_id;
+    if (!vendeurFolderId) return res.status(400).json({ error: 'Pas de dossier vendeur' });
+    
+    // Chercher le dossier "CLIENT EN ATTENTE"
+    const attenteId = await findOrCreateFolder(drive, 'CLIENT EN ATTENTE', vendeurFolderId);
+    
+    // Chercher le dossier avec l'ancien nom
+    const res2 = await drive.files.list({
+      q: `'${attenteId}' in parents and name='${oldName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: 'files(id, name)',
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true
+    });
+    
+    if (res2.data.files.length === 0) {
+      return res.json({ success: false, error: 'Dossier non trouvé' });
+    }
+    
+    // Renommer le dossier
+    const folderId = res2.data.files[0].id;
+    await drive.files.update({
+      fileId: folderId,
+      requestBody: { name: newName },
+      supportsAllDrives: true
+    });
+    
+    res.json({ success: true, folderId, oldName, newName });
+  } catch(err) {
+    console.error('Rename error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ===== FIN GOOGLE DRIVE =====
