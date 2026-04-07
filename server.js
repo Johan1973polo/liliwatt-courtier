@@ -944,4 +944,88 @@ app.post('/api/drive/rename-folder', verifyToken, async (req, res) => {
   }
 });
 
+// Route liste documents par vendeur
+app.get('/api/drive/list-documents', verifyToken, async (req, res) => {
+  if (!DRIVE_CREDENTIALS) return res.status(503).json({ error: 'Drive non configuré' });
+  try {
+    const drive = getDriveClient();
+    const vendeurFolderId = req.user.drive_folder_id;
+    if (!vendeurFolderId) return res.json({ success: true, attente: [], signe: [], perdu: [] });
+
+    async function listFolder(parentId, folderName) {
+      // Chercher le dossier
+      const folderRes = await drive.files.list({
+        q: `'${parentId}' in parents and name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+        fields: 'files(id, name)',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true
+      });
+      if (!folderRes.data.files.length) return [];
+      const folderId = folderRes.data.files[0].id;
+
+      // Lister les sous-dossiers clients
+      const clientsRes = await drive.files.list({
+        q: `'${folderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+        fields: 'files(id, name)',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true
+      });
+
+      // Pour chaque client, lister ses fichiers
+      const clients = await Promise.all(clientsRes.data.files.map(async (client) => {
+        const filesRes = await drive.files.list({
+          q: `'${client.id}' in parents and trashed=false`,
+          fields: 'files(id, name, size, webViewLink, mimeType)',
+          supportsAllDrives: true,
+          includeItemsFromAllDrives: true
+        });
+        return {
+          id: client.id,
+          name: client.name,
+          files: filesRes.data.files.map(f => ({
+            id: f.id,
+            name: f.name,
+            size: f.size ? Math.round(f.size/1024) + ' Ko' : '—',
+            webViewLink: f.webViewLink
+          }))
+        };
+      }));
+      return clients;
+    }
+
+    const [attente, signe, perdu] = await Promise.all([
+      listFolder(vendeurFolderId, 'CLIENT EN ATTENTE'),
+      listFolder(vendeurFolderId, 'Clients signés'),
+      listFolder(vendeurFolderId, 'Clients perdus')
+    ]);
+
+    res.json({ success: true, attente, signe, perdu });
+  } catch(err) {
+    console.error('list-documents error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Route upload dans un dossier spécifique
+app.post('/api/drive/upload-to-folder', verifyToken, async (req, res) => {
+  if (!DRIVE_CREDENTIALS) return res.status(503).json({ error: 'Drive non configuré' });
+  try {
+    const { pdfBase64, fileName, folderId } = req.body;
+    const drive = getDriveClient();
+    const buffer = Buffer.from(pdfBase64, 'base64');
+    const { Readable } = require('stream');
+    const stream = Readable.from(buffer);
+    const mimeType = fileName.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream';
+    const file = await drive.files.create({
+      requestBody: { name: fileName, parents: [folderId], mimeType },
+      media: { mimeType, body: stream },
+      fields: 'id, webViewLink',
+      supportsAllDrives: true
+    });
+    res.json({ success: true, fileId: file.data.id, link: file.data.webViewLink });
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ===== FIN GOOGLE DRIVE =====
