@@ -1028,4 +1028,32 @@ app.post('/api/drive/upload-to-folder', verifyToken, async (req, res) => {
   }
 });
 
+// Route téléchargement fichier Drive via service account
+app.get('/api/drive/download/:fileId', verifyToken, async (req, res) => {
+  if (!DRIVE_CREDENTIALS) return res.status(503).json({ error: 'Drive non configuré' });
+  try {
+    const drive = getDriveClient();
+    const fileId = req.params.fileId;
+    
+    // Récupérer les métadonnées
+    const meta = await drive.files.get({
+      fileId,
+      fields: 'name, mimeType',
+      supportsAllDrives: true
+    });
+    
+    // Télécharger le contenu
+    const fileRes = await drive.files.get(
+      { fileId, alt: 'media', supportsAllDrives: true },
+      { responseType: 'stream' }
+    );
+    
+    res.setHeader('Content-Disposition', `inline; filename="${meta.data.name}"`);
+    res.setHeader('Content-Type', meta.data.mimeType || 'application/octet-stream');
+    fileRes.data.pipe(res);
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ===== FIN GOOGLE DRIVE =====
