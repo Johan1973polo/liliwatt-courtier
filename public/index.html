@@ -2490,7 +2490,19 @@ const avisImages = [
                 if (mecData) {
                     const sessionData = JSON.parse(mecData);
                     console.log('📥 Chargement des données de la MEC du vendeur...');
-                    
+
+                    // ✅ Définir le drive_folder_id du vendeur pour les uploads
+                    if (sessionData.vendeur_drive_folder_id) {
+                        vendeurDriveFolderId = sessionData.vendeur_drive_folder_id;
+                        console.log('📁 Upload Drive vers le dossier du vendeur:', sessionData.vendeur_email);
+                    }
+
+                    // ✅ Définir le nom du client pour le dossier Drive
+                    if (sessionData.nom_client) {
+                        currentClientName = sessionData.nom_client;
+                        console.log('👤 Nom du client:', currentClientName);
+                    }
+
                     // Restaurer toutes les données
                     if (sessionData.extractedData) {
                         extractedData = sessionData.extractedData;
@@ -8801,6 +8813,7 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
         let _resolveClientName = null;
         let currentClientDriveFolderId = null;
         let currentClientName = null;
+        let vendeurDriveFolderId = null; // Override pour MEC reprise par admin
 
         function askClientName(defaultName = '') {
             return new Promise((resolve) => {
@@ -8851,10 +8864,23 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             try {
                 const token = localStorage.getItem('token');
                 const clientName = currentClientName || extractedData?.nom_client || 'Client';
+
+                // ✅ Si vendeurDriveFolderId est défini (MEC reprise par admin), l'utiliser
+                const payload = {
+                    pdfBase64,
+                    fileName,
+                    clientName,
+                    docType: fileName
+                };
+                if (vendeurDriveFolderId) {
+                    payload.overrideDriveFolderId = vendeurDriveFolderId;
+                    console.log('📁 Upload avec override vers dossier vendeur');
+                }
+
                 const res = await fetch('/api/drive/upload', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ pdfBase64, fileName, clientName, docType: fileName })
+                    body: JSON.stringify(payload)
                 });
                 const data = await res.json();
                 if (data.success) {

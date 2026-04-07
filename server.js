@@ -825,11 +825,15 @@ app.post('/api/drive/upload', verifyToken, async (req, res) => {
     return res.status(503).json({ error: 'Google Drive non configuré' });
   }
   try {
-    const { pdfBase64, fileName, clientName, docType } = req.body;
+    const { pdfBase64, fileName, clientName, docType, overrideDriveFolderId } = req.body;
     const drive = getDriveClient();
-    
-    // Utiliser drive_folder_id du JWT vendeur
-    const vendeurFolderId = req.user.drive_folder_id || null;
+
+    // ✅ Utiliser overrideDriveFolderId si fourni (MEC reprise par admin), sinon drive_folder_id du JWT
+    const vendeurFolderId = overrideDriveFolderId || req.user.drive_folder_id || null;
+    if (overrideDriveFolderId) {
+      console.log('📁 Upload avec override vers dossier vendeur:', overrideDriveFolderId);
+    }
+
     let attenteId;
     if (vendeurFolderId) {
       attenteId = await findOrCreateFolder(drive, 'CLIENT EN ATTENTE', vendeurFolderId);

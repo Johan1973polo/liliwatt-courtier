@@ -582,7 +582,13 @@
                     if (notification && notification.extractedData) {
                         // Sauvegarder les données extraites pour reprise
                         const mecData = {
-                            extractedData: notification.extractedData
+                            extractedData: notification.extractedData,
+                            volumes: notification.volumes || null,
+                            prix: notification.prix || null,
+                            referent: notification.referent || null,
+                            vendeur_drive_folder_id: notification.vendeur_drive_folder_id || '',
+                            vendeur_email: notification.vendeur_email || '',
+                            nom_client: notification.extractedData?.nom_client || ''
                         };
                         localStorage.setItem('reprendre_mec_data', JSON.stringify(mecData));
                         localStorage.setItem('reprendre_mec_id', notifId);
