@@ -12,7 +12,8 @@ const path = require('path');
 const multer = require('multer');
 const axios = require('axios');
 const { Readable } = require('stream');
-const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
+const chromium = require('@sparticuz/chromium');
+const puppeteer = require('puppeteer-core');
 
 dotenv.config();
 
@@ -1717,153 +1718,172 @@ app.post('/rgpd/:token/submit', rgpdUpload.any(), async (req, res) => {
       uploadedFiles.push({ name: driveFile.data.name, link: driveFile.data.webViewLink, field: file.fieldname });
     }
 
-    // 3. Générer le PDF récapitulatif RGPD via pdf-lib
+    // 3. Générer le PDF récapitulatif RGPD via Puppeteer
     const energieLabel = { electricite: 'Électricité', gaz: 'Gaz', les_deux: 'Électricité + Gaz' }[energie] || energie;
+    const refNumber = 'RGPD-' + Date.now().toString(36).toUpperCase();
+    const dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    const sitesRows = uploadedFiles.map(f => {
+      const parts = f.field.split('_');
+      const siteNum = parts[1] || '?';
+      const type = parts.slice(2).join(' ') || '\u2014';
+      return '<tr><td>Site ' + siteNum + '</td><td>Voir facture jointe</td><td>' + type + '</td><td>' + f.name + '</td></tr>';
+    }).join('');
+
+    const pdfHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;color:#1e1b4b;background:#fff;padding:0;font-size:13px;line-height:1.6}
+
+/* EN-TÊTE */
+.header{background:linear-gradient(135deg,#1e1b4b 0%,#7c3aed 100%);padding:40px 50px;display:flex;justify-content:space-between;align-items:center}
+.header-left h1{color:#fff;font-size:32px;font-weight:800;letter-spacing:4px;margin:0}
+.header-left p{color:rgba(255,255,255,.7);font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+.header-right{text-align:right;color:rgba(255,255,255,.85);font-size:11px;line-height:1.8}
+.header-right .ref{font-weight:700;font-size:12px;color:#fff}
+
+/* SECTIONS */
+.content{padding:40px 50px 30px}
+.section{margin-bottom:32px}
+.section-title{font-size:15px;font-weight:700;color:#7c3aed;border-bottom:2px solid #ede9fe;padding-bottom:8px;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px}
+
+/* BLOC LÉGAL */
+.legal-block{background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:24px 28px;margin-bottom:32px;font-size:12px;color:#374151;line-height:1.7}
+.legal-block strong{color:#1e1b4b}
+
+/* INFO GRID */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 40px;margin-bottom:8px}
+.info-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #f3f0ff}
+.info-label{font-weight:600;color:#6b7280;min-width:140px;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+.info-value{font-weight:600;color:#1e1b4b;font-size:13px}
+
+/* MENTION PDL */
+.pdl-notice{background:#f5f3ff;border-left:4px solid #7c3aed;padding:14px 20px;margin:20px 0 28px;font-size:12px;color:#5b21b6;border-radius:0 8px 8px 0;font-style:italic}
+
+/* TABLEAU */
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
+thead{background:#7c3aed}
+thead th{color:#fff;padding:10px 14px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+tbody tr{border-bottom:1px solid #ede9fe}
+tbody tr:nth-child(even){background:#faf5ff}
+tbody td{padding:10px 14px;color:#374151}
+
+/* CONSENTEMENT VERT */
+.consent-box{background:#f0fdf4;border:2px solid #86efac;border-radius:10px;padding:22px 28px;margin-bottom:32px;display:flex;gap:16px;align-items:flex-start}
+.consent-check{width:28px;height:28px;background:#22c55e;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.consent-check svg{width:16px;height:16px}
+.consent-text h3{color:#166534;font-size:14px;font-weight:700;margin-bottom:6px}
+.consent-text p{color:#374151;font-size:12px;line-height:1.6}
+
+/* BANDEAU SIGNATURE */
+.signature-band{background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:10px;padding:24px 28px;margin-bottom:32px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sig-item{display:flex;flex-direction:column;gap:2px}
+.sig-item .sig-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.5);font-weight:600}
+.sig-item .sig-value{font-size:12px;color:#fff;font-weight:500;word-break:break-all}
+.sig-full{grid-column:1/3}
+
+/* PIED DE PAGE */
+.footer{background:#f5f3ff;border-top:2px solid #ede9fe;padding:20px 50px;text-align:center;font-size:10px;color:#9ca3af;line-height:1.8}
+.footer strong{color:#7c3aed}
+</style></head><body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>LILIWATT</h1>
+    <p>Mandat de courtage en \u00e9nergie &mdash; Consentement RGPD</p>
+  </div>
+  <div class="header-right">
+    <div class="ref">${refNumber}</div>
+    <div>${dateStr}</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="legal-block">
+    <strong>${prenom} ${nom}</strong>, en qualit\u00e9 de signataire autoris\u00e9(e) pour le compte de <strong>${raison_sociale}</strong>,
+    autorise la soci\u00e9t\u00e9 <strong>LILISTRAT STRAT\u00c9GIE SAS</strong> (nom commercial : LILIWATT), SIRET 93227498500016,
+    si\u00e8ge social 59 rue de Ponthieu, Bureau 326 \u2014 75008 Paris, \u00e0 effectuer les d\u00e9marches n\u00e9cessaires aupr\u00e8s
+    des fournisseurs d\u2019\u00e9nergie pour l\u2019obtention de propositions commerciales.
+  </div>
+
+  <div class="section">
+    <div class="section-title">Informations client</div>
+    <div class="info-grid">
+      <div class="info-row"><span class="info-label">Raison sociale</span><span class="info-value">${raison_sociale}</span></div>
+      <div class="info-row"><span class="info-label">\u00c9nergie</span><span class="info-value">${energieLabel}</span></div>
+      <div class="info-row"><span class="info-label">Nom</span><span class="info-value">${nom}</span></div>
+      <div class="info-row"><span class="info-label">Pr\u00e9nom</span><span class="info-value">${prenom}</span></div>
+      <div class="info-row"><span class="info-label">T\u00e9l\u00e9phone</span><span class="info-value">${telephone}</span></div>
+      <div class="info-row"><span class="info-label">Email</span><span class="info-value">${email}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Conseiller LILIWATT</div>
+    <div class="info-grid">
+      <div class="info-row"><span class="info-label">Nom</span><span class="info-value">${vendeur.nom}</span></div>
+      <div class="info-row"><span class="info-label">Email</span><span class="info-value">${vendeur.email}</span></div>
+    </div>
+  </div>
+
+  <div class="pdl-notice">
+    Les points de livraison (PDL/PCE) concern\u00e9s par ce mandat sont ceux pr\u00e9sents sur les factures jointes au pr\u00e9sent document.
+  </div>
+
+  <div class="section">
+    <div class="section-title">Sites &amp; factures transmises</div>
+    <table>
+      <thead><tr><th>Site</th><th>PDL / PCE</th><th>Type</th><th>Fichier</th></tr></thead>
+      <tbody>${sitesRows || '<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:16px">Aucun fichier transmis</td></tr>'}</tbody>
+    </table>
+  </div>
+
+  <div class="consent-box">
+    <div class="consent-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <div class="consent-text">
+      <h3>Consentement RGPD donn\u00e9</h3>
+      <p>Le client a accept\u00e9 que ses donn\u00e9es personnelles et ses factures soient transmises \u00e0 LILIWATT
+      (LILISTRAT STRAT\u00c9GIE SAS) dans le cadre de l\u2019\u00e9tude de son dossier de courtage en \u00e9nergie.
+      Conform\u00e9ment au RGPD, il dispose d\u2019un droit d\u2019acc\u00e8s, de rectification et de suppression
+      de ses donn\u00e9es en contactant bo@liliwatt.fr.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Signature \u00e9lectronique</div>
+    <div class="signature-band">
+      <div class="sig-item"><span class="sig-label">Adresse IP</span><span class="sig-value">${clientIp}</span></div>
+      <div class="sig-item"><span class="sig-label">Horodatage</span><span class="sig-value">${horodatage}</span></div>
+      <div class="sig-item sig-full"><span class="sig-label">User Agent</span><span class="sig-value">${userAgent}</span></div>
+      <div class="sig-item"><span class="sig-label">Validit\u00e9</span><span class="sig-value">24 mois \u00e0 compter de la date de signature</span></div>
+      <div class="sig-item"><span class="sig-label">R\u00e9f\u00e9rence</span><span class="sig-value">${refNumber}</span></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <strong>LILIWATT</strong> &mdash; LILISTRAT STRAT\u00c9GIE SAS &mdash; SIRET 93227498500016<br>
+  59 rue de Ponthieu, Bureau 326 &mdash; 75008 Paris &mdash; bo@liliwatt.fr &mdash; www.liliwatt.fr
+</div>
+
+</body></html>`;
 
     let pdfBase64 = null;
     try {
-      const pdfDoc = await PDFDocument.create();
-      const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-      const purple = rgb(0.486, 0.227, 0.929);     // #7c3aed
-      const darkPurple = rgb(0.118, 0.106, 0.294);  // #1e1b4b
-      const gray = rgb(0.42, 0.44, 0.47);
-      const lightGray = rgb(0.6, 0.63, 0.66);
-      const white = rgb(1, 1, 1);
-      const bgLight = rgb(0.96, 0.953, 1);          // #f5f3ff
-
-      const W = 595.28, H = 841.89; // A4
-      let page = pdfDoc.addPage([W, H]);
-      let y = H;
-
-      // Helper : ajouter une page si nécessaire
-      function checkPage(needed) {
-        if (y - needed < 50) {
-          page = pdfDoc.addPage([W, H]);
-          y = H - 40;
-        }
-      }
-
-      // --- En-tête violet ---
-      page.drawRectangle({ x: 0, y: H - 100, width: W, height: 100, color: darkPurple });
-      page.drawRectangle({ x: 0, y: H - 100, width: W * 0.6, height: 100, color: purple, opacity: 0.3 });
-      page.drawText('LILIWATT', { x: 40, y: H - 50, size: 28, font: helveticaBold, color: white });
-      page.drawText('Récapitulatif RGPD — Transmission de factures', { x: 40, y: H - 72, size: 10, font: helvetica, color: rgb(1, 1, 1, 0.7) });
-      const dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-      const dateW = helvetica.widthOfTextAtSize(dateStr, 9);
-      page.drawText(dateStr, { x: W - 40 - dateW, y: H - 50, size: 9, font: helvetica, color: rgb(1, 1, 1, 0.8) });
-      y = H - 130;
-
-      // --- Helper : titre de section ---
-      function drawSection(title) {
-        checkPage(30);
-        page.drawRectangle({ x: 40, y: y - 2, width: W - 80, height: 1, color: bgLight });
-        page.drawText(title, { x: 40, y: y, size: 13, font: helveticaBold, color: purple });
-        y -= 22;
-      }
-
-      // --- Helper : ligne label/valeur ---
-      function drawRow(label, value) {
-        checkPage(18);
-        page.drawText(label, { x: 50, y: y, size: 9, font: helveticaBold, color: gray });
-        page.drawText(String(value || '—'), { x: 200, y: y, size: 9, font: helvetica, color: darkPurple });
-        y -= 16;
-      }
-
-      // --- Bloc client ---
-      drawSection('Informations client');
-      drawRow('Raison sociale', raison_sociale);
-      drawRow('Nom', nom);
-      drawRow('Prénom', prenom);
-      drawRow('Téléphone', telephone);
-      drawRow('Email', email);
-      drawRow('Énergie', energieLabel);
-      y -= 10;
-
-      // --- Bloc vendeur ---
-      drawSection('Conseiller LILIWATT');
-      drawRow('Nom', vendeur.nom);
-      drawRow('Email', vendeur.email);
-      y -= 10;
-
-      // --- Fichiers uploadés ---
-      drawSection('Factures transmises');
-      if (uploadedFiles.length === 0) {
-        page.drawText('Aucun fichier transmis.', { x: 50, y: y, size: 9, font: helvetica, color: gray });
-        y -= 16;
-      } else {
-        // En-tête tableau
-        checkPage(18);
-        page.drawRectangle({ x: 40, y: y - 4, width: W - 80, height: 16, color: bgLight });
-        page.drawText('Site', { x: 50, y: y, size: 8, font: helveticaBold, color: purple });
-        page.drawText('Type', { x: 150, y: y, size: 8, font: helveticaBold, color: purple });
-        page.drawText('Fichier', { x: 300, y: y, size: 8, font: helveticaBold, color: purple });
-        y -= 18;
-        for (const f of uploadedFiles) {
-          checkPage(16);
-          const parts = f.field.split('_');
-          const siteNum = parts[1] || '?';
-          const type = parts.slice(2).join(' ') || '—';
-          const fileName = f.name.length > 40 ? f.name.slice(0, 37) + '...' : f.name;
-          page.drawText('Site ' + siteNum, { x: 50, y: y, size: 8, font: helvetica, color: darkPurple });
-          page.drawText(type, { x: 150, y: y, size: 8, font: helvetica, color: darkPurple });
-          page.drawText(fileName, { x: 300, y: y, size: 8, font: helvetica, color: darkPurple });
-          y -= 14;
-        }
-      }
-      y -= 10;
-
-      // --- Consentement RGPD ---
-      drawSection('Consentement RGPD');
-      checkPage(60);
-      page.drawRectangle({ x: 40, y: y - 50, width: W - 80, height: 65, color: bgLight, borderColor: rgb(0.847, 0.706, 0.992), borderWidth: 1 });
-      page.drawText('V', { x: 50, y: y - 2, size: 12, font: helveticaBold, color: purple });
-      page.drawText('  Consentement donné', { x: 62, y: y - 2, size: 10, font: helveticaBold, color: darkPurple });
-      y -= 18;
-      const rgpdText = "J'accepte que mes données personnelles et mes factures soient transmises à LILIWATT (LILISTRAT STRATÉGIE SAS) dans le cadre de l'étude de mon dossier de courtage en énergie.";
-      // Word-wrap RGPD text
-      const words = rgpdText.split(' ');
-      let line = '';
-      for (const word of words) {
-        const test = line ? line + ' ' + word : word;
-        if (helvetica.widthOfTextAtSize(test, 8) > W - 120) {
-          page.drawText(line, { x: 50, y: y, size: 8, font: helvetica, color: gray });
-          y -= 12;
-          line = word;
-        } else {
-          line = test;
-        }
-      }
-      if (line) {
-        page.drawText(line, { x: 50, y: y, size: 8, font: helvetica, color: gray });
-        y -= 12;
-      }
-      y -= 14;
-
-      // --- Bandeau signature numérique ---
-      drawSection('Signature numérique');
-      checkPage(50);
-      page.drawRectangle({ x: 40, y: y - 40, width: W - 80, height: 55, color: darkPurple });
-      page.drawText('Adresse IP :', { x: 50, y: y, size: 8, font: helveticaBold, color: rgb(0.8, 0.8, 0.8) });
-      page.drawText(clientIp, { x: 140, y: y, size: 8, font: helvetica, color: white });
-      y -= 14;
-      page.drawText('Horodatage :', { x: 50, y: y, size: 8, font: helveticaBold, color: rgb(0.8, 0.8, 0.8) });
-      page.drawText(horodatage, { x: 140, y: y, size: 8, font: helvetica, color: white });
-      y -= 14;
-      page.drawText('User Agent :', { x: 50, y: y, size: 8, font: helveticaBold, color: rgb(0.8, 0.8, 0.8) });
-      const uaTrunc = userAgent.length > 80 ? userAgent.slice(0, 77) + '...' : userAgent;
-      page.drawText(uaTrunc, { x: 140, y: y, size: 7, font: helvetica, color: white });
-      y -= 24;
-
-      // --- Pied de page ---
-      page.drawRectangle({ x: 0, y: 0, width: W, height: 35, color: bgLight });
-      const footer = 'LILIWATT — LILISTRAT STRATÉGIE SAS — 59 rue de Ponthieu, Bureau 326 — 75008 Paris';
-      const footerW = helvetica.widthOfTextAtSize(footer, 7);
-      page.drawText(footer, { x: (W - footerW) / 2, y: 14, size: 7, font: helvetica, color: lightGray });
-
-      const pdfBytes = await pdfDoc.save();
-      pdfBase64 = Buffer.from(pdfBytes).toString('base64');
-      console.log('✅ PDF RGPD généré via pdf-lib');
+      const browser = await puppeteer.launch({
+        args: chromium.args,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless
+      });
+      const pdfPage = await browser.newPage();
+      await pdfPage.setContent(pdfHtml, { waitUntil: 'networkidle0' });
+      const pdfBuffer = await pdfPage.pdf({ format: 'A4', printBackground: true, margin: { top: '0', bottom: '0', left: '0', right: '0' } });
+      await browser.close();
+      pdfBase64 = pdfBuffer.toString('base64');
+      console.log('✅ PDF RGPD généré via Puppeteer');
     } catch (pdfErr) {
       console.error('⚠️ Erreur génération PDF RGPD:', pdfErr.message);
     }
