@@ -2072,21 +2072,30 @@ ${pdlRows}
       console.error(`⚠️ Erreur mail bo@liliwatt.fr:`, mailErr.message);
     }
 
-    // 6. Page de confirmation
+    // 6. Page de confirmation avec redirection
     res.send(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LILIWATT — Envoi confirmé</title>
+<meta http-equiv="refresh" content="5;url=https://liliwatt.fr">
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',system-ui,sans-serif;background:#f5f3ff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.box{background:#fff;border-radius:16px;padding:48px;text-align:center;max-width:500px;box-shadow:0 4px 24px rgba(124,58,237,.1)}
-.check{width:64px;height:64px;background:linear-gradient(135deg,#7c3aed,#d946ef);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
-.check svg{width:32px;height:32px;fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-h1{color:#1e1b4b;font-size:22px;margin-bottom:12px}
-p{color:#6b7280;font-size:14px;line-height:1.6}
+.box{background:#fff;border-radius:16px;padding:48px;text-align:center;max-width:520px;box-shadow:0 4px 24px rgba(124,58,237,.1)}
+.check{width:68px;height:68px;background:linear-gradient(135deg,#7c3aed,#d946ef);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px}
+.check svg{width:34px;height:34px;fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+h1{color:#1e1b4b;font-size:26px;margin-bottom:8px}
+.subtitle{color:#374151;font-size:15px;line-height:1.6;margin-bottom:24px}
+.redirect{color:#9ca3af;font-size:13px;margin-bottom:12px}
+.progress-bar{width:100%;height:6px;background:#ede9fe;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#7c3aed,#d946ef);border-radius:3px;animation:fill 5s linear forwards}
+@keyframes fill{to{width:100%}}
 </style></head><body>
 <div class="box">
 <div class="check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-<h1>Merci, ${prenom} !</h1>
-<p>Vos factures ont bien été transmises à votre conseiller <strong>${vendeur.nom}</strong>.<br>Vous recevrez une proposition sous 48h.</p>
-</div></body></html>`);
+<h1>Merci ${prenom} !</h1>
+<p class="subtitle">Vos documents ont bien été transmis à votre conseiller <strong>${vendeur.nom}</strong>.</p>
+<p class="redirect">Vous allez être redirigé vers liliwatt.fr dans <span id="countdown">5</span> secondes...</p>
+<div class="progress-bar"><div class="progress-fill"></div></div>
+</div>
+<script>let s=5;const c=document.getElementById('countdown');const t=setInterval(()=>{s--;c.textContent=s;if(s<=0){clearInterval(t);window.location.href='https://liliwatt.fr';}},1000);</script>
+</body></html>`);
 
   } catch (err) {
     console.error('❌ Erreur RGPD submit:', err);
