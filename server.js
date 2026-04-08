@@ -9,6 +9,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const multer = require('multer');
+const axios = require('axios');
+const { Readable } = require('stream');
 
 dotenv.config();
 
@@ -1474,5 +1477,384 @@ app.post('/api/drive/supprimer-fichier', verifyToken, isAdmin, async (req, res) 
 });
 
 // ===== FIN ROUTES GESTION DOSSIERS DRIVE =====
+
+// ===== RGPD FORMULAIRE CLIENT =====
+
+const rgpdUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
+
+// Helper : récupérer un vendeur par token RGPD (token = base64 de l'email vendeur)
+function decodeRgpdToken(token) {
+  try {
+    return Buffer.from(token, 'base64url').toString('utf8');
+  } catch { return null; }
+}
+
+// Helper Zoho Mail : obtenir un access token
+async function getZohoMailToken() {
+  const res = await axios.post('https://accounts.zoho.eu/oauth/v2/token', null, {
+    params: {
+      refresh_token: process.env.ZOHO_REFRESH_TOKEN,
+      client_id: process.env.ZOHO_CLIENT_ID,
+      client_secret: process.env.ZOHO_CLIENT_SECRET,
+      grant_type: 'refresh_token'
+    },
+    timeout: 15000
+  });
+  return res.data.access_token;
+}
+
+// Helper : envoyer un email via Zoho Mail avec pièce jointe base64
+async function sendZohoMail({ to, subject, htmlBody, attachmentBase64, attachmentName }) {
+  const token = await getZohoMailToken();
+  const accountId = process.env.ZOHO_ACCOUNT_ID || '8439060000000002002';
+  const payload = {
+    fromAddress: 'bo@liliwatt.fr',
+    toAddress: to,
+    subject,
+    content: htmlBody,
+    mailFormat: 'html'
+  };
+  if (attachmentBase64 && attachmentName) {
+    payload.attachments = [{ storeName: attachmentName, content: attachmentBase64 }];
+  }
+  const r = await axios.post(
+    `https://mail.zoho.eu/api/accounts/${accountId}/messages`,
+    payload,
+    { headers: { 'Authorization': `Zoho-oauthtoken ${token}`, 'Content-Type': 'application/json' }, timeout: 30000 }
+  );
+  return r.data;
+}
+
+// GET /rgpd/:token — formulaire HTML statique
+app.get('/rgpd/:token', async (req, res) => {
+  const vendeurEmail = decodeRgpdToken(req.params.token);
+  if (!vendeurEmail) return res.status(400).send('Lien invalide.');
+  const vendeurs = await getVendeursFromSheets();
+  const vendeur = vendeurs.find(v => v.email.toLowerCase() === vendeurEmail.toLowerCase());
+  if (!vendeur) return res.status(404).send('Vendeur introuvable.');
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LILIWATT — Transmission de factures</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f5f3ff;min-height:100vh}
+.header{background:linear-gradient(135deg,#1e1b4b,#7c3aed);padding:32px 24px;text-align:center}
+.header h1{color:#fff;font-size:28px;font-weight:800;letter-spacing:3px}
+.header p{color:rgba(255,255,255,.8);font-size:13px;margin-top:6px;text-transform:uppercase;letter-spacing:1px}
+.container{max-width:720px;margin:0 auto;padding:24px 16px 60px}
+.card{background:#fff;border-radius:12px;padding:28px;margin-bottom:20px;box-shadow:0 2px 12px rgba(124,58,237,.08)}
+.card h2{color:#1e1b4b;font-size:18px;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #ede9fe}
+label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;margin-top:14px}
+input[type=text],input[type=email],input[type=tel],select{width:100%;padding:10px 14px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:14px;transition:border .2s}
+input:focus,select:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.1)}
+.radio-group{display:flex;gap:12px;margin-top:6px}
+.radio-group label{display:flex;align-items:center;gap:6px;font-weight:500;cursor:pointer;padding:8px 16px;border:1.5px solid #e9d5ff;border-radius:8px;transition:all .2s}
+.radio-group input:checked+span{color:#7c3aed;font-weight:700}
+.radio-group label:has(input:checked){border-color:#7c3aed;background:#f5f3ff}
+.file-input{margin-top:6px}
+.file-input input[type=file]{width:100%;padding:8px;border:1.5px dashed #d8b4fe;border-radius:8px;background:#faf5ff;cursor:pointer}
+.site-block{border:1.5px solid #ede9fe;border-radius:10px;padding:16px;margin-top:12px;position:relative}
+.site-block .site-num{position:absolute;top:-10px;left:14px;background:#7c3aed;color:#fff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:10px}
+.btn{display:inline-block;padding:12px 28px;border:none;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#7c3aed,#d946ef);color:#fff;width:100%}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,58,237,.3)}
+.btn-secondary{background:#ede9fe;color:#7c3aed;font-size:13px;margin-top:10px}
+.btn-secondary:hover{background:#ddd6fe}
+.checkbox-row{display:flex;align-items:flex-start;gap:10px;margin-top:16px}
+.checkbox-row input[type=checkbox]{margin-top:3px;accent-color:#7c3aed;width:18px;height:18px}
+.checkbox-row span{font-size:13px;color:#374151;line-height:1.5}
+.vendeur-badge{display:inline-block;background:#ede9fe;color:#5b21b6;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-top:8px}
+#energy-elec,#energy-gaz{display:none}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>LILIWATT</h1>
+  <p>Transmission de factures</p>
+</div>
+<div class="container">
+<form id="rgpdForm" enctype="multipart/form-data" method="POST" action="/rgpd/${req.params.token}/submit">
+  <div class="card">
+    <h2>Vos coordonnées</h2>
+    <div class="vendeur-badge">Votre conseiller : ${vendeur.nom}</div>
+    <label>Raison sociale *</label>
+    <input type="text" name="raison_sociale" required>
+    <div style="display:flex;gap:12px">
+      <div style="flex:1"><label>Nom *</label><input type="text" name="nom" required></div>
+      <div style="flex:1"><label>Prénom *</label><input type="text" name="prenom" required></div>
+    </div>
+    <label>Téléphone *</label>
+    <input type="tel" name="telephone" required>
+    <label>Email *</label>
+    <input type="email" name="email" required>
+  </div>
+
+  <div class="card">
+    <h2>Type d'énergie</h2>
+    <div class="radio-group">
+      <label><input type="radio" name="energie" value="electricite" required><span>Électricité</span></label>
+      <label><input type="radio" name="energie" value="gaz"><span>Gaz</span></label>
+      <label><input type="radio" name="energie" value="les_deux"><span>Les deux</span></label>
+    </div>
+  </div>
+
+  <div class="card" id="sites-card">
+    <h2>Sites &amp; factures</h2>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:8px">Ajoutez un ou plusieurs sites. Pour chaque site, joignez les factures demandées.</p>
+    <div id="sites-container"></div>
+    <button type="button" class="btn btn-secondary" onclick="addSite()">+ Ajouter un site</button>
+  </div>
+
+  <div class="card">
+    <h2>Consentement RGPD</h2>
+    <div class="checkbox-row">
+      <input type="checkbox" id="rgpd" name="rgpd" required>
+      <span>J'accepte que mes données personnelles et mes factures soient transmises à LILIWATT (LILISTRAT STRATÉGIE SAS) dans le cadre de l'étude de mon dossier de courtage en énergie. Conformément au RGPD, je dispose d'un droit d'accès, de rectification et de suppression de mes données en contactant <a href="mailto:bo@liliwatt.fr" style="color:#7c3aed">bo@liliwatt.fr</a>.</span>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary" id="submitBtn">Envoyer mes factures</button>
+</form>
+</div>
+
+<script>
+let siteCount=0;
+const energyRadios=document.querySelectorAll('input[name=energie]');
+energyRadios.forEach(r=>r.addEventListener('change',updateSites));
+
+function updateSites(){
+  // reset
+  document.querySelectorAll('.site-block').forEach(b=>updateSiteFields(b));
+}
+
+function getEnergie(){
+  const v=document.querySelector('input[name=energie]:checked');
+  return v?v.value:'';
+}
+
+function addSite(){
+  siteCount++;
+  const div=document.createElement('div');
+  div.className='site-block';
+  div.innerHTML='<span class="site-num">Site '+siteCount+'</span>'+
+    '<label>Nom / adresse du site</label>'+
+    '<input type="text" name="site_'+siteCount+'_nom" placeholder="Ex: Siège social, Entrepôt Lyon...">'+
+    '<div class="elec-fields">'+
+    '<label>Facture électricité — Hiver (oct-mars)</label>'+
+    '<div class="file-input"><input type="file" name="site_'+siteCount+'_elec_hiver" accept=".pdf,.jpg,.jpeg,.png"></div>'+
+    '<label>Facture électricité — Été (avr-sept)</label>'+
+    '<div class="file-input"><input type="file" name="site_'+siteCount+'_elec_ete" accept=".pdf,.jpg,.jpeg,.png"></div>'+
+    '</div>'+
+    '<div class="gaz-fields">'+
+    '<label>Facture gaz</label>'+
+    '<div class="file-input"><input type="file" name="site_'+siteCount+'_gaz" accept=".pdf,.jpg,.jpeg,.png"></div>'+
+    '</div>';
+  document.getElementById('sites-container').appendChild(div);
+  updateSiteFields(div);
+}
+
+function updateSiteFields(block){
+  const e=getEnergie();
+  const elec=block.querySelector('.elec-fields');
+  const gaz=block.querySelector('.gaz-fields');
+  if(!elec||!gaz)return;
+  elec.style.display=(e==='electricite'||e==='les_deux')?'block':'none';
+  gaz.style.display=(e==='gaz'||e==='les_deux')?'block':'none';
+}
+
+// Ajouter le premier site par défaut
+addSite();
+
+document.getElementById('rgpdForm').addEventListener('submit',function(ev){
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;btn.textContent='Envoi en cours...';
+});
+</script>
+</body>
+</html>`;
+  res.send(html);
+});
+
+// POST /rgpd/:token/submit — traitement du formulaire
+app.post('/rgpd/:token/submit', rgpdUpload.any(), async (req, res) => {
+  const vendeurEmail = decodeRgpdToken(req.params.token);
+  if (!vendeurEmail) return res.status(400).send('Lien invalide.');
+
+  try {
+    const vendeurs = await getVendeursFromSheets();
+    const vendeur = vendeurs.find(v => v.email.toLowerCase() === vendeurEmail.toLowerCase());
+    if (!vendeur) return res.status(404).send('Vendeur introuvable.');
+
+    const { nom, prenom, raison_sociale, telephone, email, energie, rgpd } = req.body;
+    const clientIp = req.headers['x-forwarded-for'] || req.ip || 'IP inconnue';
+    const userAgent = req.headers['user-agent'] || 'UA inconnu';
+    const horodatage = new Date().toISOString();
+
+    // 1. Créer le dossier Drive : CLIENT EN ATTENTE / [Raison Sociale]
+    const drive = getDriveClient();
+    let attenteId;
+    if (vendeur.drive_folder_id) {
+      attenteId = await findOrCreateFolder(drive, 'CLIENT EN ATTENTE', vendeur.drive_folder_id);
+    } else {
+      const vendeurNom = vendeur.nom || vendeurEmail.split('@')[0].replace('.', ' ');
+      const fallbackId = await findOrCreateFolder(drive, vendeurNom, VENDEURS_FOLDER_ID);
+      attenteId = await findOrCreateFolder(drive, 'CLIENT EN ATTENTE', fallbackId);
+    }
+    const clientFolderId = await findOrCreateFolder(drive, raison_sociale || `${prenom} ${nom}`, attenteId);
+
+    // 2. Upload de toutes les factures dans le dossier
+    const uploadedFiles = [];
+    for (const file of (req.files || [])) {
+      const stream = Readable.from(file.buffer);
+      const driveFile = await drive.files.create({
+        requestBody: {
+          name: file.originalname,
+          mimeType: file.mimetype,
+          parents: [clientFolderId]
+        },
+        media: { mimeType: file.mimetype, body: stream },
+        fields: 'id, name, webViewLink',
+        supportsAllDrives: true
+      });
+      uploadedFiles.push({ name: driveFile.data.name, link: driveFile.data.webViewLink, field: file.fieldname });
+    }
+
+    // 3. Générer le PDF récapitulatif RGPD via PDFShift
+    const energieLabel = { electricite: 'Électricité', gaz: 'Gaz', les_deux: 'Électricité + Gaz' }[energie] || energie;
+    const sitesHtml = uploadedFiles.map(f => {
+      const parts = f.field.split('_');
+      const siteNum = parts[1] || '?';
+      const type = parts.slice(2).join(' ');
+      return `<tr><td style="padding:6px 12px;border:1px solid #e9d5ff;">Site ${siteNum}</td><td style="padding:6px 12px;border:1px solid #e9d5ff;">${type}</td><td style="padding:6px 12px;border:1px solid #e9d5ff;">${f.name}</td></tr>`;
+    }).join('');
+
+    const pdfHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>body{font-family:'Segoe UI',sans-serif;padding:40px;color:#1e1b4b}
+.header{background:linear-gradient(135deg,#1e1b4b,#7c3aed);padding:24px;border-radius:10px;text-align:center;margin-bottom:30px}
+.header h1{color:#fff;font-size:24px;letter-spacing:3px;margin:0}
+.header p{color:rgba(255,255,255,.8);font-size:12px;margin:4px 0 0}
+h2{color:#7c3aed;font-size:16px;margin:24px 0 10px;border-bottom:2px solid #ede9fe;padding-bottom:6px}
+table{width:100%;border-collapse:collapse;margin:10px 0}
+td{padding:8px 12px;font-size:13px}
+.label{font-weight:700;color:#6b7280;width:180px}
+.rgpd-box{background:#f5f3ff;border:1.5px solid #d8b4fe;border-radius:8px;padding:16px;margin:20px 0;font-size:12px;line-height:1.6;color:#374151}
+.footer{margin-top:30px;font-size:11px;color:#9ca3af;border-top:1px solid #e9d5ff;padding-top:12px}
+</style></head><body>
+<div class="header"><h1>LILIWATT</h1><p>Récapitulatif RGPD — Transmission de factures</p></div>
+<h2>Informations client</h2>
+<table>
+<tr><td class="label">Raison sociale</td><td>${raison_sociale}</td></tr>
+<tr><td class="label">Nom</td><td>${nom}</td></tr>
+<tr><td class="label">Prénom</td><td>${prenom}</td></tr>
+<tr><td class="label">Téléphone</td><td>${telephone}</td></tr>
+<tr><td class="label">Email</td><td>${email}</td></tr>
+<tr><td class="label">Énergie</td><td>${energieLabel}</td></tr>
+<tr><td class="label">Conseiller</td><td>${vendeur.nom} (${vendeur.email})</td></tr>
+</table>
+<h2>Factures transmises</h2>
+<table><tr style="background:#ede9fe;font-weight:700"><td style="padding:6px 12px;border:1px solid #e9d5ff">Site</td><td style="padding:6px 12px;border:1px solid #e9d5ff">Type</td><td style="padding:6px 12px;border:1px solid #e9d5ff">Fichier</td></tr>${sitesHtml}</table>
+<h2>Consentement RGPD</h2>
+<div class="rgpd-box">
+<strong>✅ Consentement donné</strong><br><br>
+Le client a accepté que ses données personnelles et ses factures soient transmises à LILIWATT (LILISTRAT STRATÉGIE SAS) dans le cadre de l'étude de son dossier de courtage en énergie.<br><br>
+<strong>Adresse IP :</strong> ${clientIp}<br>
+<strong>Date et heure :</strong> ${horodatage}<br>
+<strong>User Agent :</strong> ${userAgent}
+</div>
+<div class="footer">Document généré automatiquement par LILIWATT — LILISTRAT STRATÉGIE SAS — 59 rue de Ponthieu, Bureau 326 — 75008 Paris</div>
+</body></html>`;
+
+    let pdfBase64 = null;
+    try {
+      const pdfRes = await axios.post('https://api.pdfshift.io/v3/convert/pdf', {
+        source: pdfHtml,
+        sandbox: false
+      }, {
+        auth: { username: 'api', password: process.env.PDFSHIFT_API_KEY },
+        responseType: 'arraybuffer',
+        timeout: 30000
+      });
+      pdfBase64 = Buffer.from(pdfRes.data).toString('base64');
+    } catch (pdfErr) {
+      console.error('⚠️ PDFShift error:', pdfErr.message);
+    }
+
+    // 4. Déposer le PDF RGPD dans le dossier Drive
+    if (pdfBase64) {
+      const pdfStream = Readable.from(Buffer.from(pdfBase64, 'base64'));
+      await drive.files.create({
+        requestBody: {
+          name: `RGPD_${raison_sociale || nom}_${new Date().toISOString().slice(0,10)}.pdf`,
+          mimeType: 'application/pdf',
+          parents: [clientFolderId]
+        },
+        media: { mimeType: 'application/pdf', body: pdfStream },
+        fields: 'id',
+        supportsAllDrives: true
+      });
+    }
+
+    // 5. Envoyer le mail au vendeur + copie bo@liliwatt.fr
+    const mailSubject = `${prenom} ${nom} a transmis ses factures — ${raison_sociale}`;
+    const mailHtml = `<div style="font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto">
+<div style="background:linear-gradient(135deg,#1e1b4b,#7c3aed);padding:24px;border-radius:12px 12px 0 0;text-align:center">
+<h1 style="color:#fff;font-size:24px;letter-spacing:3px;margin:0">LILIWATT</h1>
+<p style="color:rgba(255,255,255,.8);font-size:12px;margin:4px 0 0">Nouvelle transmission de factures</p>
+</div>
+<div style="background:#f5f3ff;padding:28px;border-radius:0 0 12px 12px">
+<p style="font-size:15px;color:#1e1b4b"><strong>${prenom} ${nom}</strong> (${raison_sociale}) vous a transmis ses factures.</p>
+<div style="background:#fff;border-radius:10px;padding:20px;margin:16px 0;border-left:4px solid #7c3aed">
+<table style="width:100%;font-size:13px;border-collapse:collapse">
+<tr><td style="padding:6px 0;color:#6b7280;font-weight:700;width:120px">Énergie</td><td style="color:#1e1b4b">${energieLabel}</td></tr>
+<tr><td style="padding:6px 0;color:#6b7280;font-weight:700">Téléphone</td><td style="color:#1e1b4b">${telephone}</td></tr>
+<tr><td style="padding:6px 0;color:#6b7280;font-weight:700">Email</td><td style="color:#1e1b4b">${email}</td></tr>
+<tr><td style="padding:6px 0;color:#6b7280;font-weight:700">Fichiers</td><td style="color:#1e1b4b">${uploadedFiles.length} facture(s) uploadée(s)</td></tr>
+</table>
+</div>
+<p style="font-size:12px;color:#6b7280">Le récapitulatif RGPD est joint à cet email et déposé dans le dossier Drive du client.</p>
+</div></div>`;
+
+    try {
+      // Mail au vendeur
+      await sendZohoMail({ to: vendeur.email, subject: mailSubject, htmlBody: mailHtml, attachmentBase64: pdfBase64, attachmentName: `RGPD_${raison_sociale || nom}.pdf` });
+      // Copie à bo@liliwatt.fr
+      await sendZohoMail({ to: 'bo@liliwatt.fr', subject: mailSubject, htmlBody: mailHtml, attachmentBase64: pdfBase64, attachmentName: `RGPD_${raison_sociale || nom}.pdf` });
+      console.log(`✅ Mails RGPD envoyés pour ${raison_sociale} → ${vendeur.email} + bo@liliwatt.fr`);
+    } catch (mailErr) {
+      console.error('⚠️ Erreur envoi mail RGPD:', mailErr.message);
+    }
+
+    // 6. Page de confirmation
+    res.send(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LILIWATT — Envoi confirmé</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',system-ui,sans-serif;background:#f5f3ff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.box{background:#fff;border-radius:16px;padding:48px;text-align:center;max-width:500px;box-shadow:0 4px 24px rgba(124,58,237,.1)}
+.check{width:64px;height:64px;background:linear-gradient(135deg,#7c3aed,#d946ef);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.check svg{width:32px;height:32px;fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+h1{color:#1e1b4b;font-size:22px;margin-bottom:12px}
+p{color:#6b7280;font-size:14px;line-height:1.6}
+</style></head><body>
+<div class="box">
+<div class="check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+<h1>Merci, ${prenom} !</h1>
+<p>Vos factures ont bien été transmises à votre conseiller <strong>${vendeur.nom}</strong>.<br>Vous recevrez une proposition sous 48h.</p>
+</div></body></html>`);
+
+  } catch (err) {
+    console.error('❌ Erreur RGPD submit:', err);
+    res.status(500).send(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LILIWATT — Erreur</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',sans-serif;background:#fef2f2;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.box{background:#fff;border-radius:16px;padding:48px;text-align:center;max-width:500px;box-shadow:0 4px 24px rgba(239,68,68,.1)}
+h1{color:#dc2626;font-size:20px;margin-bottom:12px}p{color:#6b7280;font-size:14px;line-height:1.6}
+</style></head><body><div class="box"><h1>Une erreur est survenue</h1><p>Veuillez réessayer ou contacter <a href="mailto:bo@liliwatt.fr" style="color:#7c3aed">bo@liliwatt.fr</a>.</p></div></body></html>`);
+  }
+});
+
+// ===== FIN RGPD =====
 
 // ===== FIN GOOGLE DRIVE =====
