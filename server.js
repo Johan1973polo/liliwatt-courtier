@@ -1520,7 +1520,7 @@ async function sendZohoMail({ to, subject, htmlBody, attachmentBase64, attachmen
     mailFormat: 'html'
   };
   if (attachmentBase64 && attachmentName) {
-    payload.attachments = [{ storeName: attachmentName, content: attachmentBase64 }];
+    payload.attachments = [{ name: attachmentName, content: attachmentBase64, mimeType: 'application/pdf' }];
   }
   try {
     const r = await axios.post(url, payload, {
@@ -1740,9 +1740,9 @@ function addSite(){
   div.innerHTML='<span class="site-num">Site '+siteCount+'</span>'+
     '<label>Nom / adresse du site</label>'+
     '<input type="text" name="site_'+siteCount+'_nom" placeholder="Ex: Siège social, Entrepôt Lyon...">'+
-    '<label>PDL / PCE</label>'+
-    '<input type="text" name="site_'+siteCount+'_pdl" placeholder="14 chiffres présents sur votre facture" pattern="[0-9]{14}" title="Le numéro PDL/PCE contient 14 chiffres">'+
-    '<p style="font-size:11px;color:#9ca3af;margin:-8px 0 8px 2px">\uD83D\uDCA1 Numéro de 14 chiffres sur votre facture sous Référence du point de livraison</p>'+
+    '<label>PDL / PCE <span style="font-weight:400;color:#9ca3af">(optionnel)</span></label>'+
+    '<input type="text" name="site_'+siteCount+'_pdl" placeholder="14 chiffres" pattern="[0-9]{14}" title="Le numéro PDL/PCE contient 14 chiffres">'+
+    '<p style="font-size:11px;color:#9ca3af;margin:4px 0 10px 2px">\uD83D\uDCA1 Numéro de 14 chiffres sur votre facture sous R\u00e9f\u00e9rence du point de livraison</p>'+
     '<div class="elec-fields">'+
     '<label>Facture électricité — Hiver (oct-mars)</label>'+
     '<div class="file-input"><input type="file" name="site_'+siteCount+'_elec_hiver" accept=".pdf,.jpg,.jpeg,.png"></div>'+
