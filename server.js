@@ -1576,6 +1576,18 @@ input:focus,select:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px 
 .vendeur-badge{display:inline-block;background:#ede9fe;color:#5b21b6;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-top:8px}
 #energy-elec,#energy-gaz{display:none}
 .hidden{display:none!important}
+.search-wrap{position:relative}
+.search-wrap input{padding-left:36px}
+.search-wrap .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#9ca3af;pointer-events:none;font-size:15px}
+.suggestions{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #e9d5ff;border-top:none;border-radius:0 0 10px 10px;max-height:240px;overflow-y:auto;z-index:50;box-shadow:0 8px 24px rgba(124,58,237,.12);display:none}
+.suggestions.open{display:block}
+.sug-item{padding:12px 16px;cursor:pointer;border-bottom:1px solid #f5f3ff;transition:background .15s}
+.sug-item:hover,.sug-item.active{background:#f5f3ff}
+.sug-name{font-weight:600;color:#1e1b4b;font-size:14px}
+.sug-detail{font-size:12px;color:#6b7280;margin-top:2px}
+.sug-siret{font-family:monospace;color:#7c3aed;font-size:11px}
+.search-spinner{display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;border:2px solid #e9d5ff;border-top-color:#7c3aed;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:translateY(-50%) rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -1588,14 +1600,21 @@ input:focus,select:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px 
   <div class="card">
     <h2>Vos coordonnées</h2>
     <div class="vendeur-badge">Votre conseiller : ${vendeur.nom}</div>
+    <label>Rechercher votre entreprise</label>
+    <div class="search-wrap">
+      <span class="search-icon">\uD83D\uDD0D</span>
+      <input type="text" id="entrepriseSearch" placeholder="Tapez le nom de votre entreprise..." autocomplete="off">
+      <div class="search-spinner" id="searchSpinner"></div>
+      <div class="suggestions" id="suggestions"></div>
+    </div>
     <label>Raison sociale *</label>
-    <input type="text" name="raison_sociale" required>
+    <input type="text" name="raison_sociale" id="raison_sociale" required>
     <label>Qualité du signataire *</label>
     <input type="text" name="qualite_signataire" required placeholder="Gérant, Directeur général, PDG...">
     <label>SIRET</label>
-    <input type="text" name="siret" placeholder="14 chiffres" pattern="[0-9]{14}" title="Le SIRET doit contenir 14 chiffres">
+    <input type="text" name="siret" id="siret" placeholder="14 chiffres" pattern="[0-9]{14}" title="Le SIRET doit contenir 14 chiffres">
     <label>Adresse du siège social</label>
-    <input type="text" name="adresse_siege" placeholder="12 rue des Fleurs, 75001 Paris">
+    <input type="text" name="adresse_siege" id="adresse_siege" placeholder="12 rue des Fleurs, 75001 Paris">
     <div style="display:flex;gap:12px">
       <div style="flex:1"><label>Nom *</label><input type="text" name="nom" required></div>
       <div style="flex:1"><label>Prénom *</label><input type="text" name="prenom" required></div>
@@ -1635,6 +1654,71 @@ input:focus,select:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px 
 </div>
 
 <script>
+// === Recherche entreprise API Gouv ===
+(function(){
+  const input=document.getElementById('entrepriseSearch');
+  const sugBox=document.getElementById('suggestions');
+  const spinner=document.getElementById('searchSpinner');
+  let debounce=null, activeIdx=-1, results=[];
+
+  input.addEventListener('input',function(){
+    const q=this.value.trim();
+    clearTimeout(debounce);
+    if(q.length<3){sugBox.classList.remove('open');sugBox.innerHTML='';results=[];return;}
+    debounce=setTimeout(()=>searchEntreprise(q),300);
+  });
+
+  input.addEventListener('keydown',function(e){
+    if(!sugBox.classList.contains('open'))return;
+    if(e.key==='ArrowDown'){e.preventDefault();activeIdx=Math.min(activeIdx+1,results.length-1);highlight();}
+    else if(e.key==='ArrowUp'){e.preventDefault();activeIdx=Math.max(activeIdx-1,0);highlight();}
+    else if(e.key==='Enter'&&activeIdx>=0){e.preventDefault();selectResult(results[activeIdx]);}
+    else if(e.key==='Escape'){sugBox.classList.remove('open');}
+  });
+
+  document.addEventListener('click',function(e){if(!e.target.closest('.search-wrap'))sugBox.classList.remove('open');});
+
+  async function searchEntreprise(q){
+    spinner.style.display='block';
+    try{
+      const r=await fetch('https://recherche-entreprises.api.gouv.fr/search?q='+encodeURIComponent(q)+'&page=1&per_page=5');
+      const data=await r.json();
+      results=(data.results||[]).map(e=>{
+        const s=e.siege||{};
+        const siret=(e.siren||'')+(s.siret?s.siret.slice(9):'00000');
+        const addr=[s.numero_voie,s.type_voie,s.libelle_voie].filter(Boolean).join(' ');
+        const full=addr?(addr+', '+( s.code_postal||'')+' '+(s.libelle_commune||'')):'';
+        return{nom:e.nom_complet||e.nom_raison_sociale||'',ville:s.libelle_commune||'',cp:s.code_postal||'',siret:siret.slice(0,14),adresse:full};
+      });
+      renderSuggestions();
+    }catch(err){console.error(err);results=[];sugBox.classList.remove('open');}
+    spinner.style.display='none';
+  }
+
+  function renderSuggestions(){
+    if(!results.length){sugBox.innerHTML='<div style="padding:14px;color:#9ca3af;font-size:13px;text-align:center">Aucun résultat</div>';sugBox.classList.add('open');return;}
+    activeIdx=-1;
+    sugBox.innerHTML=results.map((r,i)=>'<div class="sug-item" data-idx="'+i+'"><div class="sug-name">'+esc(r.nom)+'</div><div class="sug-detail">'+esc(r.ville+(r.cp?' ('+r.cp+')':''))+'  <span class="sug-siret">SIRET '+esc(r.siret)+'</span></div></div>').join('');
+    sugBox.classList.add('open');
+    sugBox.querySelectorAll('.sug-item').forEach(el=>el.addEventListener('click',()=>selectResult(results[+el.dataset.idx])));
+  }
+
+  function highlight(){
+    sugBox.querySelectorAll('.sug-item').forEach((el,i)=>el.classList.toggle('active',i===activeIdx));
+  }
+
+  function selectResult(r){
+    document.getElementById('raison_sociale').value=r.nom;
+    document.getElementById('siret').value=r.siret;
+    document.getElementById('adresse_siege').value=r.adresse;
+    input.value=r.nom;
+    sugBox.classList.remove('open');
+  }
+
+  function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+})();
+
+// === Formulaire ===
 let siteCount=0;
 const energyRadios=document.querySelectorAll('input[name=energie]');
 energyRadios.forEach(r=>r.addEventListener('change',updateSites));
