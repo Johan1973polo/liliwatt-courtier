@@ -1219,7 +1219,7 @@ async function getVendeursFromSheets() {
   const sheets = google.sheets({ version: 'v4', auth });
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEETS_ID,
-    range: 'A:G'
+    range: 'A:H'
   });
   const rows = res.data.values || [];
   return rows
@@ -1229,7 +1229,8 @@ async function getVendeursFromSheets() {
       email: row[3],
       nom: row[1] + ' ' + row[0],
       drive_folder_id: row[5] || '',
-      referent_email: row[6] || ''
+      referent_email: row[6] || '',
+      token_rgpd: row[7] || ''
     }));
 }
 
@@ -1482,11 +1483,10 @@ app.post('/api/drive/supprimer-fichier', verifyToken, isAdmin, async (req, res) 
 
 const rgpdUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
-// Helper : récupérer un vendeur par token RGPD (token = base64 de l'email vendeur)
-function decodeRgpdToken(token) {
-  try {
-    return Buffer.from(token, 'base64url').toString('utf8');
-  } catch { return null; }
+// Helper : récupérer un vendeur par token RGPD (cherche dans colonne H de Google Sheets)
+async function findVendeurByRgpdToken(token) {
+  const vendeurs = await getVendeursFromSheets();
+  return vendeurs.find(v => v.token_rgpd && v.token_rgpd === token) || null;
 }
 
 // Helper Zoho Mail : obtenir un access token
@@ -1527,10 +1527,7 @@ async function sendZohoMail({ to, subject, htmlBody, attachmentBase64, attachmen
 
 // GET /rgpd/:token — formulaire HTML statique
 app.get('/rgpd/:token', async (req, res) => {
-  const vendeurEmail = decodeRgpdToken(req.params.token);
-  if (!vendeurEmail) return res.status(400).send('Lien invalide.');
-  const vendeurs = await getVendeursFromSheets();
-  const vendeur = vendeurs.find(v => v.email.toLowerCase() === vendeurEmail.toLowerCase());
+  const vendeur = await findVendeurByRgpdToken(req.params.token);
   if (!vendeur) return res.status(404).send('Vendeur introuvable.');
 
   const html = `<!DOCTYPE html>
@@ -1681,12 +1678,8 @@ document.getElementById('rgpdForm').addEventListener('submit',function(ev){
 
 // POST /rgpd/:token/submit — traitement du formulaire
 app.post('/rgpd/:token/submit', rgpdUpload.any(), async (req, res) => {
-  const vendeurEmail = decodeRgpdToken(req.params.token);
-  if (!vendeurEmail) return res.status(400).send('Lien invalide.');
-
   try {
-    const vendeurs = await getVendeursFromSheets();
-    const vendeur = vendeurs.find(v => v.email.toLowerCase() === vendeurEmail.toLowerCase());
+    const vendeur = await findVendeurByRgpdToken(req.params.token);
     if (!vendeur) return res.status(404).send('Vendeur introuvable.');
 
     const { nom, prenom, raison_sociale, telephone, email, energie, rgpd } = req.body;
