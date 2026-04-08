@@ -1506,7 +1506,7 @@ async function getZohoMailToken() {
 }
 
 // Helper : envoyer un email via Zoho Mail avec pièce jointe base64
-async function sendZohoMail({ to, subject, htmlBody, attachmentBase64, attachmentName }) {
+async function sendZohoMail({ to, subject, htmlBody }) {
   const token = await getZohoMailToken();
   const accountId = process.env.ZOHO_ACCOUNT_ID;
   if (!accountId) throw new Error('ZOHO_ACCOUNT_ID non configuré');
@@ -1519,9 +1519,6 @@ async function sendZohoMail({ to, subject, htmlBody, attachmentBase64, attachmen
     content: htmlBody,
     mailFormat: 'html'
   };
-  if (attachmentBase64 && attachmentName) {
-    payload.attachments = [{ name: attachmentName, content: attachmentBase64, mimeType: 'application/pdf' }];
-  }
   try {
     const r = await axios.post(url, payload, {
       headers: { 'Authorization': `Zoho-oauthtoken ${token}`, 'Content-Type': 'application/json' },
@@ -1994,7 +1991,7 @@ tbody td{padding:10px 14px;color:#374151}
       await pdfPage.setContent(pdfHtml, { waitUntil: 'networkidle0' });
       const pdfBuffer = await pdfPage.pdf({ format: 'A4', printBackground: true, margin: { top: '0', bottom: '0', left: '0', right: '0' } });
       await browser.close();
-      pdfBase64 = pdfBuffer.toString('base64');
+      pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
       console.log('✅ PDF RGPD généré via Puppeteer');
     } catch (pdfErr) {
       console.error('⚠️ Erreur génération PDF RGPD:', pdfErr.message);
@@ -2016,10 +2013,9 @@ tbody td{padding:10px 14px;color:#374151}
     }
 
     // 5. Envoyer les mails — try/catch séparés
-    const pdfAttachName = `RGPD_${raison_sociale || nom}.pdf`;
-
     // 5a. Mail vendeur (simple)
     const vendeurSubject = `${prenom} ${nom} a transmis ses factures — ${raison_sociale}`;
+    const drivePath = `CLIENT EN ATTENTE / ${raison_sociale || prenom + ' ' + nom}`;
     const vendeurHtml = `<div style="font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto">
 <div style="background:linear-gradient(135deg,#1e1b4b,#7c3aed);padding:24px;border-radius:12px 12px 0 0;text-align:center">
 <h1 style="color:#fff;font-size:24px;letter-spacing:3px;margin:0">LILIWATT</h1>
@@ -2035,11 +2031,11 @@ tbody td{padding:10px 14px;color:#374151}
 <tr><td style="padding:6px 0;color:#6b7280;font-weight:700">Fichiers</td><td style="color:#1e1b4b">${uploadedFiles.length} facture(s) uploadée(s)</td></tr>
 </table>
 </div>
-<p style="font-size:12px;color:#6b7280">Le récapitulatif RGPD est joint à cet email et déposé dans le dossier Drive du client.</p>
+<p style="font-size:12px;color:#6b7280">Le PDF RGPD est disponible dans votre dossier Drive : <strong>${drivePath}</strong></p>
 </div></div>`;
 
     try {
-      await sendZohoMail({ to: vendeur.email, subject: vendeurSubject, htmlBody: vendeurHtml, attachmentBase64: pdfBase64, attachmentName: pdfAttachName });
+      await sendZohoMail({ to: vendeur.email, subject: vendeurSubject, htmlBody: vendeurHtml });
     } catch (mailErr) {
       console.error(`⚠️ Erreur mail vendeur (${vendeur.email}):`, mailErr.message);
     }
@@ -2067,11 +2063,11 @@ ${pdlRows}
 <tr><td style="padding:6px 0;color:#6b7280;font-weight:700">Vendeur</td><td style="color:#1e1b4b">${vendeur.nom} (${vendeur.email})</td></tr>
 </table>
 </div>
-<p style="font-size:12px;color:#6b7280">Le récapitulatif RGPD est joint à cet email et déposé dans le dossier Drive du client.</p>
+<p style="font-size:12px;color:#6b7280">Le PDF RGPD est disponible dans le dossier Drive de <strong>${vendeur.nom}</strong> : <strong>${drivePath}</strong></p>
 </div></div>`;
 
     try {
-      await sendZohoMail({ to: 'bo@liliwatt.fr', subject: boSubject, htmlBody: boHtml, attachmentBase64: pdfBase64, attachmentName: pdfAttachName });
+      await sendZohoMail({ to: 'bo@liliwatt.fr', subject: boSubject, htmlBody: boHtml });
     } catch (mailErr) {
       console.error(`⚠️ Erreur mail bo@liliwatt.fr:`, mailErr.message);
     }
