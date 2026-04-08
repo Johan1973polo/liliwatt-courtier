@@ -1582,6 +1582,12 @@ input:focus,select:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px 
     <div class="vendeur-badge">Votre conseiller : ${vendeur.nom}</div>
     <label>Raison sociale *</label>
     <input type="text" name="raison_sociale" required>
+    <label>Qualité du signataire *</label>
+    <input type="text" name="qualite_signataire" required placeholder="Gérant, Directeur général, PDG...">
+    <label>SIRET</label>
+    <input type="text" name="siret" placeholder="14 chiffres" pattern="[0-9]{14}" title="Le SIRET doit contenir 14 chiffres">
+    <label>Adresse du siège social</label>
+    <input type="text" name="adresse_siege" placeholder="12 rue des Fleurs, 75001 Paris">
     <div style="display:flex;gap:12px">
       <div style="flex:1"><label>Nom *</label><input type="text" name="nom" required></div>
       <div style="flex:1"><label>Prénom *</label><input type="text" name="prenom" required></div>
@@ -1642,6 +1648,9 @@ function addSite(){
   div.innerHTML='<span class="site-num">Site '+siteCount+'</span>'+
     '<label>Nom / adresse du site</label>'+
     '<input type="text" name="site_'+siteCount+'_nom" placeholder="Ex: Siège social, Entrepôt Lyon...">'+
+    '<label>PDL / PCE</label>'+
+    '<input type="text" name="site_'+siteCount+'_pdl" placeholder="14 chiffres présents sur votre facture" pattern="[0-9]{14}" title="Le numéro PDL/PCE contient 14 chiffres">'+
+    '<p style="font-size:11px;color:#9ca3af;margin:-8px 0 8px 2px">\uD83D\uDCA1 Numéro de 14 chiffres sur votre facture sous Référence du point de livraison</p>'+
     '<div class="elec-fields">'+
     '<label>Facture électricité — Hiver (oct-mars)</label>'+
     '<div class="file-input"><input type="file" name="site_'+siteCount+'_elec_hiver" accept=".pdf,.jpg,.jpeg,.png"></div>'+
@@ -1684,7 +1693,7 @@ app.post('/rgpd/:token/submit', rgpdUpload.any(), async (req, res) => {
     const vendeur = await findVendeurByRgpdToken(req.params.token);
     if (!vendeur) return res.status(404).send('Vendeur introuvable.');
 
-    const { nom, prenom, raison_sociale, telephone, email, energie, rgpd } = req.body;
+    const { nom, prenom, raison_sociale, qualite_signataire, siret, adresse_siege, telephone, email, energie, rgpd } = req.body;
     const clientIp = req.headers['x-forwarded-for'] || req.ip || 'IP inconnue';
     const userAgent = req.headers['user-agent'] || 'UA inconnu';
     const horodatage = new Date().toISOString();
@@ -1723,11 +1732,19 @@ app.post('/rgpd/:token/submit', rgpdUpload.any(), async (req, res) => {
     const refNumber = 'RGPD-' + Date.now().toString(36).toUpperCase();
     const dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
+    // Collecter les PDL par site depuis req.body (site_1_pdl, site_2_pdl, ...)
+    const sitePdls = {};
+    for (const key of Object.keys(req.body)) {
+      const m = key.match(/^site_(\d+)_pdl$/);
+      if (m) sitePdls[m[1]] = req.body[key] || '';
+    }
+
     const sitesRows = uploadedFiles.map(f => {
       const parts = f.field.split('_');
       const siteNum = parts[1] || '?';
       const type = parts.slice(2).join(' ') || '\u2014';
-      return '<tr><td>Site ' + siteNum + '</td><td>Voir facture jointe</td><td>' + type + '</td><td>' + f.name + '</td></tr>';
+      const pdl = sitePdls[siteNum] || 'Voir facture jointe';
+      return '<tr><td>Site ' + siteNum + '</td><td>' + pdl + '</td><td>' + type + '</td><td>' + f.name + '</td></tr>';
     }).join('');
 
     const pdfHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
@@ -1802,7 +1819,7 @@ tbody td{padding:10px 14px;color:#374151}
 <div class="content">
 
   <div class="legal-block">
-    <strong>${prenom} ${nom}</strong>, en qualit\u00e9 de signataire autoris\u00e9(e) pour le compte de <strong>${raison_sociale}</strong>,
+    <strong>${prenom} ${nom}</strong>, en qualit\u00e9 de <strong>${qualite_signataire || 'repr\u00e9sentant(e)'}</strong> pour le compte de <strong>${raison_sociale}</strong>${siret ? ' (SIRET ' + siret + ')' : ''}${adresse_siege ? ', dont le si\u00e8ge social est situ\u00e9 au ' + adresse_siege : ''},
     autorise la soci\u00e9t\u00e9 <strong>LILISTRAT STRAT\u00c9GIE SAS</strong> (nom commercial : LILIWATT), SIRET 93227498500016,
     si\u00e8ge social 59 rue de Ponthieu, Bureau 326 \u2014 75008 Paris, \u00e0 effectuer les d\u00e9marches n\u00e9cessaires aupr\u00e8s
     des fournisseurs d\u2019\u00e9nergie pour l\u2019obtention de propositions commerciales.
@@ -1812,6 +1829,9 @@ tbody td{padding:10px 14px;color:#374151}
     <div class="section-title">Informations client</div>
     <div class="info-grid">
       <div class="info-row"><span class="info-label">Raison sociale</span><span class="info-value">${raison_sociale}</span></div>
+      <div class="info-row"><span class="info-label">Qualit\u00e9</span><span class="info-value">${qualite_signataire || '\u2014'}</span></div>
+      <div class="info-row"><span class="info-label">SIRET</span><span class="info-value">${siret || '\u2014'}</span></div>
+      <div class="info-row"><span class="info-label">Adresse si\u00e8ge</span><span class="info-value">${adresse_siege || '\u2014'}</span></div>
       <div class="info-row"><span class="info-label">\u00c9nergie</span><span class="info-value">${energieLabel}</span></div>
       <div class="info-row"><span class="info-label">Nom</span><span class="info-value">${nom}</span></div>
       <div class="info-row"><span class="info-label">Pr\u00e9nom</span><span class="info-value">${prenom}</span></div>
@@ -1857,7 +1877,7 @@ tbody td{padding:10px 14px;color:#374151}
       <div class="sig-item"><span class="sig-label">Adresse IP</span><span class="sig-value">${clientIp}</span></div>
       <div class="sig-item"><span class="sig-label">Horodatage</span><span class="sig-value">${horodatage}</span></div>
       <div class="sig-item sig-full"><span class="sig-label">User Agent</span><span class="sig-value">${userAgent}</span></div>
-      <div class="sig-item"><span class="sig-label">Validit\u00e9</span><span class="sig-value">24 mois \u00e0 compter de la date de signature</span></div>
+      <div class="sig-item"><span class="sig-label">Validit\u00e9</span><span class="sig-value">12 mois \u00e0 compter de la date de signature</span></div>
       <div class="sig-item"><span class="sig-label">R\u00e9f\u00e9rence</span><span class="sig-value">${refNumber}</span></div>
     </div>
   </div>
