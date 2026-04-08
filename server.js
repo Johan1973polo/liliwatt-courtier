@@ -1508,7 +1508,10 @@ async function getZohoMailToken() {
 // Helper : envoyer un email via Zoho Mail avec pièce jointe base64
 async function sendZohoMail({ to, subject, htmlBody, attachmentBase64, attachmentName }) {
   const token = await getZohoMailToken();
-  const accountId = process.env.ZOHO_ACCOUNT_ID || '8439060000000002002';
+  const accountId = process.env.ZOHO_ACCOUNT_ID;
+  if (!accountId) throw new Error('ZOHO_ACCOUNT_ID non configuré');
+  const url = `https://mail.zoho.eu/api/accounts/${accountId}/messages`;
+  console.log(`📧 Zoho Mail → ${to} | URL: ${url}`);
   const payload = {
     fromAddress: 'bo@liliwatt.fr',
     toAddress: to,
@@ -1519,12 +1522,17 @@ async function sendZohoMail({ to, subject, htmlBody, attachmentBase64, attachmen
   if (attachmentBase64 && attachmentName) {
     payload.attachments = [{ storeName: attachmentName, content: attachmentBase64 }];
   }
-  const r = await axios.post(
-    `https://mail.zoho.eu/api/accounts/${accountId}/messages`,
-    payload,
-    { headers: { 'Authorization': `Zoho-oauthtoken ${token}`, 'Content-Type': 'application/json' }, timeout: 30000 }
-  );
-  return r.data;
+  try {
+    const r = await axios.post(url, payload, {
+      headers: { 'Authorization': `Zoho-oauthtoken ${token}`, 'Content-Type': 'application/json' },
+      timeout: 30000
+    });
+    console.log(`✅ Zoho Mail envoyé à ${to} — status: ${r.status}`);
+    return r.data;
+  } catch (err) {
+    console.error(`❌ Zoho Mail erreur vers ${to} — status: ${err.response?.status} — data:`, JSON.stringify(err.response?.data || err.message));
+    throw err;
+  }
 }
 
 // GET /rgpd/:token — formulaire HTML statique
@@ -1923,9 +1931,12 @@ tbody td{padding:10px 14px;color:#374151}
       });
     }
 
-    // 5. Envoyer le mail au vendeur + copie bo@liliwatt.fr
-    const mailSubject = `${prenom} ${nom} a transmis ses factures — ${raison_sociale}`;
-    const mailHtml = `<div style="font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto">
+    // 5. Envoyer les mails — try/catch séparés
+    const pdfAttachName = `RGPD_${raison_sociale || nom}.pdf`;
+
+    // 5a. Mail vendeur (simple)
+    const vendeurSubject = `${prenom} ${nom} a transmis ses factures — ${raison_sociale}`;
+    const vendeurHtml = `<div style="font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto">
 <div style="background:linear-gradient(135deg,#1e1b4b,#7c3aed);padding:24px;border-radius:12px 12px 0 0;text-align:center">
 <h1 style="color:#fff;font-size:24px;letter-spacing:3px;margin:0">LILIWATT</h1>
 <p style="color:rgba(255,255,255,.8);font-size:12px;margin:4px 0 0">Nouvelle transmission de factures</p>
@@ -1944,13 +1955,41 @@ tbody td{padding:10px 14px;color:#374151}
 </div></div>`;
 
     try {
-      // Mail au vendeur
-      await sendZohoMail({ to: vendeur.email, subject: mailSubject, htmlBody: mailHtml, attachmentBase64: pdfBase64, attachmentName: `RGPD_${raison_sociale || nom}.pdf` });
-      // Copie à bo@liliwatt.fr
-      await sendZohoMail({ to: 'bo@liliwatt.fr', subject: mailSubject, htmlBody: mailHtml, attachmentBase64: pdfBase64, attachmentName: `RGPD_${raison_sociale || nom}.pdf` });
-      console.log(`✅ Mails RGPD envoyés pour ${raison_sociale} → ${vendeur.email} + bo@liliwatt.fr`);
+      await sendZohoMail({ to: vendeur.email, subject: vendeurSubject, htmlBody: vendeurHtml, attachmentBase64: pdfBase64, attachmentName: pdfAttachName });
     } catch (mailErr) {
-      console.error('⚠️ Erreur envoi mail RGPD:', mailErr.message);
+      console.error(`⚠️ Erreur mail vendeur (${vendeur.email}):`, mailErr.message);
+    }
+
+    // 5b. Mail bo@liliwatt.fr (enrichi)
+    const boSubject = `${prenom} ${nom} — ${raison_sociale} via ${vendeur.nom}`;
+    const pdlRows = Object.entries(sitePdls).filter(([, v]) => v).map(([k, v]) => `<tr><td style="padding:6px 0;color:#6b7280;font-weight:700">PDL Site ${k}</td><td style="color:#1e1b4b">${v}</td></tr>`).join('');
+    const boHtml = `<div style="font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto">
+<div style="background:linear-gradient(135deg,#1e1b4b,#7c3aed);padding:24px;border-radius:12px 12px 0 0;text-align:center">
+<h1 style="color:#fff;font-size:24px;letter-spacing:3px;margin:0">LILIWATT</h1>
+<p style="color:rgba(255,255,255,.8);font-size:12px;margin:4px 0 0">Nouvelle transmission de factures</p>
+</div>
+<div style="background:#f5f3ff;padding:28px;border-radius:0 0 12px 12px">
+<p style="font-size:15px;color:#1e1b4b"><strong>${prenom} ${nom}</strong> (${raison_sociale}) a transmis ses factures via <strong>${vendeur.nom}</strong>.</p>
+<div style="background:#fff;border-radius:10px;padding:20px;margin:16px 0;border-left:4px solid #7c3aed">
+<table style="width:100%;font-size:13px;border-collapse:collapse">
+<tr><td style="padding:6px 0;color:#6b7280;font-weight:700;width:140px">Qualité</td><td style="color:#1e1b4b">${qualite_signataire || '—'}</td></tr>
+<tr><td style="padding:6px 0;color:#6b7280;font-weight:700">SIRET</td><td style="color:#1e1b4b">${siret || '—'}</td></tr>
+<tr><td style="padding:6px 0;color:#6b7280;font-weight:700">Adresse siège</td><td style="color:#1e1b4b">${adresse_siege || '—'}</td></tr>
+<tr><td style="padding:6px 0;color:#6b7280;font-weight:700">Énergie</td><td style="color:#1e1b4b">${energieLabel}</td></tr>
+<tr><td style="padding:6px 0;color:#6b7280;font-weight:700">Téléphone</td><td style="color:#1e1b4b">${telephone}</td></tr>
+<tr><td style="padding:6px 0;color:#6b7280;font-weight:700">Email</td><td style="color:#1e1b4b">${email}</td></tr>
+<tr><td style="padding:6px 0;color:#6b7280;font-weight:700">Fichiers</td><td style="color:#1e1b4b">${uploadedFiles.length} facture(s)</td></tr>
+${pdlRows}
+<tr><td style="padding:6px 0;color:#6b7280;font-weight:700">Vendeur</td><td style="color:#1e1b4b">${vendeur.nom} (${vendeur.email})</td></tr>
+</table>
+</div>
+<p style="font-size:12px;color:#6b7280">Le récapitulatif RGPD est joint à cet email et déposé dans le dossier Drive du client.</p>
+</div></div>`;
+
+    try {
+      await sendZohoMail({ to: 'bo@liliwatt.fr', subject: boSubject, htmlBody: boHtml, attachmentBase64: pdfBase64, attachmentName: pdfAttachName });
+    } catch (mailErr) {
+      console.error(`⚠️ Erreur mail bo@liliwatt.fr:`, mailErr.message);
     }
 
     // 6. Page de confirmation
