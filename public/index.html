@@ -2873,6 +2873,8 @@ const avisImages = [
                 // Créer dossier Drive et uploader la facture immédiatement
                 if (fileNum === 1) {
                     createDriveFolder(nomSociete).then(async () => {
+                        // Verrouiller le champ société après création du dossier
+                        if (nomInput) { nomInput.readOnly = true; nomInput.style.background = '#f3f4f6'; nomInput.style.cursor = 'not-allowed'; }
                         const base64 = await new Promise((resolve, reject) => {
                             const reader = new FileReader();
                             reader.onload = e => resolve(e.target.result.split(',')[1]);
@@ -2913,6 +2915,7 @@ const avisImages = [
                 // Créer dossier Drive et uploader la facture
                 if (fileNum === 1) {
                     createDriveFolder(nomSociete).then(async () => {
+                        if (nomInput) { nomInput.readOnly = true; nomInput.style.background = '#f3f4f6'; nomInput.style.cursor = 'not-allowed'; }
                         const base64 = await new Promise((resolve, reject) => {
                             const reader = new FileReader();
                             reader.onload = e => resolve(e.target.result.split(',')[1]);
@@ -3127,19 +3130,20 @@ const avisImages = [
                             const ok = window.confirm(`L'algorithme LILIWATT a identifié : "${nomExtrait}"\nVoulez-vous mettre à jour le nom du dossier ?`);
                             if (ok) {
                                 try {
-                                    const token = localStorage.getItem('token');
-                                    const payload = { oldName: nomSaisi, newName: nomExtrait };
-                                    if (vendeurDriveFolderId) payload.vendeurDriveFolderId = vendeurDriveFolderId;
-                                    await fetch('/api/drive/rename-folder', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                                        body: JSON.stringify(payload)
-                                    });
+                                    if (currentClientDriveFolderId) {
+                                        const token = localStorage.getItem('token');
+                                        await fetch('/api/drive/rename-folder', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                                            body: JSON.stringify({ folderId: currentClientDriveFolderId, nouveauNom: nomExtrait })
+                                        });
+                                        console.log('✅ Dossier renommé:', nomSaisi, '→', nomExtrait);
+                                    }
                                     document.getElementById('nomSocieteInput').value = nomExtrait;
                                     currentClientName = nomExtrait;
-                                    console.log('✅ Dossier renommé:', nomSaisi, '→', nomExtrait);
                                 } catch(e) { console.warn('Erreur renommage:', e); }
                             }
+                            // Annuler → on garde le nom saisi, dossier inchangé
                         }, 500);
                     }
                     

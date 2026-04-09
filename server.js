@@ -881,8 +881,8 @@ async function findOrCreateFolder(drive, name, parentId) {
     supportsAllDrives: true,
     includeItemsFromAllDrives: true
   });
-  // Chercher un dossier avec le même nom (insensible à la casse)
-  const existing = res.data.files.find(f => f.name.toLowerCase() === name.toLowerCase());
+  // Chercher un dossier avec le même nom (insensible à la casse + trim)
+  const existing = res.data.files.find(f => f.name.toLowerCase().trim() === name.toLowerCase().trim());
   if (existing) return existing.id;
   const folder = await drive.files.create({
     requestBody: { name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] },
@@ -940,6 +940,26 @@ app.post('/api/drive/upload', verifyToken, async (req, res) => {
     res.json({ success: true, fileId: file.data.id, link: file.data.webViewLink });
   } catch (err) {
     console.error('Drive upload error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Route pour renommer un dossier Drive
+app.post('/api/drive/rename-folder', verifyToken, async (req, res) => {
+  if (!DRIVE_CREDENTIALS) return res.status(503).json({ error: 'Google Drive non configuré' });
+  try {
+    const { folderId, nouveauNom } = req.body;
+    if (!folderId || !nouveauNom) return res.status(400).json({ error: 'folderId et nouveauNom requis' });
+    const drive = getDriveClient();
+    await drive.files.update({
+      fileId: folderId,
+      requestBody: { name: nouveauNom },
+      supportsAllDrives: true
+    });
+    console.log(`📁 Dossier renommé: ${folderId} → ${nouveauNom}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Drive rename error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
