@@ -1308,17 +1308,30 @@ async function findVendeurRow(email) {
   return null;
 }
 
-// GET /api/equipes — hiérarchie complète
+// GET /api/equipes — hiérarchie complète (admins + référents + vendeurs)
 app.get('/api/equipes', verifyToken, isAdmin, async (req, res) => {
   try {
     const vendeurs = await getVendeursFromSheets();
+    const usersJson = await readJSON('users.json');
+    // Admins depuis users.json
+    const admins = (usersJson.users || []).filter(u => u.role === 'admin').map(a => ({
+      id: a.email, email: a.email, nom: a.name || a.email.split('@')[0],
+      drive_folder_id: a.drive_folder_id || '', role: 'admin', statut: 'actif',
+      token_rgpd: '', referent_email: '',
+      vendeurs: vendeurs.filter(v => v.referent_email === a.email)
+    }));
     const referents = vendeurs.filter(v => v.role === 'referent');
     const equipes = referents.map(ref => ({
       ...ref,
       vendeurs: vendeurs.filter(v => v.referent_email === ref.email && v.email !== ref.email)
     }));
-    const sansReferent = vendeurs.filter(v => v.role !== 'referent' && !v.referent_email);
-    res.json({ success: true, equipes, sansReferent });
+    const assignedEmails = new Set([
+      ...admins.flatMap(a => a.vendeurs.map(v => v.email)),
+      ...equipes.flatMap(e => e.vendeurs.map(v => v.email)),
+      ...referents.map(r => r.email)
+    ]);
+    const sansReferent = vendeurs.filter(v => v.role !== 'referent' && !assignedEmails.has(v.email));
+    res.json({ success: true, admins, equipes, sansReferent });
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 

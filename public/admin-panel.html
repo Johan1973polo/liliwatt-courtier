@@ -419,10 +419,17 @@
                 const r = await fetch('/api/equipes', { headers: { 'Authorization': 'Bearer ' + authToken } });
                 const data = await r.json();
                 if (!data.success) { div.innerHTML = '<p style="color:#ef4444;">Erreur: ' + data.error + '</p>'; return; }
-                allVendeurs = [...data.equipes.flatMap(e => [e, ...e.vendeurs]), ...data.sansReferent];
+                allVendeurs = [...(data.admins||[]).flatMap(a => [a, ...a.vendeurs]), ...data.equipes.flatMap(e => [e, ...e.vendeurs]), ...data.sansReferent];
                 let html = '';
-                data.equipes.forEach((ref, i) => {
+                // Admins (Super Référents)
+                (data.admins || []).forEach((adm, i) => {
                     if (i > 0) html += '<div style="height:16px;"></div>';
+                    html += renderPersonCard(adm, false, false, true);
+                    (adm.vendeurs || []).forEach(v => { html += renderPersonCard(v, false, true); });
+                });
+                // Référents
+                data.equipes.forEach((ref, i) => {
+                    if (i > 0 || (data.admins||[]).length) html += '<div style="height:16px;"></div>';
                     html += renderPersonCard(ref, true);
                     ref.vendeurs.forEach(v => { html += renderPersonCard(v, false, true); });
                 });
@@ -435,15 +442,16 @@
             } catch(e) { div.innerHTML = '<p style="color:#ef4444;">Erreur réseau</p>'; }
         }
 
-        function renderPersonCard(person, isRef, indented) {
+        function renderPersonCard(person, isRef, indented, isAdmin) {
             const e = person.email;
             const n = person.nom.replace(/'/g, "\\'");
             const sc = person.statut === 'bloqué' ? '#ef4444' : '#22c55e';
             const sl = person.statut === 'bloqué' ? '🔒 Bloqué' : '✅ Actif';
             const lnk = person.token_rgpd ? 'https://liliwatt-courtier.onrender.com/rgpd/' + person.token_rgpd : '';
-            const ri = isRef ? '👑' : '👤';
-            const rl = isRef ? 'Référent' : 'Vendeur';
+            const ri = isAdmin ? '👑' : isRef ? '🔷' : '👤';
+            const rl = isAdmin ? 'Super Référent' : isRef ? 'Référent' : 'Vendeur';
             const bs = 'padding:3px 7px;border:none;border-radius:5px;font-size:10px;cursor:pointer;font-weight:600;';
+            const isHead = isAdmin || isRef;
             const promAct = isRef ? 'retrograder' : 'promouvoir';
             const promIcon = isRef ? '⬇️' : '⬆️';
             const promColor = isRef ? '#f59e0b' : '#2563eb';
@@ -452,29 +460,37 @@
             const blkColor = person.statut === 'bloqué' ? '#22c55e' : '#ef4444';
 
             // Card style
-            let cardBg, cardBorder;
-            if (isRef) {
+            let cardBg, cardBorder, nameColor, badgeBg, badgeColor;
+            if (isAdmin) {
+                cardBg = '#fffbeb'; cardBorder = 'border:1.5px solid #fde68a;';
+                nameColor = '#b45309'; badgeBg = '#fef3c7'; badgeColor = '#b45309';
+            } else if (isRef) {
                 cardBg = '#eff6ff'; cardBorder = 'border:1.5px solid #bfdbfe;';
+                nameColor = '#2563eb'; badgeBg = '#dbeafe'; badgeColor = '#2563eb';
             } else if (indented) {
-                cardBg = '#fff'; cardBorder = 'border:1.5px solid #f0f0f0;margin-left:28px;border-left:3px solid #93c5fd;';
+                cardBg = '#fff'; cardBorder = 'border:1.5px solid #f0f0f0;margin-left:28px;border-left:3px solid ' + (isAdmin ? '#fbbf24' : '#93c5fd') + ';';
+                nameColor = '#7c3aed'; badgeBg = '#ede9fe'; badgeColor = '#7c3aed';
             } else {
                 cardBg = '#fff'; cardBorder = 'border:1.5px solid #f0f0f0;';
+                nameColor = '#7c3aed'; badgeBg = '#ede9fe'; badgeColor = '#7c3aed';
             }
 
             let btns = '';
             if (lnk) btns += '<button onclick="navigator.clipboard.writeText(\'' + lnk + '\');this.textContent=\'✅\';setTimeout(()=>this.textContent=\'🔗 RGPD\',1500)" style="' + bs + 'background:#ede9fe;color:#7c3aed;">🔗 RGPD</button>';
-            btns += '<button onclick="openChangeReferent(\'' + e + '\',\'' + n + '\')" style="' + bs + 'background:#e0e7ff;color:#2563eb;">🔄 Réf.</button>';
-            btns += '<button onclick="actionConfirm(\'' + promAct + '\',\'' + e + '\',\'' + n + '\')" style="' + bs + 'background:' + promColor + ';color:#fff;">' + promIcon + '</button>';
-            btns += '<button onclick="actionConfirm(\'' + blkAct + '\',\'' + e + '\',\'' + n + '\')" style="' + bs + 'background:' + blkColor + ';color:#fff;">' + blkIcon + '</button>';
-            btns += '<button onclick="actionConfirm(\'zoho\',\'' + e + '\',\'' + n + '\')" style="' + bs + 'background:#fecaca;color:#dc2626;">🗑️</button>';
+            if (!isAdmin) {
+                btns += '<button onclick="openChangeReferent(\'' + e + '\',\'' + n + '\')" style="' + bs + 'background:#e0e7ff;color:#2563eb;">🔄 Réf.</button>';
+                btns += '<button onclick="actionConfirm(\'' + promAct + '\',\'' + e + '\',\'' + n + '\')" style="' + bs + 'background:' + promColor + ';color:#fff;">' + promIcon + '</button>';
+                btns += '<button onclick="actionConfirm(\'' + blkAct + '\',\'' + e + '\',\'' + n + '\')" style="' + bs + 'background:' + blkColor + ';color:#fff;">' + blkIcon + '</button>';
+                btns += '<button onclick="actionConfirm(\'zoho\',\'' + e + '\',\'' + n + '\')" style="' + bs + 'background:#fecaca;color:#dc2626;">🗑️</button>';
+            }
 
             return '<div style="background:' + cardBg + ';border-radius:10px;padding:14px 18px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.04);' + cardBorder + '">' +
                 '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
                 '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
-                '<span style="font-weight:700;color:' + (isRef ? '#2563eb' : '#7c3aed') + ';font-size:14px;">' + ri + ' ' + person.nom + '</span>' +
+                '<span style="font-weight:700;color:' + nameColor + ';font-size:14px;">' + ri + ' ' + person.nom + '</span>' +
                 '<span style="font-size:11px;color:#9ca3af;">' + e + '</span>' +
                 '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:' + sc + '18;color:' + sc + ';font-weight:600;">' + sl + '</span>' +
-                '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:' + (isRef ? '#dbeafe' : '#ede9fe') + ';color:' + (isRef ? '#2563eb' : '#7c3aed') + ';font-weight:600;">' + rl + '</span>' +
+                '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:' + badgeBg + ';color:' + badgeColor + ';font-weight:600;">' + rl + '</span>' +
                 '</div>' +
                 '<div style="display:flex;gap:3px;flex-wrap:wrap;">' + btns + '</div></div></div>';
         }
@@ -1106,16 +1122,20 @@
                 const vendeurs = usersData.vendeurs || [];
                 
                 loading.style.display = 'none';
-                
-                if (!vendeurs.length) {
+
+                // Ajouter l'admin en premier
+                const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const allPortUsers = [{ email: adminUser.email, nom: adminUser.name || 'Admin', isAdmin: true }, ...vendeurs];
+
+                if (!allPortUsers.length) {
                     portContent.innerHTML = '<p style="color:#9ca3af;text-align:center;padding:32px;">Aucun vendeur</p>';
                     return;
                 }
-                
-                portContent.innerHTML = vendeurs.map((v, vi) => `
+
+                portContent.innerHTML = allPortUsers.map((v, vi) => `
                     <div style="background:white;border:1px solid #e9d5ff;border-radius:12px;margin-bottom:10px;overflow:hidden;">
                         <div onclick="togglePortVendeur(${vi})" style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;background:#faf5ff;">
-                            <div style="font-weight:700;color:#1e1b4b;font-size:15px;">👤 ${v.email}</div>
+                            <div style="font-weight:700;color:${v.isAdmin ? '#b45309' : '#1e1b4b'};font-size:15px;">${v.isAdmin ? '👑' : '👤'} ${v.nom || v.email} <span style="font-size:11px;color:#9ca3af;font-weight:400;">${v.email}</span></div>
                             <span id="port-chevron-${vi}" style="color:#9ca3af;font-size:12px;transition:transform 0.2s;">▼</span>
                         </div>
                         <div id="port-body-${vi}" style="display:none;padding:0 18px 14px;">
@@ -1127,7 +1147,7 @@
                 `).join('');
                 
                 // Stocker les vendeurs pour référence
-                window._portVendeurs = vendeurs;
+                window._portVendeurs = allPortUsers;
                 
             } catch(e) {
                 loading.style.display = 'none';
