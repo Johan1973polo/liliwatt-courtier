@@ -1265,13 +1265,19 @@ async function getVendeursFromSheets() {
     }));
 }
 
-// Helper : écrire une cellule dans Sheets
-async function updateSheetCell(cell, value) {
+// Helper Sheets auth (lecture + écriture)
+function getSheetsClient() {
   const auth = new google.auth.GoogleAuth({
     credentials: DRIVE_CREDENTIALS,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets']
+    scopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
   });
-  const sheets = google.sheets({ version: 'v4', auth });
+  return google.sheets({ version: 'v4', auth });
+}
+
+// Helper : écrire une cellule dans Sheets
+async function updateSheetCell(cell, value) {
+  const sheets = getSheetsClient();
+  console.log(`📝 Sheets update: ${cell} = "${value}"`);
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEETS_ID,
     range: cell,
@@ -1282,11 +1288,7 @@ async function updateSheetCell(cell, value) {
 
 // Helper : trouver la ligne d'un vendeur par email
 async function findVendeurRow(email) {
-  const auth = new google.auth.GoogleAuth({
-    credentials: DRIVE_CREDENTIALS,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
-  });
-  const sheets = google.sheets({ version: 'v4', auth });
+  const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEETS_ID, range: 'A:K' });
   const rows = res.data.values || [];
   for (let i = 0; i < rows.length; i++) {
@@ -1312,20 +1314,22 @@ app.get('/api/equipes', verifyToken, isAdmin, async (req, res) => {
 // POST /api/vendeurs/:email/promouvoir
 app.post('/api/vendeurs/:email/promouvoir', verifyToken, isAdmin, async (req, res) => {
   try {
+    console.log('⬆️ Promouvoir:', req.params.email);
     const row = await findVendeurRow(req.params.email);
     if (!row) return res.status(404).json({ error: 'Vendeur non trouvé' });
     await updateSheetCell(`J${row}`, 'referent');
+    console.log('✅ Promu en referent:', req.params.email, 'ligne', row);
     res.json({ success: true });
-  } catch(err) { res.status(500).json({ error: err.message }); }
+  } catch(err) { console.error('❌ Promouvoir error:', err.message); res.status(500).json({ error: err.message }); }
 });
 
 // POST /api/vendeurs/:email/retrograder
 app.post('/api/vendeurs/:email/retrograder', verifyToken, isAdmin, async (req, res) => {
   try {
+    console.log('⬇️ Rétrograder:', req.params.email);
     const row = await findVendeurRow(req.params.email);
     if (!row) return res.status(404).json({ error: 'Vendeur non trouvé' });
     await updateSheetCell(`J${row}`, 'vendeur');
-    // Réassigner les vendeurs de ce référent
     const vendeurs = await getVendeursFromSheets();
     for (const v of vendeurs) {
       if (v.referent_email === req.params.email) {
@@ -1333,37 +1337,44 @@ app.post('/api/vendeurs/:email/retrograder', verifyToken, isAdmin, async (req, r
         if (vRow) await updateSheetCell(`G${vRow}`, '');
       }
     }
+    console.log('✅ Rétrogradé:', req.params.email);
     res.json({ success: true });
-  } catch(err) { res.status(500).json({ error: err.message }); }
+  } catch(err) { console.error('❌ Rétrograder error:', err.message); res.status(500).json({ error: err.message }); }
 });
 
 // POST /api/vendeurs/:email/bloquer
 app.post('/api/vendeurs/:email/bloquer', verifyToken, isAdmin, async (req, res) => {
   try {
+    console.log('🔒 Bloquer:', req.params.email);
     const row = await findVendeurRow(req.params.email);
     if (!row) return res.status(404).json({ error: 'Vendeur non trouvé' });
     await updateSheetCell(`K${row}`, 'bloqué');
+    console.log('✅ Bloqué:', req.params.email);
     res.json({ success: true });
-  } catch(err) { res.status(500).json({ error: err.message }); }
+  } catch(err) { console.error('❌ Bloquer error:', err.message); res.status(500).json({ error: err.message }); }
 });
 
 // POST /api/vendeurs/:email/debloquer
 app.post('/api/vendeurs/:email/debloquer', verifyToken, isAdmin, async (req, res) => {
   try {
+    console.log('🔓 Débloquer:', req.params.email);
     const row = await findVendeurRow(req.params.email);
     if (!row) return res.status(404).json({ error: 'Vendeur non trouvé' });
     await updateSheetCell(`K${row}`, 'actif');
+    console.log('✅ Débloqué:', req.params.email);
     res.json({ success: true });
-  } catch(err) { res.status(500).json({ error: err.message }); }
+  } catch(err) { console.error('❌ Débloquer error:', err.message); res.status(500).json({ error: err.message }); }
 });
 
 // POST /api/vendeurs/:email/changer-referent
 app.post('/api/vendeurs/:email/changer-referent', verifyToken, isAdmin, async (req, res) => {
   try {
     const { referent_email } = req.body;
+    console.log('🔄 Changer référent:', req.params.email, '→', referent_email || 'aucun');
     const row = await findVendeurRow(req.params.email);
     if (!row) return res.status(404).json({ error: 'Vendeur non trouvé' });
     await updateSheetCell(`G${row}`, referent_email || '');
+    console.log('✅ Référent changé:', req.params.email);
     res.json({ success: true });
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
