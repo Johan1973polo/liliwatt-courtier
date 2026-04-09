@@ -1308,6 +1308,45 @@ async function findVendeurRow(email) {
   return null;
 }
 
+// GET /api/admin/init-admins-sheets — ajouter Johan et Kevin dans Sheets
+app.get('/api/admin/init-admins-sheets', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const crypto = require('crypto');
+    const sheets = getSheetsClient();
+    const existing = await sheets.spreadsheets.values.get({ spreadsheetId: SHEETS_ID, range: 'A:K' });
+    const rows = existing.data.values || [];
+    const existingEmails = new Set(rows.map(r => (r[3] || '').toLowerCase()));
+
+    const admins = [
+      { nom: 'MALLET', prenom: 'Johan', mdp: 'liliwatt2024!', email: 'johan.mallet@liliwatt.fr', poste: 'Directeur Commercial', drive: '1wovLxmyQ23pk0CNHB7Q3tYwTFN8pRZOx' },
+      { nom: 'MOREAU', prenom: 'Kevin', mdp: 'liliwatt2024!', email: 'kevin.moreau@liliwatt.fr', poste: 'Président', drive: '1Tlm8SiEMweygWpGHpcJ4UiEi8s73e6q3' }
+    ];
+
+    const added = [];
+    for (const a of admins) {
+      if (existingEmails.has(a.email.toLowerCase())) {
+        console.log('⏭️ Déjà dans Sheets:', a.email);
+        continue;
+      }
+      const token = crypto.randomBytes(6).toString('hex');
+      const link = 'https://liliwatt-courtier.onrender.com/rgpd/' + token;
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SHEETS_ID,
+        range: 'A:K',
+        valueInputOption: 'RAW',
+        requestBody: { values: [[a.nom, a.prenom, a.mdp, a.email, a.poste, a.drive, '', token, link, 'admin', 'actif']] }
+      });
+      added.push({ email: a.email, token, link });
+      console.log('✅ Admin ajouté dans Sheets:', a.email, '| token:', token);
+    }
+
+    res.json({ success: true, added, skipped: admins.length - added.length });
+  } catch(err) {
+    console.error('❌ init-admins-sheets error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/equipes — hiérarchie complète (admins + référents + vendeurs)
 app.get('/api/equipes', verifyToken, isAdmin, async (req, res) => {
   try {
