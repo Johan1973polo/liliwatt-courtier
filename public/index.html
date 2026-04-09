@@ -3280,6 +3280,18 @@ const avisImages = [
                     missingCount++;
                 }
                 
+                // Nom client : toujours verrouillé (priorité au nom saisi étape 1)
+                if (field.key === 'nom_client') {
+                    card.innerHTML = `
+                        <h3>${field.icon} ${field.label} <span style="font-size:11px;color:#9ca3af;font-weight:400;">🔒 défini à l'étape 1</span></h3>
+                        <div class="data-value" style="background:#f3f4f6;color:#1e1b4b;font-weight:700;border-radius:8px;padding:10px 14px;">
+                            ${value || 'Non renseigné'}
+                        </div>
+                    `;
+                    dataGrid.appendChild(card);
+                    return;
+                }
+
                 // Gestion spéciale pour le champ segment
                 if (field.key === 'segment') {
                     card.innerHTML = `
@@ -3781,6 +3793,8 @@ const avisImages = [
         }
         
         function updateExtractedData(key, value) {
+            // nom_client ne peut jamais être modifié depuis l'étape 2
+            if (key === 'nom_client') return;
             // Pour ces champs texte, pas de conversion numérique
             const textFields = [
                 'date_fin_contrat', 
