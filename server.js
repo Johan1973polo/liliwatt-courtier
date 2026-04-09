@@ -463,7 +463,17 @@ app.post('/api/auth/login', async (req, res) => {
     if (!validPassword) {
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
     }
-    
+
+    // Vérifier statut dans Sheets même pour les users du JSON
+    if (DRIVE_CREDENTIALS) {
+      const tousVendeurs = await getVendeursFromSheets();
+      const sheetCheck = tousVendeurs.find(v => v.email === email);
+      if (sheetCheck && (sheetCheck.statut === 'bloqué' || sheetCheck.statut === 'inactif')) {
+        console.log('🚫 Login bloqué (JSON user):', email, sheetCheck.statut);
+        return res.status(403).json({ error: 'Compte bloqué. Contactez votre administrateur.' });
+      }
+    }
+
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role, drive_folder_id: user.drive_folder_id || '' },
       JWT_SECRET,
