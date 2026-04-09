@@ -8824,6 +8824,10 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             document.getElementById('manualEntryModal').style.display = 'none';
         }
         function sendToAdminForMEC() {
+            console.log('🚀 sendToAdminForMEC appelé');
+            console.log('repriseId:', localStorage.getItem('reprendre_mec_id'));
+            console.log('client_name:', extractedData?.nom_client, '| currentClientName:', currentClientName);
+            console.log('currentUser:', currentUser?.email, currentUser?.role);
             const token = localStorage.getItem('token');
 
             // Mode reprise : on met à jour la notification existante
@@ -8865,16 +8869,19 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
                 status: 'pending'
             };
 
+            console.log('📤 POST /api/notifications — payload:', JSON.stringify({ client_name: notifData.client_name, segment: notifData.segment, vendeur_email: notifData.vendeur_email }));
             fetch('/api/notifications', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                 body: JSON.stringify(notifData)
             })
-            .then(r => r.json())
+            .then(r => { console.log('📬 Notification response status:', r.status); return r.json(); })
             .then(data => {
+                console.log('📬 Notification response data:', data);
                 alert('✅ Dossier envoyé au back-office !\nL\'admin a été notifié et pourra reprendre le traitement MEC.');
             })
-            .catch(() => {
+            .catch(err => {
+                console.error('❌ Notification error:', err);
                 alert('✅ Dossier envoyé au back-office !');
             });
         }
@@ -8913,9 +8920,10 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             const btnNext = document.getElementById('nextToVolumes');
             const btnAdmin = document.getElementById('btnSendAdmin');
             if (!btnNext || !btnAdmin) return;
-            
+
             const isVendeurRole = currentUser && (currentUser.role === 'vendeur' || currentUser.role === 'referent');
-            
+            console.log('🔘 updateStep2ButtonsForRole — role:', currentUser?.role, '| isVendeur:', isVendeurRole, '| btnAdmin visible:', isVendeurRole);
+
             if (isVendeurRole) {
                 btnNext.style.display = 'none';
                 btnAdmin.style.display = 'inline-block';
