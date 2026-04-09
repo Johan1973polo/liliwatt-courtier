@@ -322,6 +322,10 @@ Si une donnée n'existe pas, mets "N/A" pour texte ou 0 pour nombres.`
     await fs.unlink(file1.filepath);
     if (file2) await fs.unlink(file2.filepath);
     
+    // Séparer nom_detecte pour ne pas écraser le nom saisi par le vendeur
+    const nomDetecte = result.nom_client || '';
+    result.nom_detecte = nomDetecte;
+    delete result.nom_client;
     res.json({ success: true, data: result });
     
   } catch (error) {

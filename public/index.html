@@ -3025,7 +3025,10 @@ const avisImages = [
                 
                 if (result.success) {
                     extractedData = result.data;
-                    
+                    // Forcer nom_client au nom saisi par le vendeur (nom_detecte reste dispo)
+                    const _nomVendeur = document.getElementById('nomSocieteInput')?.value?.trim();
+                    extractedData.nom_client = _nomVendeur || extractedData.nom_detecte || '';
+
                     // IMPORTANT : Forcer immédiatement le SIREN et PDL à être des strings
                     // Car l'extraction peut les retourner comme des nombres
                     if (extractedData.siren !== undefined && extractedData.siren !== null) {
@@ -3145,29 +3148,11 @@ const avisImages = [
                     stopScannerLoader();
                     displayExtractedData(); updateStep2ButtonsForRole();
                     
-                    // Proposer renommage dossier Drive si nom différent
-                    const nomExtrait = extractedData.nom_client;
+                    // Toujours forcer nom_client au nom saisi par le vendeur
                     const nomSaisi = document.getElementById('nomSocieteInput')?.value?.trim();
-                    if (nomExtrait && nomSaisi && nomExtrait.toUpperCase() !== nomSaisi.toUpperCase()) {
-                        setTimeout(async () => {
-                            const ok = window.confirm(`L'algorithme LILIWATT a identifié : "${nomExtrait}"\nVoulez-vous mettre à jour le nom du dossier ?`);
-                            if (ok) {
-                                try {
-                                    if (currentClientDriveFolderId) {
-                                        const token = localStorage.getItem('token');
-                                        await fetch('/api/drive/rename-folder', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                                            body: JSON.stringify({ folderId: currentClientDriveFolderId, nouveauNom: nomExtrait })
-                                        });
-                                        console.log('✅ Dossier renommé:', nomSaisi, '→', nomExtrait);
-                                    }
-                                    document.getElementById('nomSocieteInput').value = nomExtrait;
-                                    currentClientName = nomExtrait;
-                                } catch(e) { console.warn('Erreur renommage:', e); }
-                            }
-                            // Annuler → on garde le nom saisi, dossier inchangé
-                        }, 500);
+                    if (nomSaisi) {
+                        extractedData.nom_client = nomSaisi;
+                        currentClientName = nomSaisi;
                     }
                     
                     nextStep(2);
