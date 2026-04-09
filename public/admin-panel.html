@@ -481,7 +481,7 @@
                 btns += '<button onclick="openChangeReferent(\'' + e + '\',\'' + n + '\')" style="' + bs + 'background:#e0e7ff;color:#2563eb;">🔄 Réf.</button>';
                 btns += '<button onclick="actionConfirm(\'' + promAct + '\',\'' + e + '\',\'' + n + '\')" style="' + bs + 'background:' + promColor + ';color:#fff;">' + promIcon + '</button>';
                 btns += '<button onclick="actionConfirm(\'' + blkAct + '\',\'' + e + '\',\'' + n + '\')" style="' + bs + 'background:' + blkColor + ';color:#fff;">' + blkIcon + '</button>';
-                btns += '<button onclick="actionConfirm(\'zoho\',\'' + e + '\',\'' + n + '\')" style="' + bs + 'background:#fecaca;color:#dc2626;">🗑️</button>';
+                btns += '<button onclick="actionConfirm(\'desactiver\',\'' + e + '\',\'' + n + '\')" style="' + bs + 'background:#e5e7eb;color:#6b7280;">🚫</button>';
             }
 
             return '<div style="background:' + cardBg + ';border-radius:10px;padding:14px 18px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.04);' + cardBorder + '">' +
@@ -526,7 +526,7 @@
                 retrograder: { title: '⬇️ Rétrograder en vendeur', msg: 'Rétrograder ' + nom + ' ? Ses vendeurs seront désassignés.', color: '#f59e0b' },
                 bloquer: { title: '🔒 Bloquer le compte', msg: 'Bloquer ' + nom + ' ? Il ne pourra plus se connecter.', color: '#ef4444' },
                 debloquer: { title: '🔓 Débloquer le compte', msg: 'Débloquer ' + nom + ' ?', color: '#22c55e' },
-                zoho: { title: '🗑️ Supprimer le compte Zoho', msg: 'Supprimer définitivement le compte Zoho de ' + nom + ' ? Cette action est IRRÉVERSIBLE.', color: '#dc2626' }
+                desactiver: { title: '🚫 Déclarer inactif', msg: 'Déclarer ' + nom + ' inactif ? Son dossier Drive sera archivé et il ne pourra plus se connecter.', color: '#6b7280' }
             };
             const m = msgs[action];
             document.getElementById('confirmTitle').textContent = m.title;
@@ -534,8 +534,8 @@
             document.getElementById('confirmBtn').style.background = m.color;
             _confirmAction = async () => {
                 let r;
-                if (action === 'zoho') {
-                    r = await fetch('/api/vendeurs/' + encodeURIComponent(email) + '/zoho', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + authToken } });
+                if (action === 'desactiver') {
+                    r = await fetch('/api/vendeurs/' + encodeURIComponent(email) + '/desactiver', { method: 'POST', headers: { 'Authorization': 'Bearer ' + authToken } });
                 } else {
                     r = await fetch('/api/vendeurs/' + encodeURIComponent(email) + '/' + action, { method: 'POST', headers: { 'Authorization': 'Bearer ' + authToken } });
                 }

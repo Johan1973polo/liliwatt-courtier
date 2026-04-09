@@ -1249,7 +1249,7 @@ app.get('/api/vendeurs', verifyToken, async (req, res) => {
   }
 });
 
-async function getVendeursFromSheets() {
+async function getAllVendeursFromSheets() {
   const auth = new google.auth.GoogleAuth({
     credentials: DRIVE_CREDENTIALS,
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
@@ -1274,6 +1274,11 @@ async function getVendeursFromSheets() {
       role: row[9] || 'vendeur',
       statut: row[10] || 'actif'
     }));
+}
+
+async function getVendeursFromSheets() {
+  const all = await getAllVendeursFromSheets();
+  return all.filter(v => v.statut !== 'inactif');
 }
 
 // Helper Sheets auth (lecture + écriture)
@@ -1440,6 +1445,63 @@ app.post('/api/vendeurs/:email/changer-referent', verifyToken, isAdmin, async (r
     console.log('✅ Référent changé:', req.params.email);
     res.json({ success: true });
   } catch(err) { console.error('❌ Changer-referent error:', err.message); res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/vendeurs/:email/desactiver — rendre inactif + archiver Drive
+app.post('/api/vendeurs/:email/desactiver', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const email = req.params.email;
+    console.log('🚫 Désactiver:', email);
+    const row = await findVendeurRow(email);
+    if (!row) return res.status(404).json({ error: 'Vendeur non trouvé' });
+
+    // 1. Statut → inactif
+    await updateSheetCell(`K${row}`, 'inactif');
+
+    // 2. Désassigner les vendeurs qui l'avaient comme référent
+    const allV = await getAllVendeursFromSheets();
+    for (const v of allV) {
+      if (v.referent_email === email) {
+        const vRow = await findVendeurRow(v.email);
+        if (vRow) await updateSheetCell(`G${vRow}`, '');
+        console.log('  ↳ Vendeur désassigné:', v.email);
+      }
+    }
+
+    // 3. Déplacer dossier Drive vers VENDEURS INACTIFS
+    const vendeur = allV.find(v => v.email === email);
+    if (vendeur && vendeur.drive_folder_id) {
+      try {
+        const drive = getDriveClient();
+        const INACTIFS_FOLDER = '1mGkSuGWePiEC0u_sLRIk8xUfW8oMlF3W';
+        // Trouver le parent actuel
+        const fileInfo = await drive.files.get({ fileId: vendeur.drive_folder_id, fields: 'parents', supportsAllDrives: true });
+        const currentParent = (fileInfo.data.parents || [])[0] || '';
+        await drive.files.update({
+          fileId: vendeur.drive_folder_id,
+          addParents: INACTIFS_FOLDER,
+          removeParents: currentParent,
+          supportsAllDrives: true,
+          fields: 'id, parents'
+        });
+        console.log('📁 Dossier déplacé vers INACTIFS:', vendeur.drive_folder_id);
+      } catch(driveErr) {
+        console.error('⚠️ Erreur déplacement Drive:', driveErr.message);
+      }
+    }
+
+    console.log('✅ Désactivé:', email);
+    res.json({ success: true });
+  } catch(err) { console.error('❌ Désactiver error:', err.message); res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/vendeurs/inactifs — liste des vendeurs inactifs (admin only)
+app.get('/api/vendeurs/inactifs', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const all = await getAllVendeursFromSheets();
+    const inactifs = all.filter(v => v.statut === 'inactif');
+    res.json({ success: true, inactifs });
+  } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
 // DELETE /api/vendeurs/:email/zoho — supprime le compte Zoho Mail
