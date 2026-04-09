@@ -903,9 +903,7 @@ app.post('/api/drive/upload', verifyToken, async (req, res) => {
 
     // ✅ Utiliser overrideDriveFolderId si fourni (MEC reprise par admin), sinon drive_folder_id du JWT
     const vendeurFolderId = overrideDriveFolderId || req.user.drive_folder_id || null;
-    if (overrideDriveFolderId) {
-      console.log('📁 Upload avec override vers dossier vendeur:', overrideDriveFolderId);
-    }
+    console.log('📁 Upload Drive — vendeurFolderId:', vendeurFolderId, '| overrideDriveFolderId:', overrideDriveFolderId || 'none', '| user.drive_folder_id:', req.user?.drive_folder_id || 'none', '| clientName:', clientName, '| fileName:', fileName);
 
     let attenteId;
     if (vendeurFolderId) {
