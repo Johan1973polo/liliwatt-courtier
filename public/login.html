@@ -242,7 +242,7 @@ async function login() {
       window.location.href = '/';
     } else {
       errorMsg.style.display = 'block';
-      errorMsg.textContent = '❌ Email ou mot de passe incorrect';
+      errorMsg.textContent = '❌ ' + (data.error || 'Email ou mot de passe incorrect');
     }
   } catch (err) {
     errorMsg.style.display = 'block';
