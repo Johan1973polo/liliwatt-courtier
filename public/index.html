@@ -1401,12 +1401,26 @@ button[onclick*="previousStep"] {
                 <h2 style="color: #7c3aed; margin-bottom: 30px;">📄 Étape 1 : Extraction des données</h2>
                 
                 <div class="upload-section">
+                    <!-- Client existant ou nouveau -->
+                    <div id="clientExistantSection" style="margin-bottom:24px;background:#faf5ff;border:2px solid #e9d5ff;border-radius:12px;padding:20px;">
+                        <p style="font-weight:700;color:#1e1b4b;font-size:14px;margin:0 0 12px;">Ce client a-t-il déjà transmis ses factures via le formulaire RGPD ?</p>
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                            <button onclick="chooseNewClient()" style="flex:1;min-width:180px;padding:12px 20px;background:linear-gradient(135deg,#7c3aed,#d946ef);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;">Non, nouveau client</button>
+                            <button onclick="chooseExistingClient()" style="flex:1;min-width:180px;padding:12px 20px;background:#fff;color:#7c3aed;border:2px solid #7c3aed;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;">Oui, récupérer le dossier</button>
+                        </div>
+                        <div id="existingClientList" style="display:none;margin-top:14px;">
+                            <select id="existingClientSelect" onchange="selectExistingClient(this)" style="width:100%;padding:12px 16px;border:2px solid #e9d5ff;border-radius:10px;font-size:14px;outline:none;">
+                                <option value="">Chargement...</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <!-- Nom de la société -->
                     <div style="margin-bottom:24px;">
                         <label style="font-weight:700;color:#7c3aed;font-size:14px;display:block;margin-bottom:8px;">🏢 Nom de la société <span style="color:#ef4444;">*</span></label>
-                        <input type="text" id="nomSocieteInput" placeholder="Ex: SARL DUPONT, SCI MARTIN..." 
+                        <input type="text" id="nomSocieteInput" placeholder="Ex: SARL DUPONT, SCI MARTIN..."
                             style="width:100%;padding:12px 16px;border:2px solid #e9d5ff;border-radius:10px;font-size:15px;outline:none;box-sizing:border-box;transition:border-color 0.2s;"
-                            onfocus="this.style.borderColor='#7c3aed'" 
+                            onfocus="this.style.borderColor='#7c3aed'"
                             onblur="this.style.borderColor='#e9d5ff'"
                             oninput="currentClientName=this.value.trim()">
                         <small style="color:#9ca3af;font-size:11px;">Ce nom sera utilisé pour créer le dossier dans Google Drive</small>
@@ -2870,10 +2884,9 @@ const avisImages = [
             if (file) {
                 selectedFiles[`file${fileNum}`] = file;
                 
-                // Créer dossier Drive et uploader la facture immédiatement
+                // Créer dossier Drive (sauf si dossier existant) et uploader la facture
                 if (fileNum === 1) {
-                    createDriveFolder(nomSociete).then(async () => {
-                        // Verrouiller le champ société après création du dossier
+                    const doUpload = async () => {
                         if (nomInput) { nomInput.readOnly = true; nomInput.style.background = '#f3f4f6'; nomInput.style.cursor = 'not-allowed'; }
                         const base64 = await new Promise((resolve, reject) => {
                             const reader = new FileReader();
@@ -2883,7 +2896,12 @@ const avisImages = [
                         });
                         await uploadToDrive(base64, 'Facture_' + file.name);
                         console.log('✅ Facture uploadée sur Drive:', file.name);
-                    });
+                    };
+                    if (currentClientDriveFolderId) {
+                        doUpload();
+                    } else {
+                        createDriveFolder(nomSociete).then(doUpload);
+                    }
                 }
                 document.getElementById(`fileName${fileNum}`).textContent = '📄 ' + file.name;
             }
@@ -2912,9 +2930,9 @@ const avisImages = [
                 selectedFiles[`file${fileNum}`] = file;
                 document.getElementById(`fileName${fileNum}`).textContent = '📄 ' + file.name;
                 
-                // Créer dossier Drive et uploader la facture
+                // Créer dossier Drive (sauf si existant) et uploader la facture
                 if (fileNum === 1) {
-                    createDriveFolder(nomSociete).then(async () => {
+                    const doUploadDrop = async () => {
                         if (nomInput) { nomInput.readOnly = true; nomInput.style.background = '#f3f4f6'; nomInput.style.cursor = 'not-allowed'; }
                         const base64 = await new Promise((resolve, reject) => {
                             const reader = new FileReader();
@@ -2924,7 +2942,12 @@ const avisImages = [
                         });
                         await uploadToDrive(base64, 'Facture_' + file.name);
                         console.log('✅ Facture drag&drop uploadée sur Drive:', file.name);
-                    });
+                    };
+                    if (currentClientDriveFolderId) {
+                        doUploadDrop();
+                    } else {
+                        createDriveFolder(nomSociete).then(doUploadDrop);
+                    }
                 }
             }
         }
@@ -8903,6 +8926,60 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             }
         }
         
+
+        // ===== CLIENT EXISTANT =====
+        let isExistingClient = false;
+
+        function chooseNewClient() {
+            isExistingClient = false;
+            document.getElementById('existingClientList').style.display = 'none';
+            document.getElementById('clientExistantSection').style.border = '2px solid #bbf7d0';
+            document.getElementById('clientExistantSection').style.background = '#f0fdf4';
+            document.getElementById('clientExistantSection').innerHTML = '<p style="margin:0;color:#16a34a;font-weight:600;">✅ Nouveau client — saisissez le nom de la société ci-dessous</p>';
+            const nomInput = document.getElementById('nomSocieteInput');
+            if (nomInput) { nomInput.readOnly = false; nomInput.style.background = '#fff'; nomInput.style.cursor = 'text'; nomInput.focus(); }
+        }
+
+        async function chooseExistingClient() {
+            const listDiv = document.getElementById('existingClientList');
+            const sel = document.getElementById('existingClientSelect');
+            listDiv.style.display = 'block';
+            sel.innerHTML = '<option value="">Chargement des dossiers...</option>';
+            try {
+                const token = localStorage.getItem('token');
+                const r = await fetch('/api/drive/list-documents', { headers: { 'Authorization': 'Bearer ' + token } });
+                const data = await r.json();
+                const clients = data.attente || [];
+                if (clients.length === 0) {
+                    sel.innerHTML = '<option value="">Aucun dossier client trouvé</option>';
+                    return;
+                }
+                sel.innerHTML = '<option value="">— Sélectionnez un client —</option>' +
+                    clients.map(c => '<option value="' + c.id + '">' + c.name + ' (' + c.files.length + ' fichier' + (c.files.length > 1 ? 's' : '') + ')</option>').join('');
+            } catch(e) {
+                sel.innerHTML = '<option value="">Erreur de chargement</option>';
+                console.error('Erreur chargement clients:', e);
+            }
+        }
+
+        function selectExistingClient(sel) {
+            if (!sel.value) return;
+            isExistingClient = true;
+            const clientName = sel.options[sel.selectedIndex].text.replace(/ \(\d+ fichiers?\)$/, '');
+            currentClientDriveFolderId = sel.value;
+            currentClientName = clientName;
+            const nomInput = document.getElementById('nomSocieteInput');
+            if (nomInput) {
+                nomInput.value = clientName;
+                nomInput.readOnly = true;
+                nomInput.style.background = '#f3f4f6';
+                nomInput.style.cursor = 'not-allowed';
+            }
+            document.getElementById('clientExistantSection').style.border = '2px solid #bbf7d0';
+            document.getElementById('clientExistantSection').style.background = '#f0fdf4';
+            document.getElementById('clientExistantSection').innerHTML = '<p style="margin:0;color:#16a34a;font-weight:600;">✅ Dossier existant sélectionné : <strong>' + clientName + '</strong></p>';
+            console.log('📁 Client existant sélectionné:', clientName, '| folderId:', sel.value);
+        }
 
         // ===== GOOGLE DRIVE =====
         let _resolveClientName = null;
