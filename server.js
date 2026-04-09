@@ -2448,45 +2448,28 @@ h1{color:#dc2626;font-size:20px;margin-bottom:12px}p{color:#6b7280;font-size:14p
 // ===== ENVOI MEC MAIL =====
 app.post('/api/send-mec-mail', verifyToken, isAdmin, async (req, res) => {
   try {
-    const { vendeurEmail, clientName, htmlBody, pieceJointes } = req.body;
-    if (!vendeurEmail || !htmlBody) return res.status(400).json({ error: 'vendeurEmail et htmlBody requis' });
-
-    console.log(`📨 Envoi MEC mail → ${vendeurEmail} | client: ${clientName} | PJ: ${(pieceJointes || []).length}`);
-
-    // Envoyer le mail au vendeur
-    const subject = `✅ Ta MEC est prête — ${clientName || 'Client'}`;
-    await sendZohoMail({ to: vendeurEmail, subject, htmlBody });
-    console.log(`✅ MEC mail envoyé à ${vendeurEmail}`);
-
-    // Détecter le référent du vendeur
-    let referentNotified = false;
-    try {
-      const vendeurs = await getVendeursFromSheets();
-      const vendeur = vendeurs.find(v => v.email === vendeurEmail);
-      if (vendeur && vendeur.referent_email && vendeur.referent_email !== vendeurEmail) {
-        const refSubject = `📋 MEC finalisée — ${vendeur.nom} / ${clientName || 'Client'}`;
-        const refHtml = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
-<div style="background:linear-gradient(135deg,#1e1b4b,#7c3aed);padding:24px;border-radius:12px 12px 0 0;text-align:center;">
-<h1 style="color:#fff;font-size:24px;letter-spacing:3px;margin:0;">LILIWATT</h1>
-<p style="color:rgba(255,255,255,.8);font-size:12px;margin:4px 0 0;">Notification référent</p>
-</div>
-<div style="background:#f5f3ff;padding:28px;border-radius:0 0 12px 12px;">
-<p style="font-size:15px;color:#1e1b4b;">Bonjour,</p>
-<p style="color:#374151;line-height:1.6;">Un membre de votre équipe <strong>${vendeur.nom}</strong> (${vendeurEmail}) vient de recevoir sa MEC pour <strong>${clientName || 'un client'}</strong>.</p>
-<p style="color:#374151;line-height:1.6;">Le back-office a finalisé le dossier. 🎯</p>
-<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;margin:20px 0;">
-<p style="margin:0;color:#16a34a;font-weight:600;">✅ MEC envoyée et prête à être présentée au client.</p>
-</div>
-</div></div>`;
-        await sendZohoMail({ to: vendeur.referent_email, subject: refSubject, htmlBody: refHtml });
-        referentNotified = true;
-        console.log(`✅ Notification référent envoyée à ${vendeur.referent_email}`);
-      }
-    } catch(refErr) {
-      console.warn('⚠️ Erreur notification référent:', refErr.message);
+    const { destinataires, clientName, htmlBody } = req.body;
+    if (!destinataires || !destinataires.length || !htmlBody) {
+      return res.status(400).json({ error: 'destinataires[] et htmlBody requis' });
     }
 
-    res.json({ success: true, referentNotified });
+    const subject = `✅ MEC prête — ${clientName || 'Client'}`;
+    console.log(`📨 Envoi MEC mail → ${destinataires.join(', ')} | client: ${clientName}`);
+
+    const sent = [];
+    const errors = [];
+    for (const email of destinataires) {
+      try {
+        await sendZohoMail({ to: email, subject, htmlBody });
+        sent.push(email);
+        console.log(`✅ MEC mail envoyé à ${email}`);
+      } catch(mailErr) {
+        errors.push({ email, error: mailErr.message });
+        console.error(`❌ Erreur envoi à ${email}:`, mailErr.message);
+      }
+    }
+
+    res.json({ success: true, sent, errors });
   } catch(err) {
     console.error('❌ send-mec-mail error:', err.message);
     res.status(500).json({ error: err.message });
