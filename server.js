@@ -422,7 +422,8 @@ app.post('/api/auth/login', async (req, res) => {
     if (!user && DRIVE_CREDENTIALS) {
       const sheetUser = await getVendeurFromSheets(email);
       if (sheetUser) {
-        if (sheetUser.statut === 'bloqué') {
+        if (sheetUser.statut === 'bloqué' || sheetUser.statut === 'inactif') {
+          console.log('🚫 Login bloqué:', email, '— statut:', sheetUser.statut);
           return res.status(403).json({ error: 'Compte bloqué. Contactez votre administrateur.' });
         }
         if (password === sheetUser.password) {
