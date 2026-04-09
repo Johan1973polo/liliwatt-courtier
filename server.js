@@ -422,10 +422,12 @@ app.post('/api/auth/login', async (req, res) => {
     if (!user && DRIVE_CREDENTIALS) {
       const sheetUser = await getVendeurFromSheets(email);
       if (sheetUser) {
+        if (sheetUser.statut === 'bloqué') {
+          return res.status(403).json({ error: 'Compte bloqué. Contactez votre administrateur.' });
+        }
         if (password === sheetUser.password) {
-          // Détecter si c'est un référent (son email apparaît dans colonne G d'autres vendeurs)
           const allUsers = await getVendeursFromSheets();
-          const isReferent = allUsers.some(u => u.referent_email === email);
+          const isReferent = sheetUser.role === 'referent' || allUsers.some(u => u.referent_email === email);
           const mesVendeurs = isReferent ? allUsers.filter(u => u.referent_email === email).map(u => u.email) : [];
           const role = isReferent ? 'referent' : 'vendeur';
           
@@ -830,7 +832,7 @@ async function getVendeurFromSheets(email) {
     const sheets = google.sheets({ version: 'v4', auth });
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEETS_ID,
-      range: 'A:G'
+      range: 'A:K'
     });
     const rows = res.data.values || [];
     for (const row of rows) {
@@ -842,7 +844,8 @@ async function getVendeurFromSheets(email) {
           drive_folder_id: row[5] || '',
           nom: row[0] || '',
           prenom: row[1] || '',
-          role: 'vendeur'
+          role: row[9] || 'vendeur',
+          statut: row[10] || 'actif'
         };
       }
     }
@@ -1243,7 +1246,7 @@ async function getVendeursFromSheets() {
   const sheets = google.sheets({ version: 'v4', auth });
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEETS_ID,
-    range: 'A:H'
+    range: 'A:K'
   });
   const rows = res.data.values || [];
   return rows
@@ -1252,11 +1255,147 @@ async function getVendeursFromSheets() {
       id: row[3],
       email: row[3],
       nom: row[1] + ' ' + row[0],
+      nom_famille: row[0] || '',
+      prenom: row[1] || '',
       drive_folder_id: row[5] || '',
       referent_email: row[6] || '',
-      token_rgpd: row[7] || ''
+      token_rgpd: row[7] || '',
+      role: row[9] || 'vendeur',
+      statut: row[10] || 'actif'
     }));
 }
+
+// Helper : écrire une cellule dans Sheets
+async function updateSheetCell(cell, value) {
+  const auth = new google.auth.GoogleAuth({
+    credentials: DRIVE_CREDENTIALS,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets']
+  });
+  const sheets = google.sheets({ version: 'v4', auth });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEETS_ID,
+    range: cell,
+    valueInputOption: 'RAW',
+    requestBody: { values: [[value]] }
+  });
+}
+
+// Helper : trouver la ligne d'un vendeur par email
+async function findVendeurRow(email) {
+  const auth = new google.auth.GoogleAuth({
+    credentials: DRIVE_CREDENTIALS,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
+  });
+  const sheets = google.sheets({ version: 'v4', auth });
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEETS_ID, range: 'A:K' });
+  const rows = res.data.values || [];
+  for (let i = 0; i < rows.length; i++) {
+    if ((rows[i][3] || '').toLowerCase() === email.toLowerCase()) return i + 1;
+  }
+  return null;
+}
+
+// GET /api/equipes — hiérarchie complète
+app.get('/api/equipes', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const vendeurs = await getVendeursFromSheets();
+    const referents = vendeurs.filter(v => v.role === 'referent');
+    const equipes = referents.map(ref => ({
+      ...ref,
+      vendeurs: vendeurs.filter(v => v.referent_email === ref.email && v.email !== ref.email)
+    }));
+    const sansReferent = vendeurs.filter(v => v.role !== 'referent' && !v.referent_email);
+    res.json({ success: true, equipes, sansReferent });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/vendeurs/:email/promouvoir
+app.post('/api/vendeurs/:email/promouvoir', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const row = await findVendeurRow(req.params.email);
+    if (!row) return res.status(404).json({ error: 'Vendeur non trouvé' });
+    await updateSheetCell(`J${row}`, 'referent');
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/vendeurs/:email/retrograder
+app.post('/api/vendeurs/:email/retrograder', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const row = await findVendeurRow(req.params.email);
+    if (!row) return res.status(404).json({ error: 'Vendeur non trouvé' });
+    await updateSheetCell(`J${row}`, 'vendeur');
+    // Réassigner les vendeurs de ce référent
+    const vendeurs = await getVendeursFromSheets();
+    for (const v of vendeurs) {
+      if (v.referent_email === req.params.email) {
+        const vRow = await findVendeurRow(v.email);
+        if (vRow) await updateSheetCell(`G${vRow}`, '');
+      }
+    }
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/vendeurs/:email/bloquer
+app.post('/api/vendeurs/:email/bloquer', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const row = await findVendeurRow(req.params.email);
+    if (!row) return res.status(404).json({ error: 'Vendeur non trouvé' });
+    await updateSheetCell(`K${row}`, 'bloqué');
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/vendeurs/:email/debloquer
+app.post('/api/vendeurs/:email/debloquer', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const row = await findVendeurRow(req.params.email);
+    if (!row) return res.status(404).json({ error: 'Vendeur non trouvé' });
+    await updateSheetCell(`K${row}`, 'actif');
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/vendeurs/:email/changer-referent
+app.post('/api/vendeurs/:email/changer-referent', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { referent_email } = req.body;
+    const row = await findVendeurRow(req.params.email);
+    if (!row) return res.status(404).json({ error: 'Vendeur non trouvé' });
+    await updateSheetCell(`G${row}`, referent_email || '');
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+// DELETE /api/vendeurs/:email/zoho — supprime le compte Zoho Mail
+app.delete('/api/vendeurs/:email/zoho', verifyToken, isAdmin, async (req, res) => {
+  try {
+    if (!process.env.ZOHO_REFRESH_TOKEN) return res.status(503).json({ error: 'Zoho non configuré' });
+    const axios = require('axios');
+    const tokenRes = await axios.post('https://accounts.zoho.eu/oauth/v2/token', null, {
+      params: { refresh_token: process.env.ZOHO_REFRESH_TOKEN, client_id: process.env.ZOHO_CLIENT_ID, client_secret: process.env.ZOHO_CLIENT_SECRET, grant_type: 'refresh_token' },
+      timeout: 15000
+    });
+    const zohoToken = tokenRes.data.access_token;
+    const orgId = process.env.ZOHO_ORG_ID || '20113501048';
+    // Trouver le compte Zoho par email
+    const listRes = await axios.get(`https://mail.zoho.eu/api/organization/${orgId}/accounts`, {
+      headers: { 'Authorization': `Zoho-oauthtoken ${zohoToken}` }, timeout: 15000
+    });
+    const accounts = listRes.data.data || [];
+    const account = accounts.find(a => a.primaryEmailAddress === req.params.email);
+    if (!account) return res.status(404).json({ error: 'Compte Zoho non trouvé' });
+    await axios.delete(`https://mail.zoho.eu/api/organization/${orgId}/accounts/${account.accountId}`, {
+      headers: { 'Authorization': `Zoho-oauthtoken ${zohoToken}` }, timeout: 15000
+    });
+    console.log(`🗑️ Compte Zoho supprimé: ${req.params.email}`);
+    res.json({ success: true });
+  } catch(err) {
+    console.error('Zoho delete error:', err.response?.data || err.message);
+    res.status(500).json({ error: err.response?.data?.message || err.message });
+  }
+});
 
 // Route liste documents pour référent (ses vendeurs)
 app.get('/api/drive/list-documents-referent', verifyToken, async (req, res) => {
