@@ -5,6 +5,13 @@
       "password": "$2b$10$I4cv/PNzz3w7UforJBln0uyGucCz2quzBFSg5Mv/iFbgLOQVzXe1.",
       "role": "admin",
       "name": "Johan Mallet"
+    },
+    {
+      "email": "zakaria.jamaoui@liliwatt.fr",
+      "password": "$2b$10$uUgdyj2smXO7TAcK6swdzOsr3KxGtChX9wk/ODAvSQwQBXGVLR9qi",
+      "role": "vendeur",
+      "drive_folder_id": "1wggo_2QoUqoKYkuPb3MAoSfj_U650z8I",
+      "name": "Zakaria Jamaoui"
     }
   ]
 }
