@@ -1504,6 +1504,43 @@ app.get('/api/vendeurs/inactifs', verifyToken, isAdmin, async (req, res) => {
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
+// POST /api/vendeurs/:email/reactiver — réactiver un vendeur inactif
+app.post('/api/vendeurs/:email/reactiver', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const email = req.params.email;
+    console.log('✅ Réactiver:', email);
+    const row = await findVendeurRow(email);
+    if (!row) return res.status(404).json({ error: 'Vendeur non trouvé' });
+
+    // 1. Statut → actif
+    await updateSheetCell(`K${row}`, 'actif');
+
+    // 2. Déplacer dossier Drive depuis INACTIFS vers VENDEURS
+    const allV = await getAllVendeursFromSheets();
+    const vendeur = allV.find(v => v.email === email);
+    if (vendeur && vendeur.drive_folder_id) {
+      try {
+        const drive = getDriveClient();
+        const VENDEURS_PARENT = '157Sol6u32W0loIEv8CmYT3uoDaGyZ7q6';
+        const INACTIFS_FOLDER = '1mGkSuGWePiEC0u_sLRIk8xUfW8oMlF3W';
+        await drive.files.update({
+          fileId: vendeur.drive_folder_id,
+          addParents: VENDEURS_PARENT,
+          removeParents: INACTIFS_FOLDER,
+          supportsAllDrives: true,
+          fields: 'id, parents'
+        });
+        console.log('📁 Dossier déplacé vers VENDEURS:', vendeur.drive_folder_id);
+      } catch(driveErr) {
+        console.error('⚠️ Erreur déplacement Drive:', driveErr.message);
+      }
+    }
+
+    console.log('✅ Réactivé:', email);
+    res.json({ success: true });
+  } catch(err) { console.error('❌ Réactiver error:', err.message); res.status(500).json({ error: err.message }); }
+});
+
 // DELETE /api/vendeurs/:email/zoho — supprime le compte Zoho Mail
 app.delete('/api/vendeurs/:email/zoho', verifyToken, isAdmin, async (req, res) => {
   try {
