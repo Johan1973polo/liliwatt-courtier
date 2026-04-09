@@ -1952,21 +1952,42 @@ button[onclick*="previousStep"] {
             <!-- Étape 8: Email -->
             <div class="step-content" id="content8">
                 <h2 style="color: #7c3aed; margin-bottom: 30px;">📧 Étape 8 : Email client</h2>
-                
+
                 <div style="background: #f8f9fa; border-radius: 15px; padding: 30px;">
                     <div style="background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
-                        <h4 style="color: #7c3aed; margin-bottom: 15px;">Template email généré</h4>
-                        <div id="emailTemplate" style="background: #f9f9f9; padding: 20px; border-radius: 8px; min-height: 200px; font-family: Arial, sans-serif; line-height: 1.6;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;">
+                            <h4 style="color: #7c3aed; margin:0;">Template email généré</h4>
+                            <span style="font-size:12px;color:#9ca3af;">✏️ Vous pouvez modifier le mail avant envoi</span>
+                        </div>
+                        <div id="emailTemplate" contenteditable="true" style="background: #f9f9f9; padding: 20px; border-radius: 8px; min-height: 200px; font-family: Arial, sans-serif; line-height: 1.6; cursor:text; border:2px solid transparent; transition:border-color .2s; outline:none;" onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='transparent'">
                             <!-- Email généré dynamiquement -->
                         </div>
                     </div>
-                    
-                    <div style="text-align: center;">
+
+                    <!-- Pièces jointes -->
+                    <div style="background:white;border-radius:10px;padding:20px;margin-bottom:20px;">
+                        <h4 style="color:#7c3aed;margin-bottom:12px;">📎 Pièces jointes</h4>
+                        <div id="pjDropZone" style="border:2px dashed #d8b4fe;border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:#faf5ff;"
+                            ondragover="event.preventDefault();this.style.borderColor='#7c3aed';this.style.background='#ede9fe'"
+                            ondragleave="this.style.borderColor='#d8b4fe';this.style.background='#faf5ff'"
+                            ondrop="handlePjDrop(event)"
+                            onclick="document.getElementById('pjFileInput').click()">
+                            <p style="color:#7c3aed;font-weight:600;margin:0 0 4px;">Glissez vos PDFs ici</p>
+                            <p style="color:#9ca3af;font-size:12px;margin:0;">ou cliquez pour sélectionner (PDF uniquement)</p>
+                        </div>
+                        <input type="file" id="pjFileInput" accept=".pdf" multiple style="display:none" onchange="handlePjSelect(event)">
+                        <div id="pjList" style="margin-top:10px;"></div>
+                    </div>
+
+                    <div style="text-align: center; display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
                         <button onclick="generateEmailTemplate()" class="btn-success">
-                            ✨ Générer email personnalisé
+                            ✨ Générer email
                         </button>
                         <button onclick="copyEmailTemplate()" class="btn-secondary">
-                            📋 Copier l'email
+                            📋 Copier
+                        </button>
+                        <button onclick="sendMecMail()" style="padding:12px 28px;background:linear-gradient(135deg,#7c3aed,#d946ef);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;" id="btnSendMecMail">
+                            📨 Envoyer au vendeur
                         </button>
                         <button onclick="resetWorkflow()" class="btn-outline">
                             🔄 Nouvelle analyse
@@ -8452,6 +8473,82 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
             }
         }
         
+        // ===== PIÈCES JOINTES EMAIL =====
+        let pieceJointes = [];
+
+        function handlePjDrop(event) {
+            event.preventDefault();
+            event.currentTarget.style.borderColor = '#d8b4fe';
+            event.currentTarget.style.background = '#faf5ff';
+            const files = [...event.dataTransfer.files].filter(f => f.type === 'application/pdf');
+            files.forEach(addPj);
+        }
+
+        function handlePjSelect(event) {
+            const files = [...event.target.files].filter(f => f.type === 'application/pdf');
+            files.forEach(addPj);
+            event.target.value = '';
+        }
+
+        function addPj(file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                pieceJointes.push({ name: file.name, base64: e.target.result.split(',')[1], size: file.size });
+                renderPjList();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removePj(idx) {
+            pieceJointes.splice(idx, 1);
+            renderPjList();
+        }
+
+        function renderPjList() {
+            const div = document.getElementById('pjList');
+            if (!pieceJointes.length) { div.innerHTML = ''; return; }
+            div.innerHTML = pieceJointes.map((f, i) =>
+                '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f5f3ff;border-radius:6px;margin-bottom:4px;">' +
+                '<span style="font-size:13px;color:#1e1b4b;">📄 ' + f.name + ' <span style="color:#9ca3af;">(' + Math.round(f.size/1024) + ' Ko)</span></span>' +
+                '<button onclick="removePj(' + i + ')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;">✕</button></div>'
+            ).join('');
+        }
+
+        async function sendMecMail() {
+            const btn = document.getElementById('btnSendMecMail');
+            const htmlBody = document.getElementById('emailTemplate').innerHTML;
+            const mecData = JSON.parse(localStorage.getItem('reprendre_mec_data') || '{}');
+            const vendeurEmail = mecData.vendeur_email || localStorage.getItem('reprendre_vendeur_email') || currentUser?.email || '';
+            const clientName = extractedData?.nom_client || currentClientName || 'Client';
+
+            if (!vendeurEmail) { alert('⚠️ Email vendeur non trouvé.'); return; }
+            if (!htmlBody.trim()) { alert('⚠️ Le mail est vide. Générez le template d\'abord.'); return; }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Envoi en cours...';
+
+            try {
+                const r = await fetch('/api/send-mec-mail', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+                    body: JSON.stringify({ vendeurEmail, clientName, htmlBody, pieceJointes })
+                });
+                const data = await r.json();
+                console.log('📨 sendMecMail response:', data);
+                if (data.success) {
+                    alert('✅ Mail envoyé à ' + vendeurEmail + (data.referentNotified ? ' + notification référent' : ''));
+                    await markMECAsCompleted();
+                } else {
+                    alert('❌ Erreur : ' + (data.error || 'Envoi échoué'));
+                }
+            } catch(err) {
+                console.error('sendMecMail error:', err);
+                alert('❌ Erreur réseau');
+            }
+            btn.disabled = false;
+            btn.textContent = '📨 Envoyer au vendeur';
+        }
+
         async function markMECAsCompleted() {
             // Vérifier s'il y a une MEC en cours à marquer comme traitée
             const mecId = localStorage.getItem('reprendre_mec_id');
