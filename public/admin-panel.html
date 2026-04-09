@@ -502,12 +502,15 @@
 
         async function confirmChangeReferent() {
             const newRef = document.getElementById('modalRefSelect').value;
-            await fetch('/api/vendeurs/' + encodeURIComponent(_pendingRefEmail) + '/changer-referent', {
+            const r = await fetch('/api/vendeurs/' + encodeURIComponent(_pendingRefEmail) + '/changer-referent', {
                 method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
                 body: JSON.stringify({ referent_email: newRef })
             });
+            const data = await r.json();
+            console.log('🔄 Changer référent response:', data);
             closeModal('modalReferent');
-            loadEquipes();
+            // Délai pour laisser Sheets propager l'écriture
+            setTimeout(() => loadEquipes(), 1500);
         }
 
         let _confirmAction = null;
@@ -524,13 +527,16 @@
             document.getElementById('confirmMsg').textContent = m.msg;
             document.getElementById('confirmBtn').style.background = m.color;
             _confirmAction = async () => {
+                let r;
                 if (action === 'zoho') {
-                    await fetch('/api/vendeurs/' + encodeURIComponent(email) + '/zoho', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + authToken } });
+                    r = await fetch('/api/vendeurs/' + encodeURIComponent(email) + '/zoho', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + authToken } });
                 } else {
-                    await fetch('/api/vendeurs/' + encodeURIComponent(email) + '/' + action, { method: 'POST', headers: { 'Authorization': 'Bearer ' + authToken } });
+                    r = await fetch('/api/vendeurs/' + encodeURIComponent(email) + '/' + action, { method: 'POST', headers: { 'Authorization': 'Bearer ' + authToken } });
                 }
+                const data = await r.json();
+                console.log('Action', action, 'response:', data);
                 closeModal('modalConfirm');
-                loadEquipes();
+                setTimeout(() => loadEquipes(), 1500);
             };
             document.getElementById('confirmBtn').onclick = _confirmAction;
             document.getElementById('modalConfirm').style.display = 'flex';
