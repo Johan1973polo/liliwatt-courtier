@@ -1376,7 +1376,7 @@ app.post('/api/vendeurs/:email/changer-referent', verifyToken, isAdmin, async (r
     await updateSheetCell(`G${row}`, referent_email || '');
     console.log('✅ Référent changé:', req.params.email);
     res.json({ success: true });
-  } catch(err) { res.status(500).json({ error: err.message }); }
+  } catch(err) { console.error('❌ Changer-referent error:', err.message); res.status(500).json({ error: err.message }); }
 });
 
 // DELETE /api/vendeurs/:email/zoho — supprime le compte Zoho Mail
