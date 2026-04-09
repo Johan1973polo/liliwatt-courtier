@@ -1786,6 +1786,7 @@ app.post('/rgpd/:token/submit', rgpdUpload.any(), async (req, res) => {
     const clientIp = req.headers['x-forwarded-for'] || req.ip || 'IP inconnue';
     const userAgent = req.headers['user-agent'] || 'UA inconnu';
     const horodatage = new Date().toISOString();
+    console.log(`📋 RGPD submit: ${prenom} ${nom} (${raison_sociale}) — vendeur: ${vendeur.email} — fichiers: ${(req.files || []).length}`);
 
     // 1. Créer le dossier Drive : CLIENT EN ATTENTE / [Raison Sociale]
     const drive = getDriveClient();
@@ -1793,7 +1794,7 @@ app.post('/rgpd/:token/submit', rgpdUpload.any(), async (req, res) => {
     if (vendeur.drive_folder_id) {
       attenteId = await findOrCreateFolder(drive, 'CLIENT EN ATTENTE', vendeur.drive_folder_id);
     } else {
-      const vendeurNom = vendeur.nom || vendeurEmail.split('@')[0].replace('.', ' ');
+      const vendeurNom = vendeur.nom || vendeur.email.split('@')[0].replace('.', ' ');
       const fallbackId = await findOrCreateFolder(drive, vendeurNom, VENDEURS_FOLDER_ID);
       attenteId = await findOrCreateFolder(drive, 'CLIENT EN ATTENTE', fallbackId);
     }
@@ -2098,7 +2099,7 @@ h1{color:#1e1b4b;font-size:26px;margin-bottom:8px}
 </body></html>`);
 
   } catch (err) {
-    console.error('❌ Erreur RGPD submit:', err);
+    console.error('❌ Erreur RGPD submit:', err.message, err.stack);
     res.status(500).send(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LILIWATT — Erreur</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',sans-serif;background:#fef2f2;min-height:100vh;display:flex;align-items:center;justify-content:center}
