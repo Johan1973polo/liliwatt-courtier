@@ -4,7 +4,8 @@
       "email": "johan.mallet@liliwatt.fr",
       "password": "$2b$10$I4cv/PNzz3w7UforJBln0uyGucCz2quzBFSg5Mv/iFbgLOQVzXe1.",
       "role": "admin",
-      "name": "Johan Mallet"
+      "name": "Johan Mallet",
+      "drive_folder_id": "1wovLxmyQ23pk0CNHB7Q3tYwTFN8pRZOx"
     },
     {
       "email": "zakaria.jamaoui@liliwatt.fr",
