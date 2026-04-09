@@ -195,16 +195,6 @@
             </div>
             <hr style="border:none;border-top:1px solid #e9d5ff;margin-bottom:24px;">
 
-            <!-- Gestion des vendeurs -->
-            <div style="margin-bottom: 30px;">
-                <div style="margin-bottom: 20px;">
-                    <h2 style="color: #1e3a8a;">👥 Vendeurs (gérés via Google Sheets)</h2>
-                </div>
-                <div id="vendeursList">
-                    <p style="color: #64748b;">Aucun vendeur enregistré</p>
-                </div>
-            </div>
-            
             <!-- Gestion des administrateurs -->
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -603,40 +593,9 @@
                     const data = await response.json();
                     const allUsers = data.users || [];
                     
-                    // Séparer vendeurs et admins
-                    const vendeurs = allUsers.filter(u => u.role === 'vendeur');
+                    // Vendeurs gérés via onglet Équipes
                     const admins = allUsers.filter(u => u.role === 'admin');
-                    
-                    // Afficher les vendeurs
-                    const vendeursDiv = document.getElementById('vendeursList');
-                    if (vendeurs.length === 0) {
-                        vendeursDiv.innerHTML = '<p style="color: #64748b;">Aucun vendeur enregistré</p>';
-                    } else {
-                        vendeursDiv.innerHTML = vendeurs.map(user => `
-                            <div class="user-item">
-                                <div>
-                                    <strong>${user.email}</strong><br>
-                                    <small style="color: #64748b;">Créé le: ${new Date(user.created).toLocaleDateString('fr-FR')}</small>
-                                    ${user.info ? `<br><small style="color: #10b981;">✓ Infos configurées</small>` : ''}
-                                </div>
-                                <div style="display: flex; gap: 10px;">
-                                    <button class="btn btn-success" onclick="viewUser('${user.id}')">
-                                        👁️ Consulter
-                                    </button>
-                                    <button class="btn btn-primary" onclick="editUser('${user.id}')">
-                                        ✏️ Éditer
-                                    </button>
-                                    <button onclick="updateDriveFolder('${user.email}')" style="padding:6px 12px;background:white;border:1.5px solid #4285f4;color:#4285f4;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;">
-                                        🗂️ Drive${user.drive_folder_id ? ' ✅' : ''}
-                                    </button>
-                                    <button class="btn btn-danger" onclick="deleteUser('${user.id}', 'vendeur')">
-                                        🗑️ Supprimer
-                                    </button>
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-                    
+
                     // Afficher les admins
                     const adminsDiv = document.getElementById('adminsList');
                     if (admins.length === 0) {
