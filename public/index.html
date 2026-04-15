@@ -3041,7 +3041,7 @@ const avisImages = [
                     extractedData = result.data;
                     // Forcer nom_client au nom saisi par le vendeur (nom_detecte reste dispo)
                     const _nomVendeur = document.getElementById('nomSocieteInput')?.value?.trim();
-                    extractedData.nom_client = _nomVendeur || extractedData.nom_detecte || '';
+                    extractedData.nom_client = _nomVendeur || currentClientName || extractedData.nom_detecte || '';
 
                     // IMPORTANT : Forcer immédiatement le SIREN et PDL à être des strings
                     // Car l'extraction peut les retourner comme des nombres
