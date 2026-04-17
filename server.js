@@ -44,11 +44,7 @@ const initDataFolder = async () => {
     console.log('✅ Admin par défaut créé: johan.mallet@liliwatt.fr / Jaguar2026@');
   }
   
-  // Créer le fichier notifications.json s'il n'existe pas
-  const notifsFile = path.join(dataDir, 'notifications.json');
-  if (!require('fs').existsSync(notifsFile)) {
-    require('fs').writeFileSync(notifsFile, JSON.stringify({ notifications: [] }, null, 2));
-  }
+  // Notifications stockées dans Google Sheets (onglet NOTIFICATIONS)
 };
 
 // Initialiser les dossiers et fichiers
@@ -659,27 +655,23 @@ app.delete('/api/auth/users/:id', verifyToken, isAdmin, async (req, res) => {
 // Route pour créer une notification (vendeur)
 app.post('/api/notifications', verifyToken, async (req, res) => {
   try {
-    const data = await readJSON('notifications.json');
-    
+    const all = await getAllNotificationsFromSheets();
+
     // Vérifier si une notification existe déjà pour ce client et ce vendeur
-    const existingNotif = data.notifications.find(n =>
-      n.vendeur_id === req.user.id &&
+    const existingNotif = all.find(n =>
+      n.vendeur_email === req.user.email &&
       n.client_name === req.body.client_name &&
       (n.status === 'pending' || n.status === 'pending_referent')
     );
-    
+
     if (existingNotif) {
-      // Mettre à jour la notification existante au lieu d'en créer une nouvelle
-      existingNotif.date = new Date().toISOString();
-      existingNotif.extractedData = req.body.extractedData;
-      existingNotif.client_name = req.body.client_name || existingNotif.client_name;
-      existingNotif.segment = req.body.segment || existingNotif.segment;
-      await writeJSON('notifications.json', data);
-      
+      await updateNotificationInSheets(existingNotif.id, {
+        extractedData: req.body.extractedData,
+        client_name: req.body.client_name || existingNotif.client_name,
+        segment: req.body.segment || existingNotif.segment,
+      });
       res.json({ success: true, notification: existingNotif, updated: true });
     } else {
-      // Créer une nouvelle notification
-      // Chercher le référent du vendeur
       let referent_email = '';
       try {
         const allUsers = await getVendeursFromSheets();
@@ -690,24 +682,18 @@ app.post('/api/notifications', verifyToken, async (req, res) => {
       const notification = {
         ...req.body,
         id: `notif_${Date.now()}`,
-        vendeur_id: req.user.id,
         vendeur_email: req.user.email,
         vendeur_drive_folder_id: req.user.drive_folder_id || '',
         referent_email,
         date: new Date().toISOString(),
-        date_soumission_vendeur: new Date().toISOString(),
         status: referent_email ? 'pending_referent' : 'pending',
         historique: [{
-          role: 'vendeur',
-          email: req.user.email,
-          action: 'Soumission MEC',
-          date: new Date().toISOString()
+          role: 'vendeur', email: req.user.email,
+          action: 'Soumission MEC', date: new Date().toISOString()
         }]
       };
 
-      data.notifications.push(notification);
-      await writeJSON('notifications.json', data);
-      
+      await saveNotificationToSheets(notification);
       res.json({ success: true, notification });
     }
   } catch (error) {
@@ -741,9 +727,8 @@ app.put('/api/auth/users/:email/drive-folder', verifyToken, isAdmin, async (req,
 // Route pour lister les notifications (admin only)
 app.get('/api/notifications', verifyToken, isAdmin, async (req, res) => {
   try {
-    const data = await readJSON('notifications.json');
-    const pending = data.notifications.filter(n => n.status === 'pending' || n.status === 'pending_referent');
-    
+    const all = await getAllNotificationsFromSheets();
+    const pending = all.filter(n => n.status === 'pending' || n.status === 'pending_referent');
     res.json({ success: true, notifications: pending });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -754,14 +739,14 @@ app.get('/api/notifications', verifyToken, isAdmin, async (req, res) => {
 app.get('/api/notifications/referent', verifyToken, async (req, res) => {
   try {
     const mesVendeurs = req.user.mes_vendeurs || [];
-    const data = JSON.parse(require('fs').readFileSync('./data/notifications.json'));
-    const pending = data.notifications.filter(n =>
+    const all = await getAllNotificationsFromSheets();
+    const pending = all.filter(n =>
       n.status === 'pending_referent' && mesVendeurs.includes(n.vendeur_email)
     );
-    const historique = data.notifications.filter(n =>
-      n.status !== 'pending_referent' &&
+    const historique = all.filter(n =>
+      n.status !== 'pending_referent' && n.status !== 'deleted' &&
       mesVendeurs.includes(n.vendeur_email) &&
-      (n.referent_email === req.user.email || n.referent_validateur === req.user.email)
+      (n.referent_email === req.user.email)
     );
     res.json({ success: true, notifications: pending, historique });
   } catch(err) {
@@ -772,13 +757,9 @@ app.get('/api/notifications/referent', verifyToken, async (req, res) => {
 // Route pour récupérer une notification spécifique
 app.get('/api/notifications/:id', verifyToken, isAdmin, async (req, res) => {
   try {
-    const data = await readJSON('notifications.json');
-    const notification = data.notifications.find(n => n.id === req.params.id);
-    
-    if (!notification) {
-      return res.status(404).json({ error: 'Notification non trouvée' });
-    }
-    
+    const all = await getAllNotificationsFromSheets();
+    const notification = all.find(n => n.id === req.params.id);
+    if (!notification) return res.status(404).json({ error: 'Notification non trouvée' });
     res.json({ success: true, notification });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -788,23 +769,19 @@ app.get('/api/notifications/:id', verifyToken, isAdmin, async (req, res) => {
 // Route pour marquer une notification comme complète
 app.put('/api/notifications/:id', verifyToken, isAdmin, async (req, res) => {
   try {
-    const data = await readJSON('notifications.json');
-    const notif = data.notifications.find(n => n.id === req.params.id);
+    const all = await getAllNotificationsFromSheets();
+    const notif = all.find(n => n.id === req.params.id);
+    if (!notif) return res.status(404).json({ error: 'Notification non trouvée' });
 
-    if (notif) {
-      notif.status = 'completed';
-      notif.completed_at = new Date().toISOString();
-      notif.completed_by = req.user.id;
-      notif.historique = notif.historique || [];
-      notif.historique.push({
-        role: 'admin',
-        email: req.user.email,
-        action: 'MEC finalisée et traitée',
-        date: new Date().toISOString()
-      });
-      await writeJSON('notifications.json', data);
-    }
-
+    const historique = notif.historique || [];
+    historique.push({
+      role: 'admin', email: req.user.email,
+      action: 'MEC finalisée et traitée', date: new Date().toISOString()
+    });
+    await updateNotificationInSheets(req.params.id, {
+      status: 'completed', historique,
+      note_admin: req.body.note || notif.note_admin || ''
+    });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -814,10 +791,9 @@ app.put('/api/notifications/:id', verifyToken, isAdmin, async (req, res) => {
 // Route pour récupérer les MEC complétées
 app.get('/api/notifications/completed', verifyToken, isAdmin, async (req, res) => {
   try {
-    const data = await readJSON('notifications.json');
-    const completed = data.notifications.filter(n => n.status === 'completed')
-      .sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0));
-    
+    const all = await getAllNotificationsFromSheets();
+    const completed = all.filter(n => n.status === 'completed')
+      .sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0));
     res.json({ success: true, notifications: completed });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -827,16 +803,8 @@ app.get('/api/notifications/completed', verifyToken, isAdmin, async (req, res) =
 // Route pour supprimer une notification (admin only)
 app.delete('/api/notifications/:id', verifyToken, isAdmin, async (req, res) => {
   try {
-    const data = await readJSON('notifications.json');
-    const index = data.notifications.findIndex(n => n.id === req.params.id);
-    
-    if (index === -1) {
-      return res.status(404).json({ error: 'Notification non trouvée' });
-    }
-    
-    data.notifications.splice(index, 1);
-    await writeJSON('notifications.json', data);
-    
+    const ok = await deleteNotificationFromSheets(req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Notification non trouvée' });
     res.json({ success: true, message: 'Notification supprimée avec succès' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1331,6 +1299,110 @@ async function updateSheetCell(cell, value) {
   });
 }
 
+// ========== NOTIFICATIONS VIA GOOGLE SHEETS ==========
+const NOTIF_SHEET_NAME = 'NOTIFICATIONS';
+
+async function ensureNotifSheet() {
+  const sheets = getSheetsClient();
+  try {
+    await sheets.spreadsheets.values.get({ spreadsheetId: SHEETS_ID, range: `${NOTIF_SHEET_NAME}!A1` });
+  } catch {
+    // L'onglet n'existe pas → le créer
+    try {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SHEETS_ID,
+        requestBody: { requests: [{ addSheet: { properties: { title: NOTIF_SHEET_NAME } } }] }
+      });
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SHEETS_ID,
+        range: `${NOTIF_SHEET_NAME}!A1:L1`,
+        valueInputOption: 'RAW',
+        requestBody: { values: [['id','status','client_name','segment','vendeur_email','referent_email','vendeur_drive_folder_id','extractedData','created_at','updated_at','note_referent','note_admin']] }
+      });
+      console.log('📋 Onglet NOTIFICATIONS créé dans Sheets');
+    } catch(e) { console.error('Erreur création onglet NOTIFICATIONS:', e.message); }
+  }
+}
+
+async function getAllNotificationsFromSheets() {
+  await ensureNotifSheet();
+  const sheets = getSheetsClient();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEETS_ID, range: `${NOTIF_SHEET_NAME}!A2:L500`
+  });
+  const rows = res.data.values || [];
+  return rows.map((r, i) => {
+    let extractedData = {};
+    try { extractedData = JSON.parse(r[7] || '{}'); } catch {}
+    return {
+      id: r[0] || '', status: r[1] || 'pending', client_name: r[2] || '',
+      segment: r[3] || '', vendeur_email: r[4] || '', referent_email: r[5] || '',
+      vendeur_drive_folder_id: r[6] || '', extractedData,
+      date: r[8] || '', updated_at: r[9] || '',
+      note_referent: r[10] || '', note_admin: r[11] || '',
+      _row: i + 2, // numéro de ligne dans le Sheet (pour update)
+      historique: extractedData._historique || []
+    };
+  });
+}
+
+async function saveNotificationToSheets(notif) {
+  await ensureNotifSheet();
+  const sheets = getSheetsClient();
+  const ed = { ...notif.extractedData };
+  if (notif.historique) ed._historique = notif.historique;
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEETS_ID,
+    range: `${NOTIF_SHEET_NAME}!A:L`,
+    valueInputOption: 'RAW',
+    requestBody: { values: [[
+      notif.id, notif.status, notif.client_name || '', notif.segment || '',
+      notif.vendeur_email || '', notif.referent_email || '',
+      notif.vendeur_drive_folder_id || '', JSON.stringify(ed),
+      notif.date || new Date().toISOString(), new Date().toISOString(),
+      notif.note_referent || '', notif.note_admin || ''
+    ]] }
+  });
+  console.log(`📋 Notification sauvée dans Sheets: ${notif.id} (${notif.client_name})`);
+}
+
+async function updateNotificationInSheets(notifId, updates) {
+  const all = await getAllNotificationsFromSheets();
+  const notif = all.find(n => n.id === notifId);
+  if (!notif) return null;
+
+  const merged = { ...notif, ...updates };
+  const ed = { ...(updates.extractedData || notif.extractedData) };
+  if (merged.historique) ed._historique = merged.historique;
+
+  const sheets = getSheetsClient();
+  const row = notif._row;
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SHEETS_ID,
+    range: `${NOTIF_SHEET_NAME}!A${row}:L${row}`,
+    valueInputOption: 'RAW',
+    requestBody: { values: [[
+      merged.id, merged.status, merged.client_name || '', merged.segment || '',
+      merged.vendeur_email || '', merged.referent_email || '',
+      merged.vendeur_drive_folder_id || '', JSON.stringify(ed),
+      merged.date || '', new Date().toISOString(),
+      merged.note_referent || '', merged.note_admin || ''
+    ]] }
+  });
+  console.log(`📋 Notification mise à jour dans Sheets: ${notifId} → ${merged.status}`);
+  return merged;
+}
+
+async function deleteNotificationFromSheets(notifId) {
+  const all = await getAllNotificationsFromSheets();
+  const notif = all.find(n => n.id === notifId);
+  if (!notif) return false;
+  // On met le statut à 'deleted' plutôt que de supprimer la ligne
+  await updateNotificationInSheets(notifId, { status: 'deleted' });
+  console.log(`🗑 Notification supprimée: ${notifId}`);
+  return true;
+}
+
 // Helper : trouver la ligne d'un vendeur par email
 async function findVendeurRow(email) {
   const sheets = getSheetsClient();
@@ -1695,37 +1767,31 @@ app.post('/api/drive/move-folder', verifyToken, async (req, res) => {
 app.post('/api/notifications/:id/valider-referent', verifyToken, async (req, res) => {
   try {
     const { note, extractedData } = req.body;
-    const data = JSON.parse(require('fs').readFileSync('./data/notifications.json'));
-    const notif = data.notifications.find(n => n.id === req.params.id);
-    
+    const all = await getAllNotificationsFromSheets();
+    const notif = all.find(n => n.id === req.params.id);
+
     if (!notif) return res.status(404).json({ error: 'Notification non trouvée' });
-    
-    // Vérifier que c'est bien le référent du vendeur
+
     const mesVendeurs = req.user.mes_vendeurs || [];
     if (req.user.role !== 'admin' && !mesVendeurs.includes(notif.vendeur_email)) {
       return res.status(403).json({ error: 'Accès refusé' });
     }
-    
-    // Mettre à jour le statut et l'historique
-    notif.status = 'pending';
-    notif.date_validation_referent = new Date().toISOString();
-    notif.referent_validateur = req.user.email;
-    notif.note_referent = note || '';
-    // Sauvegarder les données modifiées par le référent
-    if (extractedData) {
-      notif.extractedData = extractedData;
-      console.log('💾 Données référent sauvegardées pour:', notif.client_name);
-    }
-    notif.historique = notif.historique || [];
-    notif.historique.push({
-      role: 'referent',
-      email: req.user.email,
-      action: 'Validation et envoi à l\'admin',
-      note: note || '',
+
+    const historique = notif.historique || [];
+    historique.push({
+      role: 'referent', email: req.user.email,
+      action: 'Validation et envoi à l\'admin', note: note || '',
       date: new Date().toISOString()
     });
-    
-    require('fs').writeFileSync('./data/notifications.json', JSON.stringify(data, null, 2));
+
+    await updateNotificationInSheets(req.params.id, {
+      status: 'pending',
+      note_referent: note || '',
+      extractedData: extractedData || notif.extractedData,
+      historique
+    });
+
+    console.log('💾 Données référent sauvegardées pour:', notif.client_name);
     res.json({ success: true });
   } catch(err) {
     res.status(500).json({ error: err.message });
