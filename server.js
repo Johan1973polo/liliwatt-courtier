@@ -130,12 +130,25 @@ app.post('/api/upload-and-extract', async (req, res) => {
       `=== FACTURE PÉRIODE 1 (été) ===\n${content1}\n\n=== FACTURE PÉRIODE 2 (hiver) ===\n${content2}` : 
       content1;
     
-    console.log('🤖 Extraction GPT-4 ULTRA-PRÉCISE en cours...');
+    console.log('🤖 Extraction GPT-4o en cours...');
     console.log('📏 Taille du contenu:', fullContent.length, 'caractères');
-    
-    // Extraction avec GPT-4 ULTRA-OPTIMISÉ
+
+    // Si le texte extrait est trop court (photo/scan), utiliser GPT-4o Vision
+    let visionMode = false;
+    let imageBase64 = null;
+    if (fullContent.trim().length < 100) {
+      console.log('📸 Texte trop court → activation GPT-4o Vision');
+      visionMode = true;
+      const fileBuffer = await fs.readFile(file1.filepath);
+      imageBase64 = fileBuffer.toString('base64');
+      const mimeType = file1.mimetype || 'application/pdf';
+      // Pour les PDFs scannés, on envoie directement le fichier comme image
+      imageBase64 = `data:${mimeType};base64,${imageBase64}`;
+    }
+
+    // Extraction avec GPT-4o
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -254,7 +267,23 @@ Format JSON EXACT :
         },
         {
           role: "user",
-          content: `FACTURE(S) À ANALYSER AVEC PRÉCISION MAXIMALE :
+          content: visionMode ? [
+            {
+              type: "image_url",
+              image_url: { url: imageBase64, detail: "high" }
+            },
+            {
+              type: "text",
+              text: `FACTURE À ANALYSER VISUELLEMENT AVEC PRÉCISION MAXIMALE :
+Énergie sélectionnée: ${fields.energyType}
+Profil choisi: ${fields.profileType}
+
+EXTRAIS ABSOLUMENT TOUT depuis cette IMAGE de facture !
+Lis chaque zone, chaque tableau, chaque chiffre visible.
+Si une donnée n'existe pas, mets "N/A" pour texte ou 0 pour nombres.
+RETOURNE UNIQUEMENT le JSON, sans texte avant ni après.`
+            }
+          ] : `FACTURE(S) À ANALYSER AVEC PRÉCISION MAXIMALE :
 Énergie sélectionnée: ${fields.energyType}
 Profil choisi: ${fields.profileType}
 
