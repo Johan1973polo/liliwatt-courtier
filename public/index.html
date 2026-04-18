@@ -2547,17 +2547,19 @@ const avisImages = [
                     const sessionData = JSON.parse(mecData);
                     console.log('📥 Chargement des données de la MEC du vendeur...');
 
+                    // 🔄 RESET des variables globales AVANT chargement
+                    vendeurDriveFolderId = null;
+                    currentClientName = null;
+                    currentClientDriveFolderId = null;
+                    extractedData = null;
+
                     // ✅ Définir le drive_folder_id du vendeur pour les uploads
-                    if (sessionData.vendeur_drive_folder_id) {
-                        vendeurDriveFolderId = sessionData.vendeur_drive_folder_id;
-                        console.log('📁 Upload Drive vers le dossier du vendeur:', sessionData.vendeur_email);
-                    }
+                    vendeurDriveFolderId = sessionData.vendeur_drive_folder_id || null;
+                    console.log('📁 Upload Drive vers le dossier du vendeur:', sessionData.vendeur_email, '| folderId:', vendeurDriveFolderId);
 
                     // ✅ Définir le nom du client pour le dossier Drive
-                    if (sessionData.nom_client) {
-                        currentClientName = sessionData.nom_client;
-                        console.log('👤 Nom du client:', currentClientName);
-                    }
+                    currentClientName = sessionData.nom_client || sessionData.client_name || null;
+                    console.log('👤 Nom du client:', currentClientName);
 
                     // Restaurer toutes les données
                     if (sessionData.extractedData) {
