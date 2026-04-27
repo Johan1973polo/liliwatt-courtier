@@ -863,6 +863,12 @@ async function getVendeurFromSheets(email) {
     return null;
   }
 }
+// Helper: relire le drive_folder_id depuis le Sheet (source de verite)
+async function getDriveFolderForUser(email) {
+  const vendeurs = await getVendeursFromSheets();
+  const v = vendeurs.find(u => u.email.toLowerCase().trim() === email.toLowerCase().trim());
+  return v?.drive_folder_id || null;
+}
 // ===== FIN GOOGLE SHEETS AUTH =====
 
 // ===== GOOGLE DRIVE INTEGRATION =====
@@ -916,8 +922,9 @@ app.post('/api/drive/upload', verifyToken, async (req, res) => {
     const { pdfBase64, fileName, clientName, docType, overrideDriveFolderId } = req.body;
     const drive = getDriveClient();
 
-    // ✅ Utiliser overrideDriveFolderId si fourni (MEC reprise par admin), sinon drive_folder_id du JWT
-    const vendeurFolderId = overrideDriveFolderId || req.user.drive_folder_id || null;
+    // ✅ Utiliser overrideDriveFolderId si fourni (MEC reprise par admin), sinon relire le Sheet
+    const sheetFolder = await getDriveFolderForUser(req.user.email);
+    const vendeurFolderId = overrideDriveFolderId || sheetFolder || req.user.drive_folder_id || null;
     console.log('📁 Upload Drive — vendeurFolderId:', vendeurFolderId, '| overrideDriveFolderId:', overrideDriveFolderId || 'none', '| user.drive_folder_id:', req.user?.drive_folder_id || 'none', '| clientName:', clientName, '| fileName:', fileName);
 
     let attenteId;
@@ -988,8 +995,8 @@ app.post('/api/drive/create-client-folder', verifyToken, async (req, res) => {
     const { clientName } = req.body;
     const drive = getDriveClient();
     
-    // Utiliser le dossier Drive du vendeur depuis son JWT
-    const vendeurFolderId = req.user.drive_folder_id || null;
+    // Relire le Sheet pour le bon folder (pas le JWT qui peut etre obsolete)
+    const vendeurFolderId = await getDriveFolderForUser(req.user.email) || req.user.drive_folder_id || null;
     
     let attenteId;
     if (vendeurFolderId) {
@@ -1017,7 +1024,7 @@ app.post('/api/drive/rename-folder', verifyToken, async (req, res) => {
     const { oldName, newName, vendeurDriveFolderId } = req.body;
     const drive = getDriveClient();
     
-    const vendeurFolderId = vendeurDriveFolderId || req.user.drive_folder_id;
+    const vendeurFolderId = vendeurDriveFolderId || await getDriveFolderForUser(req.user.email) || req.user.drive_folder_id;
     if (!vendeurFolderId) return res.status(400).json({ error: 'Pas de dossier vendeur' });
     
     // Chercher le dossier "CLIENT EN ATTENTE"
@@ -1055,7 +1062,7 @@ app.get('/api/drive/list-documents', verifyToken, async (req, res) => {
   if (!DRIVE_CREDENTIALS) return res.status(503).json({ error: 'Drive non configuré' });
   try {
     const drive = getDriveClient();
-    const vendeurFolderId = req.user.drive_folder_id;
+    const vendeurFolderId = await getDriveFolderForUser(req.user.email) || req.user.drive_folder_id;
     if (!vendeurFolderId) return res.json({ success: true, attente: [], signe: [], perdu: [] });
 
     async function listFolder(parentId, folderName) {
