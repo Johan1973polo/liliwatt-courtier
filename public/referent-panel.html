@@ -510,18 +510,25 @@ async function toggleVendeur(vi) {
       const data = await res.json();
       
       const sections = [
-        { key: 'attente', label: '🕐 Clients en attente', cls: 'cat-attente', cat: 'CLIENT EN ATTENTE' },
-        { key: 'signe', label: '✅ Clients signés', cls: 'cat-signe', cat: 'CLIENTS SIGNÉS' },
-        { key: 'perdu', label: '❌ Clients perdus', cls: 'cat-perdu', cat: 'CLIENTS PERDUS' }
+        { key: 'attente', label: '🕐 Clients en attente', cat: 'CLIENT EN ATTENTE', color: '#d97706', bg: '#fffbeb' },
+        { key: 'signe', label: '✅ Clients signés', cat: 'CLIENTS SIGNÉS', color: '#059669', bg: '#ecfdf5' },
+        { key: 'perdu', label: '❌ Clients perdus', cat: 'CLIENTS PERDUS', color: '#dc2626', bg: '#fef2f2' },
+        { key: 'malScore', label: '⚠️ Clients mal scorés', cat: 'CLIENTS MAL SCORÉS', color: '#7c3aed', bg: '#f5f3ff' }
       ];
-      
+
       content.innerHTML = sections.map(sec => {
         const clients = data[sec.key] || [];
-        if (!clients.length) return '';
+        const isEmpty = !clients.length;
+        const grayStyle = isEmpty ? 'opacity:0.5;' : '';
         return `
-          <div>
-            <div class="cat-title ${sec.cls}">${sec.label} (${clients.length})</div>
-            ${clients.map((client, ci) => `
+          <div style="margin-bottom:8px;">
+            <div onclick="toggleN2Ref('${vi}','${sec.key}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:${sec.bg};border-radius:10px;cursor:pointer;${grayStyle}transition:opacity .15s;">
+              <span style="font-weight:700;color:${sec.color};font-size:13px;">${sec.label} (${clients.length})</span>
+              <span id="rn2chev-${vi}-${sec.key}" style="color:${sec.color};font-size:12px;transition:transform 200ms ease-out;display:inline-block;">▶</span>
+            </div>
+            <div id="rn2body-${vi}-${sec.key}" style="max-height:0;overflow:hidden;transition:max-height 200ms ease-out;">
+              <div style="padding:8px 0;">
+              ${isEmpty ? '<p class="empty">Aucun client</p>' : clients.map((client, ci) => `
               <div class="client-item">
                 <div class="client-header" onclick="toggleClient('${vi}_${ci}')">
                   <span style="font-weight:600;font-size:13px;">🏢 ${client.name}</span>
@@ -540,6 +547,8 @@ async function toggleVendeur(vi) {
                 </div>
               </div>
             `).join('')}
+              </div>
+            </div>
           </div>
         `;
       }).join('') || '<p class="empty">Aucun document</p>';
@@ -566,6 +575,23 @@ async function viewDoc(fileId) {
   } catch(e) {
     alert('Erreur: ' + e.message);
   }
+}
+
+function toggleN2Ref(vi, key) {
+  var allKeys = ['attente','signe','perdu','malScore'];
+  allKeys.forEach(function(k) {
+    var body = document.getElementById('rn2body-' + vi + '-' + k);
+    var chev = document.getElementById('rn2chev-' + vi + '-' + k);
+    if (!body) return;
+    if (k === key) {
+      var isOpen = body.style.maxHeight && body.style.maxHeight !== '0px';
+      body.style.maxHeight = isOpen ? '0px' : body.scrollHeight + 'px';
+      if (chev) chev.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+    } else {
+      body.style.maxHeight = '0px';
+      if (chev) chev.style.transform = 'rotate(0deg)';
+    }
+  });
 }
 
 function openMoveModal(folderId, clientName, fromCat, vendeurFolderId) {

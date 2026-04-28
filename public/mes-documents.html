@@ -209,25 +209,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #faf5ff; min-
     Chargement de vos documents...
   </div>
   
-  <div id="content" style="display:none;">
-    <!-- CLIENT EN ATTENTE -->
-    <div class="section">
-      <div class="section-title">🕐 Clients en attente <span id="countAttente" style="color:#d97706;font-size:13px;"></span></div>
-      <div id="listAttente"></div>
-    </div>
-    
-    <!-- CLIENTS SIGNÉS -->
-    <div class="section">
-      <div class="section-title">✅ Clients signés <span id="countSigne" style="color:#059669;font-size:13px;"></span></div>
-      <div id="listSigne"></div>
-    </div>
-    
-    <!-- CLIENTS PERDUS -->
-    <div class="section">
-      <div class="section-title">❌ Clients perdus <span id="countPerdu" style="color:#dc2626;font-size:13px;"></span></div>
-      <div id="listPerdu"></div>
-    </div>
-  </div>
+  <div id="content" style="display:none;"></div>
 </div>
 
 <!-- Modal upload document -->
@@ -264,64 +246,75 @@ async function loadDocuments() {
       headers: { 'Authorization': 'Bearer ' + token }
     });
     const data = await res.json();
-    
+
     if (!data.success) throw new Error(data.error);
-    
+
     document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('content').style.display = 'block';
-    
-    renderSection('listAttente', 'countAttente', data.attente || [], 'attente');
-    renderSection('listSigne', 'countSigne', data.signe || [], 'signe');
-    renderSection('listPerdu', 'countPerdu', data.perdu || [], 'perdu');
-    
+    var content = document.getElementById('content');
+    content.style.display = 'block';
+
+    var sections = [
+      { key: 'attente', label: '🕐 Clients en attente', color: '#d97706', bg: '#fffbeb' },
+      { key: 'signe', label: '✅ Clients signés', color: '#059669', bg: '#ecfdf5' },
+      { key: 'perdu', label: '❌ Clients perdus', color: '#dc2626', bg: '#fef2f2' },
+      { key: 'malScore', label: '⚠️ Clients mal scorés', color: '#7c3aed', bg: '#f5f3ff' }
+    ];
+
+    content.innerHTML = sections.map(function(sec) {
+      var clients = data[sec.key] || [];
+      var isEmpty = !clients.length;
+      var grayStyle = isEmpty ? 'opacity:0.5;' : '';
+      return '<div style="margin-bottom:8px;">' +
+        '<div onclick="toggleN2V(\'' + sec.key + '\')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:' + sec.bg + ';border-radius:10px;cursor:pointer;' + grayStyle + 'transition:opacity .15s;">' +
+          '<span style="font-weight:700;color:' + sec.color + ';font-size:13px;">' + sec.label + ' (' + clients.length + ')</span>' +
+          '<span id="vn2chev-' + sec.key + '" style="color:' + sec.color + ';font-size:12px;transition:transform 200ms ease-out;display:inline-block;">▶</span>' +
+        '</div>' +
+        '<div id="vn2body-' + sec.key + '" style="max-height:0;overflow:hidden;transition:max-height 200ms ease-out;">' +
+          '<div style="padding:8px 0;">' +
+          (isEmpty ? '<div class="empty-state">Aucun client</div>' : renderSectionClients(clients, sec.key)) +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
   } catch(e) {
-    document.getElementById('loadingState').innerHTML = `<p style="color:#ef4444;">Erreur: ${e.message}</p>`;
+    document.getElementById('loadingState').innerHTML = '<p style="color:#ef4444;">Erreur: ' + e.message + '</p>';
   }
 }
 
-function renderSection(containerId, countId, clients, section) {
-  const container = document.getElementById(containerId);
-  const countEl = document.getElementById(countId);
-  
-  countEl.textContent = clients.length > 0 ? `(${clients.length})` : '';
-  
-  if (clients.length === 0) {
-    container.innerHTML = '<div class="empty-state">Aucun client dans cette catégorie</div>';
-    return;
-  }
-  
-  container.innerHTML = clients.map(client => `
-    <div class="client-card">
-      <div class="client-header" onclick="toggleClient('${client.id}')">
-        <div class="client-name">
-          🏢 ${client.name}
-          <span style="color:#9ca3af;font-weight:400;font-size:12px;">${client.files?.length || 0} document(s)</span>
-        </div>
-        <span class="client-chevron" id="chevron-${client.id}">▼</span>
-      </div>
-      <div class="client-body" id="body-${client.id}">
-        <ul class="doc-list">
-          ${(client.files || []).map(file => `
-            <li class="doc-item">
-              <div class="doc-name">
-                📄 ${file.name}
-                <span style="color:#9ca3af;font-size:11px;">${file.size}</span>
-              </div>
-              <div class="doc-actions">
-                <button onclick="viewDoc('${file.id}')" class="btn-download" style="border:none;cursor:pointer;">👁 Voir</button>
-              </div>
-            </li>
-          `).join('')}
-        </ul>
-        <button class="btn-upload-doc" onclick="openUploadModal('${client.id}', '${client.name}', '${section}')">
-          ➕ Ajouter un document
-        </button>
-        <button onclick="deplacerClientVendeur('${client.id}', '${client.name}', '${section}')" style="margin-top:8px;width:100%;padding:8px;background:white;border:1.5px solid #7c3aed;color:#7c3aed;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
-          📂 Déplacer
-        </button>
-      </div>
-    </div>
-  `).join('');
+function toggleN2V(key) {
+  var allKeys = ['attente','signe','perdu','malScore'];
+  allKeys.forEach(function(k) {
+    var body = document.getElementById('vn2body-' + k);
+    var chev = document.getElementById('vn2chev-' + k);
+    if (!body) return;
+    if (k === key) {
+      var isOpen = body.style.maxHeight && body.style.maxHeight !== '0px';
+      body.style.maxHeight = isOpen ? '0px' : body.scrollHeight + 'px';
+      if (chev) chev.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+    } else {
+      body.style.maxHeight = '0px';
+      if (chev) chev.style.transform = 'rotate(0deg)';
+    }
+  });
+}
+
+function renderSectionClients(clients, section) {
+  return clients.map(function(client) {
+    return '<div class="client-card">' +
+      '<div class="client-header" onclick="toggleClient(\'' + client.id + '\')">' +
+        '<div class="client-name">🏢 ' + client.name + ' <span style="color:#9ca3af;font-weight:400;font-size:12px;">' + (client.files?.length || 0) + ' document(s)</span></div>' +
+        '<span class="client-chevron" id="chevron-' + client.id + '">▼</span>' +
+      '</div>' +
+      '<div class="client-body" id="body-' + client.id + '">' +
+        '<ul class="doc-list">' + (client.files || []).map(function(file) {
+          return '<li class="doc-item"><div class="doc-name">📄 ' + file.name + ' <span style="color:#9ca3af;font-size:11px;">' + file.size + '</span></div><div class="doc-actions"><button onclick="viewDoc(\'' + file.id + '\')" class="btn-download" style="border:none;cursor:pointer;">👁 Voir</button></div></li>';
+        }).join('') + '</ul>' +
+        '<button class="btn-upload-doc" onclick="openUploadModal(\'' + client.id + '\', \'' + client.name.replace(/'/g, "\\'") + '\', \'' + section + '\')">➕ Ajouter un document</button>' +
+        '<button onclick="deplacerClientVendeur(\'' + client.id + '\', \'' + client.name.replace(/'/g, "\\'") + '\', \'' + section + '\')" style="margin-top:8px;width:100%;padding:8px;background:white;border:1.5px solid #7c3aed;color:#7c3aed;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">📂 Déplacer</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 function toggleClient(clientId) {

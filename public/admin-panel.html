@@ -1323,17 +1323,25 @@ Cette action est irréversible.`)) return;
                     if (!data.success) throw new Error(data.error || 'Erreur');
                     
                     const sections = [
-                        { key: 'attente', label: '🕐 Clients en attente', color: '#d97706' },
-                        { key: 'signe', label: '✅ Clients signés', color: '#059669' },
-                        { key: 'perdu', label: '❌ Clients perdus', color: '#dc2626' }
+                        { key: 'attente', label: '🕐 Clients en attente', color: '#d97706', bg: '#fffbeb' },
+                        { key: 'signe', label: '✅ Clients signés', color: '#059669', bg: '#ecfdf5' },
+                        { key: 'perdu', label: '❌ Clients perdus', color: '#dc2626', bg: '#fef2f2' },
+                        { key: 'malScore', label: '⚠️ Clients mal scorés', color: '#7c3aed', bg: '#f5f3ff' }
                     ];
                     
                     contentDiv.innerHTML = sections.map(sec => {
                         const clients = data[sec.key] || [];
-                        if (!clients.length) return '';
+                        const isEmpty = !clients.length;
+                        const grayStyle = isEmpty ? 'opacity:0.5;' : '';
                         return `
-                            <div style="margin-bottom:12px;">
-                                <div style="font-weight:700;color:${sec.color};font-size:13px;margin-bottom:6px;">${sec.label} (${clients.length})</div>
+                            <div style="margin-bottom:8px;">
+                                <div onclick="toggleN2('${vi}','${sec.key}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:${sec.bg};border-radius:10px;cursor:pointer;${grayStyle}transition:opacity .15s;">
+                                    <span style="font-weight:700;color:${sec.color};font-size:13px;">${sec.label} (${clients.length})</span>
+                                    <span id="n2chev-${vi}-${sec.key}" style="color:${sec.color};font-size:12px;transition:transform 200ms ease-out;display:inline-block;">▶</span>
+                                </div>
+                                <div id="n2body-${vi}-${sec.key}" style="max-height:0;overflow:hidden;transition:max-height 200ms ease-out;">
+                                <div style="padding:8px 0;">
+                                ${isEmpty ? '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:12px;">Aucun client</p>' : ''}
                                 ${clients.map((client, ci) => `
                                     <div style="background:#f9f9ff;border:1px solid #e9d5ff;border-radius:8px;margin-bottom:6px;overflow:hidden;">
                                         <div onclick="togglePortClient('${vi}_${sec.key}_${ci}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;">
@@ -1368,9 +1376,10 @@ Cette action est irréversible.`)) return;
                                         </div>
                                     </div>
                                 `).join('')}
+                                </div></div>
                             </div>
                         `;
-                    }).join('') || '<p style="color:#9ca3af;font-size:13px;">Aucun document</p>';
+                    }).join('');
                     
                 } catch(e) {
                     contentDiv.innerHTML = `<p style="color:#ef4444;font-size:13px;">Erreur: ${e.message}</p>`;
@@ -1378,6 +1387,22 @@ Cette action est irréversible.`)) return;
             }
         }
         
+        function toggleN2(vi, key) {
+            var allKeys = ['attente','signe','perdu','malScore'];
+            allKeys.forEach(function(k) {
+                var body = document.getElementById('n2body-' + vi + '-' + k);
+                var chev = document.getElementById('n2chev-' + vi + '-' + k);
+                if (!body) return;
+                if (k === key) {
+                    var isOpen = body.style.maxHeight && body.style.maxHeight !== '0px';
+                    body.style.maxHeight = isOpen ? '0px' : body.scrollHeight + 'px';
+                    if (chev) chev.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+                } else {
+                    body.style.maxHeight = '0px';
+                    if (chev) chev.style.transform = 'rotate(0deg)';
+                }
+            });
+        }
         function togglePortClient(id) {
             const body = document.getElementById('port-cbody-' + id);
             const chevron = document.getElementById('port-cchevron-' + id);
