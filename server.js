@@ -1063,7 +1063,7 @@ app.get('/api/drive/list-documents', verifyToken, async (req, res) => {
   try {
     const drive = getDriveClient();
     const vendeurFolderId = await getDriveFolderForUser(req.user.email) || req.user.drive_folder_id;
-    if (!vendeurFolderId) return res.json({ success: true, attente: [], signe: [], perdu: [] });
+    if (!vendeurFolderId) return res.json({ success: true, attente: [], signe: [], perdu: [], malScore: [] });
 
     async function listFolder(parentId, folderName) {
       // Chercher le dossier
@@ -1106,13 +1106,14 @@ app.get('/api/drive/list-documents', verifyToken, async (req, res) => {
       return clients;
     }
 
-    const [attente, signe, perdu] = await Promise.all([
+    const [attente, signe, perdu, malScore] = await Promise.all([
       listFolder(vendeurFolderId, 'CLIENT EN ATTENTE'),
       listFolder(vendeurFolderId, 'CLIENTS SIGNÉS'),
-      listFolder(vendeurFolderId, 'CLIENTS PERDUS')
+      listFolder(vendeurFolderId, 'CLIENTS PERDUS'),
+      listFolder(vendeurFolderId, 'Clients mal scorés')
     ]);
 
-    res.json({ success: true, attente, signe, perdu });
+    res.json({ success: true, attente, signe, perdu, malScore });
   } catch(err) {
     console.error('list-documents error:', err.message);
     res.status(500).json({ error: err.message });
@@ -1189,7 +1190,7 @@ app.get('/api/drive/list-documents-admin', verifyToken, async (req, res) => {
     }
     
     if (!vendeurFolderId) {
-      return res.json({ success: true, attente: [], signe: [], perdu: [], error: 'Pas de dossier Drive configuré' });
+      return res.json({ success: true, attente: [], signe: [], perdu: [], malScore: [], error: 'Pas de dossier Drive configuré' });
     }
     
     const drive = getDriveClient();
@@ -1230,13 +1231,14 @@ app.get('/api/drive/list-documents-admin', verifyToken, async (req, res) => {
       return clients;
     }
 
-    const [attente, signe, perdu] = await Promise.all([
+    const [attente, signe, perdu, malScore] = await Promise.all([
       listFolder(vendeurFolderId, 'CLIENT EN ATTENTE'),
       listFolder(vendeurFolderId, 'CLIENTS SIGNÉS'),
-      listFolder(vendeurFolderId, 'CLIENTS PERDUS')
+      listFolder(vendeurFolderId, 'CLIENTS PERDUS'),
+      listFolder(vendeurFolderId, 'Clients mal scorés')
     ]);
 
-    res.json({ success: true, attente, signe, perdu });
+    res.json({ success: true, attente, signe, perdu, malScore });
   } catch(err) {
     console.error('list-documents-admin error:', err.message);
     res.status(500).json({ error: err.message });
@@ -1693,7 +1695,7 @@ app.get('/api/drive/list-documents-referent', verifyToken, async (req, res) => {
     const vendeurs = await getVendeursFromSheets();
     const vendeur = vendeurs.find(v => v.email === vendeurEmail);
     if (!vendeur?.drive_folder_id) {
-      return res.json({ success: true, attente: [], signe: [], perdu: [] });
+      return res.json({ success: true, attente: [], signe: [], perdu: [], malScore: [] });
     }
     
     const drive = getDriveClient();
@@ -1733,13 +1735,14 @@ app.get('/api/drive/list-documents-referent', verifyToken, async (req, res) => {
       return clients;
     }
 
-    const [attente, signe, perdu] = await Promise.all([
+    const [attente, signe, perdu, malScore] = await Promise.all([
       listFolder(vendeurFolderId, 'CLIENT EN ATTENTE'),
       listFolder(vendeurFolderId, 'CLIENTS SIGNÉS'),
-      listFolder(vendeurFolderId, 'CLIENTS PERDUS')
+      listFolder(vendeurFolderId, 'CLIENTS PERDUS'),
+      listFolder(vendeurFolderId, 'Clients mal scorés')
     ]);
 
-    res.json({ success: true, attente, signe, perdu });
+    res.json({ success: true, attente, signe, perdu, malScore });
   } catch(err) {
     res.status(500).json({ error: err.message });
   }
@@ -1822,7 +1825,8 @@ app.post('/api/drive/changer-statut', verifyToken, async (req, res) => {
     const nomsStatuts = {
       'attente': 'CLIENT EN ATTENTE',
       'signe': 'CLIENTS SIGNÉS',
-      'perdu': 'CLIENTS PERDUS'
+      'perdu': 'CLIENTS PERDUS',
+      'mal_score': 'Clients mal scorés'
     };
     
     // Trouver le dossier source
@@ -1858,7 +1862,7 @@ app.post('/api/drive/deplacer-client', verifyToken, isAdmin, async (req, res) =>
       return res.status(404).json({ error: 'Dossier Drive manquant pour un des vendeurs' });
     }
     
-    const nomsStatuts = { 'attente': 'CLIENT EN ATTENTE', 'signe': 'CLIENTS SIGNÉS', 'perdu': 'CLIENTS PERDUS' };
+    const nomsStatuts = { 'attente': 'CLIENT EN ATTENTE', 'signe': 'CLIENTS SIGNÉS', 'perdu': 'CLIENTS PERDUS', 'mal_score': 'Clients mal scorés' };
     const nomStatut = nomsStatuts[statut] || 'CLIENT EN ATTENTE';
     
     const sourceFolderId = await findOrCreateFolder(drive, nomStatut, vendeurSrc.drive_folder_id);
