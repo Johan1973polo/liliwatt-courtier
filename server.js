@@ -1921,6 +1921,60 @@ app.post('/api/drive/supprimer-fichier', verifyToken, isAdmin, async (req, res) 
 
 // ===== FIN ROUTES GESTION DOSSIERS DRIVE =====
 
+// ===== COMMISSIONS =====
+const COMMISSIONS_SHEET_ID = '1Ld1Zl3qVzdVZsyksdfxYfL1LiVcFd5BEbrPV6NYLfcA';
+
+app.post('/api/commissions/annoncer', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { vendeurEmail, vendeurNom, vendeurPrenom, referentEmail, referentNom, referentPrenom, clientNom, fournisseur, segment, commissionVendeur, commissionReferent } = req.body;
+    if (!vendeurEmail || !clientNom) return res.status(400).json({ error: 'Vendeur et client requis' });
+    if ((!commissionVendeur || commissionVendeur <= 0) && (!commissionReferent || commissionReferent <= 0)) return res.status(400).json({ error: 'Aucune commission renseignée' });
+
+    // 1. Append Sheet
+    let sheetUpdated = false;
+    try {
+      const sheetsClient = getSheetsClient();
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' }) + ' ' + now.toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' });
+      await sheetsClient.spreadsheets.values.append({
+        spreadsheetId: COMMISSIONS_SHEET_ID,
+        range: "'SUIVI COMMISSIONS ANNONCÉE'!A:G",
+        valueInputOption: 'RAW',
+        requestBody: { values: [[vendeurNom || '', clientNom, commissionVendeur > 0 ? commissionVendeur : '', commissionReferent > 0 ? commissionReferent : '', dateStr, fournisseur || '', segment || '']] }
+      });
+      sheetUpdated = true;
+      console.log('[COMMISSIONS] Sheet append OK —', vendeurNom, '—', clientNom);
+    } catch (e) { console.error('[COMMISSIONS] Sheet erreur:', e.message); }
+
+    // 2. Mail vendeur
+    let mailVendeur = false;
+    if (commissionVendeur > 0 && vendeurEmail) {
+      try {
+        const refBlock = (referentNom && referentPrenom) ? `<div style="display:flex;align-items:center;gap:10px;padding:12px;background:#f9fafb;border-radius:8px;"><div style="width:32px;height:32px;border-radius:50%;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#7c3aed;flex-shrink:0;">${(referentPrenom[0]||'').toUpperCase()}${(referentNom.split(' ').pop()[0]||'').toUpperCase()}</div><div style="font-size:12px;color:#4b5563;line-height:1.4;">Ton référent <strong style="color:#1e1b4b;">${referentPrenom} ${referentNom.split(' ').pop()}</strong> est informé et te suit sur ce dossier 🤝</div></div>` : '';
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;"><div style="max-width:560px;margin:24px auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.08);"><div style="background:#7c3aed;padding:36px 28px;text-align:center;"><div style="display:inline-block;background:rgba(255,255,255,0.18);padding:5px 14px;border-radius:20px;color:white;font-size:11px;font-weight:500;letter-spacing:0.5px;margin-bottom:14px;">⚡ LILIWATT</div><div style="color:white;font-size:22px;font-weight:600;margin-bottom:6px;">Bonjour ${vendeurPrenom || ''} 👋</div><div style="color:rgba(255,255,255,0.92);font-size:14px;line-height:1.6;">Tu viens de positionner un super dossier</div></div><div style="padding:28px;background:white;"><div style="background:#faf5ff;border-left:3px solid #7c3aed;padding:16px 18px;border-radius:0 8px 8px 0;margin-bottom:24px;"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Client positionné</div><div style="font-size:17px;font-weight:600;color:#1e1b4b;margin-bottom:8px;">${clientNom}</div><div><span style="display:inline-block;background:#ede9fe;color:#5b21b6;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:500;margin-right:6px;">${fournisseur || ''}</span><span style="display:inline-block;background:#f3f4f6;color:#4b5563;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:500;">${segment || ''}</span></div></div><div style="background:#f9fafb;border-radius:12px;padding:24px;text-align:center;margin-bottom:22px;"><div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Ta rémunération potentielle</div><div style="font-size:44px;font-weight:700;color:#7c3aed;letter-spacing:-1px;line-height:1;">${commissionVendeur} €</div></div><div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;margin-bottom:22px;"><div style="font-size:13px;color:#92400e;font-weight:500;margin-bottom:4px;">⏱️ Signature rapide = commission sécurisée</div><div style="font-size:12px;color:#b45309;line-height:1.5;">La rémunération est validée après signature client et confirmation fournisseur. Plus tu fermes vite, plus tu sécurises ton dossier.</div></div>${refBlock}</div><div style="padding:14px 24px;background:#faf5ff;border-top:1px solid #f3e8ff;text-align:center;"><div style="font-size:11px;color:#7c3aed;font-weight:600;">⚡ LILIWATT — Courtage énergie professionnel</div><div style="font-size:10px;color:#9ca3af;margin-top:3px;">Email automatique — Ne pas répondre</div></div></div></body></html>`;
+        await sendZohoMail({ to: vendeurEmail, subject: `🚀 Excellente nouvelle ${vendeurPrenom || ''} — ${clientNom}`, htmlBody: html });
+        mailVendeur = true;
+        console.log('[COMMISSIONS] Mail vendeur envoyé →', vendeurEmail);
+      } catch (e) { console.error('[COMMISSIONS] Mail vendeur erreur:', e.message); }
+    }
+
+    // 3. Mail référent
+    let mailReferent = false;
+    if (commissionReferent > 0 && referentEmail) {
+      try {
+        const vInit = ((vendeurPrenom||'')[0]||'').toUpperCase() + ((vendeurNom||'').split(' ').pop()[0]||'').toUpperCase();
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;"><div style="max-width:560px;margin:24px auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.08);"><div style="background:#5b21b6;padding:36px 28px;text-align:center;"><div style="display:inline-block;background:rgba(255,255,255,0.18);padding:5px 14px;border-radius:20px;color:white;font-size:11px;font-weight:500;letter-spacing:0.5px;margin-bottom:14px;">⚡ LILIWATT</div><div style="color:white;font-size:22px;font-weight:600;margin-bottom:6px;">Bonjour ${referentPrenom || ''} 👋</div><div style="color:rgba(255,255,255,0.92);font-size:14px;line-height:1.6;">Un de tes vendeurs est sur un beau dossier</div></div><div style="padding:28px;background:white;"><div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:#faf5ff;border-radius:10px;margin-bottom:20px;"><div style="width:40px;height:40px;border-radius:50%;background:#7c3aed;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:14px;flex-shrink:0;">${vInit}</div><div><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Vendeur</div><div style="font-size:15px;font-weight:600;color:#1e1b4b;">${vendeurNom || ''}</div></div></div><div style="background:white;border:1px solid #e9d5ff;border-radius:10px;padding:16px 18px;margin-bottom:24px;"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Client en cours</div><div style="font-size:17px;font-weight:600;color:#1e1b4b;margin-bottom:8px;">${clientNom}</div><div><span style="display:inline-block;background:#ede9fe;color:#5b21b6;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:500;margin-right:6px;">${fournisseur || ''}</span><span style="display:inline-block;background:#f3f4f6;color:#4b5563;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:500;">${segment || ''}</span></div></div><div style="background:#f9fafb;border-radius:12px;padding:24px;text-align:center;margin-bottom:22px;"><div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Ta commission potentielle</div><div style="font-size:44px;font-weight:700;color:#7c3aed;letter-spacing:-1px;line-height:1;">${commissionReferent} €</div></div><div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 16px;"><div style="font-size:13px;color:#166534;font-weight:500;margin-bottom:4px;">💪 Booste ton équipe</div><div style="font-size:12px;color:#15803d;line-height:1.5;">Plus la signature est rapide, plus le dossier se sécurise. N'hésite pas à accompagner ${vendeurPrenom || ''} pour fermer rapidement — c'est aussi ta commission qui s'envole.</div></div></div><div style="padding:14px 24px;background:#faf5ff;border-top:1px solid #f3e8ff;text-align:center;"><div style="font-size:11px;color:#7c3aed;font-weight:600;">⚡ LILIWATT — Courtage énergie professionnel</div><div style="font-size:10px;color:#9ca3af;margin-top:3px;">Email automatique — Ne pas répondre</div></div></div></body></html>`;
+        await sendZohoMail({ to: referentEmail, subject: `🎯 Dossier en cours dans ton équipe — ${clientNom}`, htmlBody: html });
+        mailReferent = true;
+        console.log('[COMMISSIONS] Mail référent envoyé →', referentEmail);
+      } catch (e) { console.error('[COMMISSIONS] Mail référent erreur:', e.message); }
+    }
+
+    const msg = [mailVendeur ? `Vendeur ${commissionVendeur} €` : null, mailReferent ? `Référent ${commissionReferent} €` : null].filter(Boolean).join(' + ');
+    res.json({ success: true, mailsSent: { vendeur: mailVendeur, referent: mailReferent }, sheetUpdated, message: msg || 'Sheet mis à jour' });
+  } catch (e) { console.error('[COMMISSIONS] Erreur:', e.message); res.status(500).json({ error: e.message }); }
+});
+
 // ===== RGPD FORMULAIRE CLIENT =====
 
 const rgpdUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });

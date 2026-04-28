@@ -1981,6 +1981,9 @@ button[onclick*="previousStep"] {
                         <button onclick="sendMecMail()" style="padding:12px 28px;background:linear-gradient(135deg,#7c3aed,#d946ef);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;" id="btnSendMecMail">
                             📨 Envoyer
                         </button>
+                        <button onclick="openCommissionModal()" style="padding:12px 28px;background:linear-gradient(135deg,#7c3aed,#d946ef);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">
+                            💰 Annoncer les commissions
+                        </button>
                         <button onclick="resetWorkflow()" class="btn-outline">
                             🔄 Nouvelle analyse
                         </button>
@@ -9297,6 +9300,198 @@ En activant cette option, je confirme avoir pris connaissance, compris et accept
     }, 2000);
   };
 })();
+
+// ===== TOAST =====
+function showToast(msg, type) {
+  type = type || 'info';
+  var icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  var colors = { success: '#10b981', error: '#ef4444', info: '#7c3aed' };
+  var container = document.getElementById('toastContainer');
+  if (!container) { container = document.createElement('div'); container.id = 'toastContainer'; container.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;'; document.body.appendChild(container); }
+  var t = document.createElement('div');
+  t.style.cssText = 'padding:12px 18px;border-radius:10px;color:white;font-size:14px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,0.15);transform:translateX(120%);transition:transform 250ms ease-out,opacity 250ms;display:flex;align-items:center;gap:8px;max-width:380px;background:' + colors[type] + ';';
+  t.innerHTML = icons[type] + ' ' + msg;
+  container.appendChild(t);
+  requestAnimationFrame(function() { t.style.transform = 'translateX(0)'; });
+  setTimeout(function() { t.style.opacity = '0'; t.style.transform = 'translateX(120%)'; setTimeout(function() { t.remove(); }, 300); }, 3500);
+}
+
+// ===== COMMISSION MODAL =====
+var _comVendeurs = [];
+async function openCommissionModal() {
+  var clientNom = currentClientName || (typeof extractedData !== 'undefined' ? extractedData.nom_client : '') || 'Client';
+  document.getElementById('comClientNom').textContent = clientNom;
+  document.getElementById('comVendeur').innerHTML = '<option value="">Chargement...</option>';
+  document.getElementById('comRefInfo').textContent = '—';
+  document.getElementById('comRefEmail').textContent = '';
+  document.getElementById('comCommVendeur').value = '';
+  document.getElementById('comCommReferent').value = '';
+  document.getElementById('comCommReferent').disabled = true;
+  document.getElementById('comCommReferent').style.opacity = '0.5';
+  document.getElementById('comFournisseur').value = '';
+  document.getElementById('comFournisseurAutre').style.display = 'none';
+  document.getElementById('comSegment').value = '';
+  document.getElementById('modalCommission').style.display = 'flex';
+  document.addEventListener('keydown', _comEsc);
+  // Load vendeurs
+  try {
+    var token = localStorage.getItem('token');
+    var r = await fetch('/api/vendeurs', { headers: { 'Authorization': 'Bearer ' + token } });
+    var d = await r.json();
+    _comVendeurs = (d.vendeurs || []).filter(function(v) { return v.statut !== 'inactif' && v.statut !== 'bloqué'; });
+    var sel = document.getElementById('comVendeur');
+    sel.innerHTML = '<option value="">— Choisir un vendeur —</option>' + _comVendeurs.map(function(v) {
+      return '<option value="' + v.email + '">' + (v.prenom || '') + ' ' + (v.nom_famille || '') + '</option>';
+    }).join('');
+  } catch(e) { console.error(e); }
+}
+function _comEsc(e) { if (e.key === 'Escape') fermerCommissionModal(); }
+function fermerCommissionModal() { document.getElementById('modalCommission').style.display = 'none'; document.removeEventListener('keydown', _comEsc); }
+
+function onComVendeurChange(email) {
+  var refInfo = document.getElementById('comRefInfo');
+  var refEmail = document.getElementById('comRefEmail');
+  var comRef = document.getElementById('comCommReferent');
+  var vendeur = _comVendeurs.find(function(v) { return v.email === email; });
+  if (!vendeur || !vendeur.referent_email) {
+    refInfo.textContent = 'Aucun';
+    refInfo.style.color = '#9ca3af';
+    refInfo.style.fontStyle = 'italic';
+    refEmail.textContent = '';
+    comRef.disabled = true;
+    comRef.style.opacity = '0.5';
+    comRef.value = '';
+    return;
+  }
+  var ref = _comVendeurs.find(function(v) { return v.email === vendeur.referent_email; });
+  if (!ref) {
+    refInfo.textContent = 'Aucun';
+    refInfo.style.color = '#9ca3af';
+    refInfo.style.fontStyle = 'italic';
+    refEmail.textContent = '';
+    comRef.disabled = true;
+    comRef.style.opacity = '0.5';
+    comRef.value = '';
+    return;
+  }
+  refInfo.textContent = (ref.prenom || '') + ' ' + (ref.nom_famille || '');
+  refInfo.style.color = '#1e1b4b';
+  refInfo.style.fontStyle = 'normal';
+  refEmail.textContent = ref.email;
+  comRef.disabled = false;
+  comRef.style.opacity = '1';
+}
+
+function onComFournisseurChange(val) {
+  document.getElementById('comFournisseurAutre').style.display = val === 'Autres' ? 'block' : 'none';
+}
+
+async function validerCommission() {
+  var vendeurEmail = document.getElementById('comVendeur').value;
+  if (!vendeurEmail) { showToast('Sélectionnez un vendeur', 'error'); return; }
+  var fournisseur = document.getElementById('comFournisseur').value;
+  if (fournisseur === 'Autres') fournisseur = document.getElementById('comFournisseurAutreInput').value.trim() || 'Autres';
+  var segment = document.getElementById('comSegment').value;
+  var comV = parseInt(document.getElementById('comCommVendeur').value) || 0;
+  var comR = parseInt(document.getElementById('comCommReferent').value) || 0;
+  if (comV <= 0 && comR <= 0) { showToast('Aucune commission renseignée', 'error'); return; }
+
+  var vendeur = _comVendeurs.find(function(v) { return v.email === vendeurEmail; });
+  var refEmail = document.getElementById('comRefEmail').textContent;
+  var ref = refEmail ? _comVendeurs.find(function(v) { return v.email === refEmail; }) : null;
+  var clientNom = document.getElementById('comClientNom').textContent;
+
+  var btn = document.getElementById('comBtnValider');
+  btn.disabled = true; btn.textContent = '⏳ Envoi...';
+
+  try {
+    var token = localStorage.getItem('token');
+    var r = await fetch('/api/commissions/annoncer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({
+        vendeurEmail: vendeur.email,
+        vendeurNom: (vendeur.prenom || '') + ' ' + (vendeur.nom_famille || ''),
+        vendeurPrenom: vendeur.prenom || '',
+        referentEmail: ref ? ref.email : null,
+        referentNom: ref ? (ref.prenom || '') + ' ' + (ref.nom_famille || '') : null,
+        referentPrenom: ref ? ref.prenom : null,
+        clientNom: clientNom,
+        fournisseur: fournisseur,
+        segment: segment,
+        commissionVendeur: comV,
+        commissionReferent: comR
+      })
+    });
+    var d = await r.json();
+    if (d.success) {
+      var msg = 'Commissions annoncées — ' + d.message;
+      if (!d.sheetUpdated) msg += ' (Sheet non mis à jour)';
+      showToast(msg, d.sheetUpdated ? 'success' : 'info');
+      setTimeout(fermerCommissionModal, 400);
+    } else {
+      showToast(d.error || 'Erreur', 'error');
+    }
+  } catch(e) { showToast('Erreur réseau', 'error'); }
+  btn.disabled = false; btn.textContent = '✅ Valider et envoyer';
+}
 </script>
+
+<!-- Modal Commission -->
+<div id="modalCommission" style="display:none;position:fixed;inset:0;background:rgba(30,27,75,0.5);backdrop-filter:blur(4px);z-index:5000;align-items:center;justify-content:center;" onclick="if(event.target===this)fermerCommissionModal()">
+  <div style="background:white;border-radius:16px;padding:28px;width:460px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+    <h3 style="color:#7c3aed;margin:0 0 4px;">💰 Annoncer les commissions</h3>
+    <p style="color:#9ca3af;font-size:13px;margin:0 0 20px;">Client : <strong id="comClientNom" style="color:#1e1b4b;">—</strong></p>
+
+    <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:4px;">Vendeur</label>
+    <select id="comVendeur" onchange="onComVendeurChange(this.value)" style="width:100%;padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;"></select>
+
+    <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:4px;">Référent</label>
+    <div style="padding:10px 14px;background:#f9fafb;border-radius:8px;margin-bottom:14px;">
+      <div id="comRefInfo" style="font-weight:600;font-size:14px;color:#9ca3af;font-style:italic;">—</div>
+      <div id="comRefEmail" style="font-size:12px;color:#6b7280;margin-top:2px;"></div>
+    </div>
+
+    <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:4px;">Fournisseur</label>
+    <select id="comFournisseur" onchange="onComFournisseurChange(this.value)" style="width:100%;padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:14px;margin-bottom:4px;box-sizing:border-box;">
+      <option value="">— Choisir —</option>
+      <option value="OHM Middle">OHM Middle</option>
+      <option value="OHM SoHo">OHM SoHo</option>
+      <option value="OHM Particulier">OHM Particulier</option>
+      <option value="Autres">Autres</option>
+    </select>
+    <div id="comFournisseurAutre" style="display:none;margin-bottom:10px;">
+      <input type="text" id="comFournisseurAutreInput" placeholder="Précisez le fournisseur" style="width:100%;padding:8px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:6px;">
+    </div>
+    <div style="margin-bottom:14px;"></div>
+
+    <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:4px;">Segment</label>
+    <select id="comSegment" style="width:100%;padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;">
+      <option value="">— Choisir —</option>
+      <option value="Pro">Pro</option>
+      <option value="SoHo">SoHo</option>
+      <option value="Particulier">Particulier</option>
+    </select>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+      <div>
+        <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:4px;">Commission vendeur (€)</label>
+        <input type="number" id="comCommVendeur" min="0" step="1" placeholder="0" style="width:100%;padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:14px;box-sizing:border-box;">
+        <div style="font-size:11px;color:#9ca3af;margin-top:3px;">Laisser à 0 → pas de mail vendeur</div>
+      </div>
+      <div>
+        <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:4px;">Commission référent (€)</label>
+        <input type="number" id="comCommReferent" min="0" step="1" placeholder="0" disabled style="width:100%;padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:14px;box-sizing:border-box;opacity:0.5;">
+        <div style="font-size:11px;color:#9ca3af;margin-top:3px;">Laisser à 0 → pas de mail référent</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button onclick="fermerCommissionModal()" style="flex:1;padding:12px;background:white;border:1.5px solid #e9d5ff;border-radius:8px;cursor:pointer;color:#6b7280;font-size:14px;">Annuler</button>
+      <button id="comBtnValider" onclick="validerCommission()" style="flex:2;padding:12px;background:linear-gradient(135deg,#7c3aed,#d946ef);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;">✅ Valider et envoyer</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
