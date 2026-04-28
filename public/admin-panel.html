@@ -1190,68 +1190,81 @@
             }
         }
         
-        async function changerStatutClient(vendeurEmail, clientId, clientName, statutActuel) {
-            const labels = { 'attente': '🕐 En attente', 'signe': '✅ Signé', 'perdu': '❌ Perdu' };
-            // Proposer les 2 autres statuts possibles
-            const choix = {
-                'attente': ['signe', 'perdu'],
-                'signe':   ['attente', 'perdu'],
-                'perdu':   ['attente', 'signe']
-            };
-            const options = choix[statutActuel];
-            const msg = `Déplacer "${clientName}" vers :\n\n1. ${labels[options[0]]}\n2. ${labels[options[1]]}\n\nEntrez 1 ou 2 :`;
-            const rep = prompt(msg);
-            if (!rep) return;
-            const nouveauStatut = rep.trim() === '1' ? options[0] : rep.trim() === '2' ? options[1] : null;
-            if (!nouveauStatut) { alert('Choix invalide'); return; }
-            
-            const token = localStorage.getItem('token');
-            const r = await fetch('/api/drive/changer-statut', {
+        var _mdCtx = null;
+        function changerStatutClient(vendeurEmail, clientId, clientName, statutActuel) {
+            _mdCtx = { vendeurEmail, clientId, clientName, statutActuel };
+            document.getElementById('mdClientName').textContent = clientName;
+            var catLabels = { 'attente': 'En attente', 'signe': 'Signé', 'perdu': 'Perdu', 'mal_score': 'Mal scoré' };
+            document.getElementById('mdFromCat').textContent = catLabels[statutActuel] || statutActuel;
+            var allStatuts = [
+                { key: 'attente', label: '🕐 En attente', bg: '#f59e0b' },
+                { key: 'signe', label: '✅ Signé', bg: '#10b981' },
+                { key: 'perdu', label: '❌ Perdu', bg: '#ef4444' },
+                { key: 'mal_score', label: '⚠️ Mal scoré', bg: '#7c3aed' }
+            ];
+            document.getElementById('mdOptions').innerHTML = allStatuts.filter(function(s) { return s.key !== statutActuel; }).map(function(s) {
+                return '<button onclick="execDeplacer(\'' + s.key + '\')" style="padding:12px;background:' + s.bg + ';color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;">' + s.label + '</button>';
+            }).join('');
+            document.getElementById('modalDeplacer').style.display = 'flex';
+            document.addEventListener('keydown', _mdEsc);
+        }
+        function _mdEsc(e) { if (e.key === 'Escape') fermerModalDeplacer(); }
+        function fermerModalDeplacer() { document.getElementById('modalDeplacer').style.display = 'none'; _mdCtx = null; document.removeEventListener('keydown', _mdEsc); }
+        async function execDeplacer(nouveauStatut) {
+            if (!_mdCtx) return;
+            var labels = { 'attente': '🕐 En attente', 'signe': '✅ Signé', 'perdu': '❌ Perdu', 'mal_score': '⚠️ Mal scoré' };
+            var token = localStorage.getItem('token');
+            var r = await fetch('/api/drive/changer-statut', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({ vendeurEmail, clientId, clientName, statutActuel, nouveauStatut })
+                body: JSON.stringify({ vendeurEmail: _mdCtx.vendeurEmail, clientId: _mdCtx.clientId, clientName: _mdCtx.clientName, statutActuel: _mdCtx.statutActuel, nouveauStatut: nouveauStatut })
             });
-            const data = await r.json();
-            if (data.success) {
-                alert(`✅ "${clientName}" déplacé vers ${labels[nouveauStatut]}`);
-                loadPortefeuille();
-            } else {
-                alert('❌ Erreur : ' + data.error);
-            }
+            var data = await r.json();
+            fermerModalDeplacer();
+            if (data.success) { showToast('"' + _mdCtx.clientName + '" déplacé vers ' + labels[nouveauStatut], 'success'); loadPortefeuille(); }
+            else { showToast('Erreur : ' + data.error, 'error'); }
         }
 
+        var _mtCtx = null;
         async function deplacerClient(vendeurEmail, clientId, clientName, statut) {
-            const token = localStorage.getItem('token');
-            // Récupérer la liste des vendeurs
-            const r = await fetch('/api/vendeurs', { headers: { 'Authorization': 'Bearer ' + token } });
-            const data = await r.json();
-            const vendeurs = (data.vendeurs || []).filter(v => v.email !== vendeurEmail);
-            if (!vendeurs.length) { alert('Aucun autre vendeur disponible'); return; }
-            
-            const options = vendeurs.map((v, i) => `${i+1}. ${v.email}`).join('\n');
-            const choix = prompt(`Vers quel vendeur déplacer "${clientName}" ?
-
-${options}
-
-Entrez le numéro :`);
-            if (!choix) return;
-            
-            const idx = parseInt(choix) - 1;
-            if (idx < 0 || idx >= vendeurs.length) { alert('Choix invalide'); return; }
-            
-            const nouveauVendeur = vendeurs[idx];
-            const res = await fetch('/api/drive/deplacer-client', {
+            _mtCtx = { vendeurEmail, clientId, clientName, statut };
+            document.getElementById('mtClientName').textContent = clientName;
+            var token = localStorage.getItem('token');
+            var r = await fetch('/api/vendeurs', { headers: { 'Authorization': 'Bearer ' + token } });
+            var data = await r.json();
+            var vendeurs = (data.vendeurs || []).filter(function(v) { return v.email !== vendeurEmail; });
+            if (!vendeurs.length) { showToast('Aucun autre vendeur disponible', 'info'); return; }
+            document.getElementById('mtList').innerHTML = vendeurs.map(function(v) {
+                var nom = ((v.prenom || v.firstName || '') + ' ' + (v.nom || v.lastName || '')).trim() || v.email;
+                return '<button onclick="confirmerTransfert(\'' + v.email.replace(/'/g, "\\'") + '\',\'' + nom.replace(/'/g, "\\'") + '\')" style="padding:14px 16px;background:white;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;text-align:left;transition:all .15s;" onmouseover="this.style.borderColor=\'#7c3aed\';this.style.background=\'#faf5ff\'" onmouseout="this.style.borderColor=\'#e5e7eb\';this.style.background=\'white\'"><div style="font-weight:700;color:#1e1b4b;font-size:14px;">' + nom + '</div><div style="font-size:12px;color:#6b7280;margin-top:2px;">' + v.email + '</div></button>';
+            }).join('');
+            document.getElementById('modalTransferer').style.display = 'flex';
+            document.addEventListener('keydown', _mtEsc);
+        }
+        function _mtEsc(e) { if (e.key === 'Escape') fermerModalTransferer(); }
+        function fermerModalTransferer() { document.getElementById('modalTransferer').style.display = 'none'; document.removeEventListener('keydown', _mtEsc); }
+        function _mtcEsc(e) { if (e.key === 'Escape') fermerConfirmTransfert(); }
+        function fermerConfirmTransfert() { document.getElementById('modalConfirmTransfert').style.display = 'none'; document.removeEventListener('keydown', _mtcEsc); }
+        function confirmerTransfert(email, nom) {
+            document.getElementById('mtConfirmText').innerHTML = 'Transférer <strong>' + _mtCtx.clientName + '</strong> vers <strong>' + nom + '</strong> ?';
+            document.getElementById('mtConfirmBtn').onclick = function() { execTransfert(email); };
+            document.getElementById('modalConfirmTransfert').style.display = 'flex';
+            document.addEventListener('keydown', _mtcEsc);
+        }
+        async function execTransfert(vendeurEmailDest) {
+            if (!_mtCtx) return;
+            fermerConfirmTransfert();
+            fermerModalTransferer();
+            var token = localStorage.getItem('token');
+            var res = await fetch('/api/drive/deplacer-client', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({ vendeurEmailSource: vendeurEmail, vendeurEmailDest: nouveauVendeur.email, clientId, clientName, statut })
+                body: JSON.stringify({ vendeurEmailSource: _mtCtx.vendeurEmail, vendeurEmailDest: vendeurEmailDest, clientId: _mtCtx.clientId, clientName: _mtCtx.clientName, statut: _mtCtx.statut })
             });
-            const d = await res.json();
-            if (d.success) {
-                alert(`✅ "${clientName}" déplacé vers ${nouveauVendeur.email}`);
-                loadPortefeuille();
-            } else {
-                alert('❌ Erreur : ' + d.error);
-            }
+            var d = await res.json();
+            if (d.success) { showToast('"' + _mtCtx.clientName + '" transféré vers ' + vendeurEmailDest, 'success'); loadPortefeuille(); }
+            else { showToast('Erreur : ' + d.error, 'error'); }
+            _mtCtx = null;
         }
 
         async function supprimerFichier(fileId, fileName) {
@@ -1517,6 +1530,21 @@ Cette action est irréversible.`)) return;
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(loadServices, 500);
         });
+
+        // Toast notifications
+        function showToast(msg, type) {
+            type = type || 'info';
+            var icons = { success: '✅', error: '❌', info: 'ℹ️' };
+            var colors = { success: '#10b981', error: '#ef4444', info: '#7c3aed' };
+            var container = document.getElementById('toastContainer');
+            if (!container) { container = document.createElement('div'); container.id = 'toastContainer'; container.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;'; document.body.appendChild(container); }
+            var t = document.createElement('div');
+            t.style.cssText = 'padding:12px 18px;border-radius:10px;color:white;font-size:14px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,0.15);transform:translateX(120%);transition:transform 250ms ease-out,opacity 250ms;display:flex;align-items:center;gap:8px;max-width:380px;background:' + colors[type] + ';';
+            t.innerHTML = icons[type] + ' ' + msg;
+            container.appendChild(t);
+            requestAnimationFrame(function() { t.style.transform = 'translateX(0)'; });
+            setTimeout(function() { t.style.opacity = '0'; t.style.transform = 'translateX(120%)'; setTimeout(function() { t.remove(); }, 300); }, 3500);
+        }
 </script>
 
 <!-- Modal upload admin -->
@@ -1553,6 +1581,39 @@ Cette action est irréversible.`)) return;
             <button onclick="saveService()" style="flex:1;padding:10px;background:linear-gradient(135deg,#7c3aed,#d946ef);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">Enregistrer</button>
         </div>
     </div>
+</div>
+
+<!-- Modal Déplacer (changer statut) -->
+<div id="modalDeplacer" style="display:none;position:fixed;inset:0;background:rgba(30,27,75,0.5);backdrop-filter:blur(4px);z-index:5000;align-items:center;justify-content:center;" onclick="if(event.target===this)fermerModalDeplacer()">
+  <div style="background:white;border-radius:16px;padding:28px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+    <h3 style="color:#7c3aed;margin:0 0 16px;">🔄 Déplacer</h3>
+    <p style="color:#9ca3af;font-size:13px;margin:0 0 4px;">Client : <strong id="mdClientName"></strong></p>
+    <p style="color:#9ca3af;font-size:12px;margin:0 0 12px;">Actuellement : <strong id="mdFromCat"></strong></p>
+    <div id="mdOptions" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+    <button onclick="fermerModalDeplacer()" style="width:100%;padding:10px;background:white;border:1.5px solid #e9d5ff;border-radius:8px;cursor:pointer;color:#6b7280;margin-top:12px;">Annuler</button>
+  </div>
+</div>
+
+<!-- Modal Transférer -->
+<div id="modalTransferer" style="display:none;position:fixed;inset:0;background:rgba(30,27,75,0.5);backdrop-filter:blur(4px);z-index:5000;align-items:center;justify-content:center;" onclick="if(event.target===this)fermerModalTransferer()">
+  <div style="background:white;border-radius:16px;padding:28px;width:420px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+    <h3 style="color:#7c3aed;margin:0 0 16px;">🔀 Transférer</h3>
+    <p style="color:#9ca3af;font-size:13px;margin:0 0 12px;">Client : <strong id="mtClientName"></strong></p>
+    <div id="mtList" style="flex:1;overflow-y:auto;max-height:50vh;display:flex;flex-direction:column;gap:8px;"></div>
+    <button onclick="fermerModalTransferer()" style="width:100%;padding:10px;background:white;border:1.5px solid #e9d5ff;border-radius:8px;cursor:pointer;color:#6b7280;margin-top:12px;">Annuler</button>
+  </div>
+</div>
+
+<!-- Modal Confirmation transfert -->
+<div id="modalConfirmTransfert" style="display:none;position:fixed;inset:0;background:rgba(30,27,75,0.6);z-index:5100;align-items:center;justify-content:center;" onclick="if(event.target===this)fermerConfirmTransfert()">
+  <div style="background:white;border-radius:16px;padding:28px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+    <h3 style="color:#7c3aed;margin:0 0 12px;">Confirmer le transfert</h3>
+    <p id="mtConfirmText" style="color:#374151;font-size:14px;margin:0 0 20px;line-height:1.5;"></p>
+    <div style="display:flex;gap:10px;">
+      <button onclick="fermerConfirmTransfert()" style="flex:1;padding:10px;background:white;border:1.5px solid #e9d5ff;border-radius:8px;cursor:pointer;color:#6b7280;">Non</button>
+      <button id="mtConfirmBtn" style="flex:1;padding:10px;background:#7c3aed;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">Oui</button>
+    </div>
+  </div>
 </div>
 
 </body>

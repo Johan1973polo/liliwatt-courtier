@@ -166,8 +166,13 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #faf5ff; min-
 .modal { background: white; border-radius: 16px; padding: 28px; width: 380px; }
 .modal h3 { color: #7c3aed; margin-bottom: 16px; }
 .modal-option { display: flex; gap: 10px; margin-top: 12px; }
-.btn-signe { flex: 1; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; }
-.btn-perdu { flex: 1; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; }
+.modal-option { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.btn-status { padding: 12px; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 13px; }
+.btn-status:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-status[data-s="attente"] { background: #f59e0b; }
+.btn-status[data-s="signe"] { background: #10b981; }
+.btn-status[data-s="perdu"] { background: #ef4444; }
+.btn-status[data-s="mal_score"] { background: #7c3aed; }
 .btn-annuler { width: 100%; padding: 10px; background: white; border: 1.5px solid #e9d5ff; border-radius: 8px; cursor: pointer; color: #6b7280; margin-top: 8px; }
 </style>
 </head>
@@ -271,15 +276,12 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #faf5ff; min-
 </div>
 
 <!-- Modal déplacement -->
-<div class="modal-overlay" id="moveModal">
+<div class="modal-overlay" id="moveModal" onclick="if(event.target===this)closeMoveModal()">
   <div class="modal">
     <h3>🔄 Déplacer le dossier</h3>
     <p style="color:#9ca3af;font-size:13px;">Client : <strong id="moveClientName"></strong></p>
     <p style="color:#9ca3af;font-size:12px;margin-top:4px;">Actuellement dans : <strong id="moveFromCat"></strong></p>
-    <div class="modal-option">
-      <button class="btn-signe" onclick="confirmMove('CLIENTS SIGNÉS')">✅ Client signé</button>
-      <button class="btn-perdu" onclick="confirmMove('CLIENTS PERDUS')">❌ Client perdu</button>
-    </div>
+    <div class="modal-option" id="moveOptions"></div>
     <button class="btn-annuler" onclick="closeMoveModal()">Annuler</button>
   </div>
 </div>
@@ -570,12 +572,25 @@ function openMoveModal(folderId, clientName, fromCat, vendeurFolderId) {
   moveTarget = { folderId, clientName, fromCat, vendeurFolderId };
   document.getElementById('moveClientName').textContent = clientName;
   document.getElementById('moveFromCat').textContent = fromCat;
+  var allStatuts = [
+    { key: 'CLIENT EN ATTENTE', label: '🕐 En attente', s: 'attente' },
+    { key: 'CLIENTS SIGNÉS', label: '✅ Signé', s: 'signe' },
+    { key: 'CLIENTS PERDUS', label: '❌ Perdu', s: 'perdu' },
+    { key: 'CLIENTS MAL SCORÉS', label: '⚠️ Mal scoré', s: 'mal_score' }
+  ];
+  var opts = document.getElementById('moveOptions');
+  opts.innerHTML = allStatuts.filter(function(st) { return st.key !== fromCat; }).map(function(st) {
+    return '<button class="btn-status" data-s="' + st.s + '" onclick="confirmMove(\'' + st.key + '\')">' + st.label + '</button>';
+  }).join('');
   document.getElementById('moveModal').classList.add('open');
+  document.addEventListener('keydown', _moveEsc);
 }
+function _moveEsc(e) { if (e.key === 'Escape') closeMoveModal(); }
 
 function closeMoveModal() {
   document.getElementById('moveModal').classList.remove('open');
   moveTarget = null;
+  document.removeEventListener('keydown', _moveEsc);
 }
 
 async function confirmMove(toCategory) {
@@ -593,14 +608,14 @@ async function confirmMove(toCategory) {
     });
     const data = await res.json();
     if (data.success) {
-      alert('✅ Dossier déplacé vers ' + toCategory);
+      showToast('Dossier déplacé vers ' + toCategory, 'success');
       closeMoveModal();
       loadVendeurs();
     } else {
-      alert('Erreur: ' + data.error);
+      showToast('Erreur: ' + data.error, 'error');
     }
   } catch(e) {
-    alert('Erreur: ' + e.message);
+    showToast('Erreur: ' + e.message, 'error');
   }
 }
 
@@ -714,6 +729,20 @@ async function loadStats() {
   } catch(e) {
     console.error('Erreur chargement stats:', e);
   }
+}
+
+function showToast(msg, type) {
+  type = type || 'info';
+  var icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  var colors = { success: '#10b981', error: '#ef4444', info: '#7c3aed' };
+  var container = document.getElementById('toastContainer');
+  if (!container) { container = document.createElement('div'); container.id = 'toastContainer'; container.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;'; document.body.appendChild(container); }
+  var t = document.createElement('div');
+  t.style.cssText = 'padding:12px 18px;border-radius:10px;color:white;font-size:14px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,0.15);transform:translateX(120%);transition:transform 250ms ease-out,opacity 250ms;display:flex;align-items:center;gap:8px;max-width:380px;background:' + colors[type] + ';';
+  t.innerHTML = icons[type] + ' ' + msg;
+  container.appendChild(t);
+  requestAnimationFrame(function() { t.style.transform = 'translateX(0)'; });
+  setTimeout(function() { t.style.opacity = '0'; t.style.transform = 'translateX(120%)'; setTimeout(function() { t.remove(); }, 300); }, 3500);
 }
 
 </script>

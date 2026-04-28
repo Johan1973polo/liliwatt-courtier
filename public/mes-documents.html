@@ -390,31 +390,64 @@ loadDocuments();
             }
         }
 
-        async function deplacerClientVendeur(clientId, clientName, statutActuel) {
-            const labels = { 'attente': '🕐 En attente', 'signe': '✅ Signé', 'perdu': '❌ Perdu' };
-            const choix = {
-                'attente': ['signe', 'perdu'],
-                'signe':   ['attente', 'perdu'],
-                'perdu':   ['attente', 'signe']
-            };
-            const options = choix[statutActuel] || ['signe', 'perdu'];
-            const msg = `Déplacer "${clientName}" vers :\n\n1. ${labels[options[0]]}\n2. ${labels[options[1]]}\n\nEntrez 1 ou 2 :`;
-            const rep = prompt(msg);
-            if (!rep) return;
-            const nouveauStatut = rep.trim() === '1' ? options[0] : rep.trim() === '2' ? options[1] : null;
-            if (!nouveauStatut) { alert('Choix invalide'); return; }
-            
-            const token = localStorage.getItem('token');
-            const userEmail = JSON.parse(localStorage.getItem('user') || '{}').email;
-            const r = await fetch('/api/drive/changer-statut', {
+        var _mdvCtx = null;
+        function deplacerClientVendeur(clientId, clientName, statutActuel) {
+            _mdvCtx = { clientId, clientName, statutActuel };
+            document.getElementById('mdvClientName').textContent = clientName;
+            var catLabels = { 'attente': 'En attente', 'signe': 'Signé', 'perdu': 'Perdu', 'mal_score': 'Mal scoré' };
+            document.getElementById('mdvFromCat').textContent = catLabels[statutActuel] || statutActuel;
+            var allStatuts = [
+                { key: 'attente', label: '🕐 En attente', bg: '#f59e0b' },
+                { key: 'signe', label: '✅ Signé', bg: '#10b981' },
+                { key: 'perdu', label: '❌ Perdu', bg: '#ef4444' },
+                { key: 'mal_score', label: '⚠️ Mal scoré', bg: '#7c3aed' }
+            ];
+            document.getElementById('mdvOptions').innerHTML = allStatuts.filter(function(s) { return s.key !== statutActuel; }).map(function(s) {
+                return '<button onclick="execDeplacerVendeur(\'' + s.key + '\')" style="padding:12px;background:' + s.bg + ';color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;">' + s.label + '</button>';
+            }).join('');
+            document.getElementById('modalDeplacerVendeur').style.display = 'flex';
+            document.addEventListener('keydown', _mdvEsc);
+        }
+        function _mdvEsc(e) { if (e.key === 'Escape') fermerModalDeplacerVendeur(); }
+        function fermerModalDeplacerVendeur() { document.getElementById('modalDeplacerVendeur').style.display = 'none'; _mdvCtx = null; document.removeEventListener('keydown', _mdvEsc); }
+        async function execDeplacerVendeur(nouveauStatut) {
+            if (!_mdvCtx) return;
+            var labels = { 'attente': '🕐 En attente', 'signe': '✅ Signé', 'perdu': '❌ Perdu', 'mal_score': '⚠️ Mal scoré' };
+            var token = localStorage.getItem('token');
+            var userEmail = JSON.parse(localStorage.getItem('user') || '{}').email;
+            var r = await fetch('/api/drive/changer-statut', {
                 method: 'POST',
                 headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
-                body: JSON.stringify({ vendeurEmail: userEmail, clientId, clientName, statutActuel, nouveauStatut })
+                body: JSON.stringify({ vendeurEmail: userEmail, clientId: _mdvCtx.clientId, clientName: _mdvCtx.clientName, statutActuel: _mdvCtx.statutActuel, nouveauStatut: nouveauStatut })
             });
-            const d = await r.json();
-            if (d.success) { alert(`✅ "${clientName}" déplacé vers ${labels[nouveauStatut]}`); location.reload(); }
-            else alert('❌ ' + d.error);
+            var d = await r.json();
+            fermerModalDeplacerVendeur();
+            if (d.success) { showToast('"' + _mdvCtx.clientName + '" déplacé vers ' + labels[nouveauStatut], 'success'); setTimeout(function(){ location.reload(); }, 1500); }
+            else showToast(d.error, 'error');
+        }
+        function showToast(msg, type) {
+            type = type || 'info';
+            var icons = { success: '✅', error: '❌', info: 'ℹ️' };
+            var colors = { success: '#10b981', error: '#ef4444', info: '#7c3aed' };
+            var container = document.getElementById('toastContainer');
+            if (!container) { container = document.createElement('div'); container.id = 'toastContainer'; container.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;'; document.body.appendChild(container); }
+            var t = document.createElement('div');
+            t.style.cssText = 'padding:12px 18px;border-radius:10px;color:white;font-size:14px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,0.15);transform:translateX(120%);transition:transform 250ms ease-out,opacity 250ms;display:flex;align-items:center;gap:8px;max-width:380px;background:' + colors[type] + ';';
+            t.innerHTML = icons[type] + ' ' + msg;
+            container.appendChild(t);
+            requestAnimationFrame(function() { t.style.transform = 'translateX(0)'; });
+            setTimeout(function() { t.style.opacity = '0'; t.style.transform = 'translateX(120%)'; setTimeout(function() { t.remove(); }, 300); }, 3500);
         }
 </script>
+<!-- Modal Déplacer (vendeur) -->
+<div id="modalDeplacerVendeur" style="display:none;position:fixed;inset:0;background:rgba(30,27,75,0.5);backdrop-filter:blur(4px);z-index:5000;align-items:center;justify-content:center;" onclick="if(event.target===this)fermerModalDeplacerVendeur()">
+  <div style="background:white;border-radius:16px;padding:28px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+    <h3 style="color:#7c3aed;margin:0 0 16px;">🔄 Déplacer</h3>
+    <p style="color:#9ca3af;font-size:13px;margin:0 0 4px;">Client : <strong id="mdvClientName"></strong></p>
+    <p style="color:#9ca3af;font-size:12px;margin:0 0 12px;">Actuellement : <strong id="mdvFromCat"></strong></p>
+    <div id="mdvOptions" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+    <button onclick="fermerModalDeplacerVendeur()" style="width:100%;padding:10px;background:white;border:1.5px solid #e9d5ff;border-radius:8px;cursor:pointer;color:#6b7280;margin-top:12px;">Annuler</button>
+  </div>
+</div>
 </body>
 </html>
