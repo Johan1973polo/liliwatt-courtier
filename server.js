@@ -1975,6 +1975,67 @@ app.post('/api/commissions/annoncer', verifyToken, isAdmin, async (req, res) => 
   } catch (e) { console.error('[COMMISSIONS] Erreur:', e.message); res.status(500).json({ error: e.message }); }
 });
 
+// ===== CONTRATS PARTICULIERS =====
+app.post('/api/contrats-particuliers/creer', verifyToken, async (req, res) => {
+  try {
+    const { client, lieu, logement, contrat, services, vendeur } = req.body;
+    if (!client?.prenom || !client?.nom || !client?.email || !client?.tel || !client?.adresse) return res.status(400).json({ error: 'Champs client requis' });
+    if (!contrat?.elec?.active && !contrat?.gaz?.active) return res.status(400).json({ error: 'Au moins une offre requise' });
+
+    // Calcul commission (back = source de verite)
+    let commission = 0;
+    const GRILLE = {
+      elec: { premium: { '3kVA': 20, '6kVA+': 40 }, extra_eco: { '3kVA': 20, '6kVA+': 30 } },
+      gaz: { premium: { base: 20, b0: 30, b1_b2i: 40 }, extra_eco: { base: 20, b0: 20, b1_b2i: 30 } }
+    };
+    let elecAmt = 0, gazAmt = 0;
+    if (contrat.elec?.active) { elecAmt = GRILLE.elec[contrat.elec.offre]?.[contrat.elec.puissance] || 0; commission += elecAmt; }
+    if (contrat.gaz?.active) { gazAmt = GRILLE.gaz[contrat.gaz.offre]?.[contrat.gaz.categorie] || 0; commission += gazAmt; }
+    if (services?.entretien_chaudiere && contrat.gaz?.active) commission += 10;
+    // Thermostat: verifier conditions cote back
+    if (services?.thermostat && contrat.elec?.active && logement?.type_chauffage === 'Tout electrique' && lieu?.residence_principale === 'OUI' && logement?.plus_3_radiateurs) commission += 15;
+    else if (services?.thermostat) services.thermostat = false; // refuse si conditions non remplies
+
+    // 1. Append Sheet
+    let sheetOk = false;
+    try {
+      const sheetsClient = getSheetsClient();
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' }) + ' ' + now.toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' });
+      const offreElecLabel = contrat.elec?.active ? (contrat.elec.offre === 'premium' ? 'Premium' : 'Extra Eco') : '';
+      const puissanceLabel = contrat.elec?.active ? (contrat.elec.puissance === '3kVA' ? '3 kVA' : '6 kVA et +') : '';
+      const offreGazLabel = contrat.gaz?.active ? (contrat.gaz.offre === 'premium' ? 'Premium' : 'Extra Eco') : '';
+      const catGazLabel = contrat.gaz?.active ? ({ base: 'Base', b0: 'B0', b1_b2i: 'B1-B2i' }[contrat.gaz.categorie] || '') : '';
+      await sheetsClient.spreadsheets.values.append({
+        spreadsheetId: COMMISSIONS_SHEET_ID,
+        range: "'CONTRATS PARTICULIERS'!A:W",
+        valueInputOption: 'RAW',
+        requestBody: { values: [[dateStr, vendeur?.nom_complet || '', vendeur?.email || '', client.prenom, client.nom, client.email, client.tel, client.adresse, lieu?.pdl_prm || '', lieu?.pce || '', lieu?.fournisseur_actuel || '', lieu?.residence_principale || '', logement?.type_chauffage || '', offreElecLabel, puissanceLabel, contrat.elec?.conso_kwh || '', offreGazLabel, catGazLabel, contrat.gaz?.conso_kwh || '', services?.entretien_chaudiere ? 'OUI' : 'NON', services?.thermostat ? 'OUI' : 'NON', commission, 'Signe']] }
+      });
+      sheetOk = true;
+      console.log('[CONTRAT PART] Sheet append OK —', client.prenom, client.nom, '— commission:', commission);
+    } catch (e) { console.error('[CONTRAT PART] Sheet erreur:', e.message); }
+
+    // 2. Mail recap vendeur
+    let mailOk = false;
+    if (vendeur?.email) {
+      try {
+        const elecRow = contrat.elec?.active ? `<tr><td style="padding:4px 0;">⚡ Electricite</td><td style="text-align:right;padding:4px 0;font-weight:500;">${contrat.elec.offre === 'premium' ? 'Premium' : 'Extra Eco'} ${contrat.elec.puissance === '3kVA' ? '3 kVA' : '6 kVA+'}</td></tr>` : '';
+        const gazRow = contrat.gaz?.active ? `<tr><td style="padding:4px 0;">🔥 Gaz</td><td style="text-align:right;padding:4px 0;font-weight:500;">${contrat.gaz.offre === 'premium' ? 'Premium' : 'Extra Eco'} ${{ base: 'Base', b0: 'B0', b1_b2i: 'B1-B2i' }[contrat.gaz.categorie] || ''}</td></tr>` : '';
+        const entretienRow = services?.entretien_chaudiere ? '<tr><td style="padding:4px 0;">🔧 Entretien chaudiere</td><td style="text-align:right;padding:4px 0;font-weight:500;">+10 €</td></tr>' : '';
+        const thermostatRow = services?.thermostat ? '<tr><td style="padding:4px 0;">📡 Thermostat connecte</td><td style="text-align:right;padding:4px 0;font-weight:500;">+15 €</td></tr>' : '';
+        const prenomV = (vendeur.nom_complet || '').split(' ')[0] || '';
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;"><div style="max-width:580px;margin:24px auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.08);"><div style="background:linear-gradient(135deg,#7c3aed 0%,#d946ef 100%);padding:32px 28px;text-align:center;"><div style="display:inline-block;background:rgba(255,255,255,0.18);padding:5px 14px;border-radius:20px;color:white;font-size:11px;font-weight:500;letter-spacing:0.5px;margin-bottom:14px;">⚡ LILIWATT × 🟦 OHM</div><div style="color:white;font-size:22px;font-weight:600;margin-bottom:6px;">✅ Demande de vente enregistree</div><div style="color:rgba(255,255,255,0.92);font-size:14px;">Bonjour ${prenomV}, voici le recap de ta demande</div></div><div style="padding:28px;background:white;"><div style="background:#faf5ff;border-left:3px solid #7c3aed;padding:16px 18px;border-radius:0 8px 8px 0;margin-bottom:20px;"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Client</div><div style="font-size:17px;font-weight:600;color:#1e1b4b;margin-bottom:4px;">${client.prenom} ${client.nom}</div><div style="font-size:12px;color:#6b7280;line-height:1.6;">📧 ${client.email}<br>📞 ${client.tel}<br>🏠 ${client.adresse}</div></div><div style="background:white;border:1px solid #e9d5ff;border-radius:10px;padding:16px 18px;margin-bottom:20px;"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Detail du contrat</div><table style="width:100%;font-size:13px;color:#1e1b4b;">${elecRow}${gazRow}${entretienRow}${thermostatRow}</table></div><div style="background:#f9fafb;border-radius:12px;padding:24px;text-align:center;margin-bottom:20px;"><div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Ta commission potentielle</div><div style="font-size:44px;font-weight:700;color:#7c3aed;letter-spacing:-1px;line-height:1;">${commission} €</div></div><div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;"><div style="font-size:13px;color:#92400e;font-weight:500;margin-bottom:4px;">⏱️ Sous reserve d'activation</div><div style="font-size:12px;color:#b45309;line-height:1.5;">La commission est validee apres activation effective du contrat par OHM (retractation, conformite, premier prelevement). Plus la signature est rapide, plus le dossier se securise.</div></div></div><div style="padding:14px 24px;background:#faf5ff;border-top:1px solid #f3e8ff;text-align:center;"><div style="font-size:11px;color:#7c3aed;font-weight:600;">⚡ LILIWATT — Courtage energie professionnel</div><div style="font-size:10px;color:#9ca3af;margin-top:3px;">Email automatique — Ne pas repondre</div></div></div></body></html>`;
+        await sendZohoMail({ to: vendeur.email, subject: `✅ Ta demande de vente a ete enregistree — ${client.prenom} ${client.nom}`, htmlBody: html });
+        mailOk = true;
+        console.log('[CONTRAT PART] Mail recap envoye →', vendeur.email);
+      } catch (e) { console.error('[CONTRAT PART] Mail erreur:', e.message); }
+    }
+
+    res.json({ success: true, commission, sheetUpdated: sheetOk, mailSent: mailOk });
+  } catch (e) { console.error('[CONTRAT PART] Erreur:', e.message); res.status(500).json({ error: e.message }); }
+});
+
 // ===== RGPD FORMULAIRE CLIENT =====
 
 const rgpdUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });

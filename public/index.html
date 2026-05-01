@@ -1394,7 +1394,15 @@ button[onclick*="previousStep"] {
                 <span>Email</span>
             </div>
         </div>
-        
+
+        <!-- Bouton Contrat Particulier -->
+        <div style="text-align:center;margin:20px 0 10px;">
+          <button onclick="openContratParticulier()" style="padding:16px 36px;background:linear-gradient(135deg,#7c3aed,#d946ef);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(124,58,237,0.3);">
+            📝 Nouveau contrat particulier — Cliquer ici
+          </button>
+          <div style="font-size:12px;color:#9ca3af;margin-top:6px;">Pour les ventes de particuliers (Elec / Gaz / Dual) hors workflow MEC pro</div>
+        </div>
+
         <div class="content">
             <!-- Étape 1: Upload et Extraction -->
             <div class="step-content active" id="content1">
@@ -9492,6 +9500,271 @@ async function validerCommission() {
     </div>
   </div>
 </div>
+
+<!-- Modal Contrat Particulier -->
+<div id="modalContratParticulier" style="display:none;position:fixed;inset:0;background:rgba(30,27,75,0.5);backdrop-filter:blur(4px);z-index:5000;align-items:center;justify-content:center;overflow-y:auto;padding:20px;" onclick="if(event.target===this)fermerContratParticulier()">
+<div style="background:white;border-radius:16px;width:580px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.2);margin:auto;">
+
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#7c3aed,#d946ef);padding:28px;border-radius:16px 16px 0 0;text-align:center;position:relative;">
+    <button onclick="fermerContratParticulier()" style="position:absolute;top:12px;right:16px;background:none;border:none;color:rgba(255,255,255,0.8);font-size:22px;cursor:pointer;">×</button>
+    <div style="display:inline-block;background:rgba(255,255,255,0.18);padding:5px 14px;border-radius:20px;color:white;font-size:11px;font-weight:500;letter-spacing:0.5px;margin-bottom:10px;">⚡ LILIWATT × 🟦 OHM</div>
+    <div style="color:white;font-size:20px;font-weight:600;margin-bottom:4px;">Nouveau contrat particulier</div>
+    <div style="color:rgba(255,255,255,0.85);font-size:13px;">Saisis le client — la commission se calcule automatiquement</div>
+  </div>
+
+  <div style="padding:22px 28px;max-height:70vh;overflow-y:auto;">
+
+    <!-- S1 Offre -->
+    <div style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Choix de l'offre</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;">
+      <label id="cpElecPrem" onclick="toggleCpOffre('elec','premium')" style="padding:14px;background:#faf5ff;border:2px solid #e9d5ff;border-radius:10px;cursor:pointer;text-align:center;transition:all .15s;">
+        <div style="font-size:15px;">⚡</div><div style="font-weight:700;font-size:13px;color:#1e1b4b;">Elec Premium</div><div style="font-size:11px;color:#6b7280;">Prix fixe 2 ans • 20-40 €</div>
+      </label>
+      <label id="cpElecEco" onclick="toggleCpOffre('elec','extra_eco')" style="padding:14px;background:#faf5ff;border:2px solid #e9d5ff;border-radius:10px;cursor:pointer;text-align:center;transition:all .15s;">
+        <div style="font-size:15px;">⚡</div><div style="font-weight:700;font-size:13px;color:#1e1b4b;">Elec Extra Eco</div><div style="font-size:11px;color:#6b7280;">-15% TRV indexe • 20-30 €</div>
+      </label>
+      <label id="cpGazPrem" onclick="toggleCpOffre('gaz','premium')" style="padding:14px;background:#faf5ff;border:2px solid #e9d5ff;border-radius:10px;cursor:pointer;text-align:center;transition:all .15s;">
+        <div style="font-size:15px;">🔥</div><div style="font-weight:700;font-size:13px;color:#1e1b4b;">Gaz Premium</div><div style="font-size:11px;color:#6b7280;">Prix fixe 2 ans • 20-40 €</div>
+      </label>
+      <label id="cpGazEco" onclick="toggleCpOffre('gaz','extra_eco')" style="padding:14px;background:#faf5ff;border:2px solid #e9d5ff;border-radius:10px;cursor:pointer;text-align:center;transition:all .15s;">
+        <div style="font-size:15px;">🔥</div><div style="font-weight:700;font-size:13px;color:#1e1b4b;">Gaz Extra Eco</div><div style="font-size:11px;color:#6b7280;">-15% TRV indexe • 20-30 €</div>
+      </label>
+    </div>
+    <div id="cpDualBadge" style="display:none;text-align:center;padding:8px;background:#ede9fe;border-radius:8px;font-size:12px;color:#5b21b6;font-weight:600;margin-bottom:14px;">⚡🔥 Contrat Dual detecte — Elec + Gaz cumules independamment</div>
+
+    <!-- S2 Client -->
+    <div style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin:14px 0 8px;">Identite client</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <input type="text" id="cpPrenom" placeholder="👤 Prenom" required style="padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;">
+      <input type="text" id="cpNom" placeholder="👤 Nom" required style="padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <input type="email" id="cpEmail" placeholder="📧 Email" required style="padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;">
+      <input type="tel" id="cpTel" placeholder="📞 Telephone" required style="padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;">
+    </div>
+
+    <!-- S3 Lieu -->
+    <div style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Lieu de consommation</div>
+    <input type="text" id="cpAdresse" placeholder="🏠 Adresse complete" required style="width:100%;padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;margin-bottom:8px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <div><input type="text" id="cpPdl" placeholder="⚡ PDL/PRM" style="width:100%;padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;"><div style="font-size:10px;color:#9ca3af;margin-top:2px;">Si non renseigne → adresse sert d'identifiant</div></div>
+      <div id="cpPceWrap" style="display:none;"><input type="text" id="cpPce" placeholder="🔥 PCE" style="width:100%;padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div>
+        <select id="cpFournisseur" onchange="if(this.value==='Autre')document.getElementById('cpFournisseurAutre').style.display='block';else document.getElementById('cpFournisseurAutre').style.display='none';" style="width:100%;padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;">
+          <option value="">🏢 Fournisseur actuel</option><option>EDF</option><option>Engie</option><option>TotalEnergies</option><option>OHM</option><option>Vattenfall</option><option>ekWateur</option><option>Wekiwi</option><option value="Autre">Autre</option>
+        </select>
+        <input type="text" id="cpFournisseurAutre" placeholder="Precisez le fournisseur" style="display:none;width:100%;padding:8px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:12px;box-sizing:border-box;margin-top:4px;">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:12px;color:#374151;">🛡️ Residence principale ?</span>
+        <select id="cpResidence" style="padding:8px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;"><option value="OUI">Oui</option><option value="NON">Non</option></select>
+      </div>
+    </div>
+
+    <!-- S4 Logement -->
+    <div style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Logement & consommation</div>
+    <select id="cpChauffage" onchange="updateCpThermostat()" style="width:100%;padding:10px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;margin-bottom:8px;">
+      <option value="">🌡️ Type de chauffage</option><option value="Tout electrique">Tout electrique</option><option value="Gaz">Gaz</option><option value="Fioul">Fioul</option><option value="Bois">Bois</option><option value="Pompe a chaleur">Pompe a chaleur</option><option value="Autre">Autre</option>
+    </select>
+    <div id="cpElecFields" style="display:none;margin-bottom:8px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div><label style="font-size:11px;color:#6b7280;">🔌 Puissance</label><select id="cpPuissance" onchange="recalcCp()" style="width:100%;padding:8px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;"><option value="3kVA">3 kVA</option><option value="6kVA+" selected>6 kVA et +</option></select></div>
+        <div><label style="font-size:11px;color:#6b7280;">⚡ Conso elec (kWh/an)</label><input type="number" id="cpConsoElec" placeholder="Ex: 5000" style="width:100%;padding:8px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>
+      </div>
+    </div>
+    <div id="cpGazFields" style="display:none;margin-bottom:8px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div><label style="font-size:11px;color:#6b7280;">🔥 Categorie gaz</label><select id="cpCategorieGaz" onchange="recalcCp()" style="width:100%;padding:8px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;"><option value="base">Base</option><option value="b0">B0</option><option value="b1_b2i">B1-B2i</option></select></div>
+        <div><label style="font-size:11px;color:#6b7280;">🔥 Conso gaz (kWh/an)</label><input type="number" id="cpConsoGaz" placeholder="Ex: 12000" style="width:100%;padding:8px;border:1.5px solid #e9d5ff;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>
+      </div>
+    </div>
+
+    <!-- S5 Services -->
+    <div id="cpServicesSection" style="display:none;">
+      <div style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin:10px 0 8px;">Services additionnels</div>
+      <div id="cpThermostatWrap" style="display:none;margin-bottom:8px;">
+        <div id="cpRadiateursWrap" style="display:none;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:#374151;">Plus de 3 radiateurs ?</span><select id="cpRadiateurs" onchange="updateCpThermostat()" style="padding:6px;border:1.5px solid #e9d5ff;border-radius:6px;font-size:12px;"><option value="NON">Non</option><option value="OUI">Oui</option></select></div>
+        </div>
+        <label id="cpThermostatLabel" style="display:flex;align-items:center;gap:8px;padding:10px;background:#f9fafb;border-radius:8px;cursor:pointer;opacity:0.4;pointer-events:none;">
+          <input type="checkbox" id="cpThermostat" onchange="recalcCp()"> <span style="font-size:13px;">📡 Thermostat connecte (+15 €)</span>
+        </label>
+        <div id="cpThermostatMsg" style="font-size:11px;margin-top:4px;"></div>
+      </div>
+      <div id="cpEntretienWrap" style="display:none;margin-bottom:8px;">
+        <label style="display:flex;align-items:center;gap:8px;padding:10px;background:#f9fafb;border-radius:8px;cursor:pointer;">
+          <input type="checkbox" id="cpEntretien" onchange="recalcCp()"> <span style="font-size:13px;">🔧 Entretien chaudiere (+10 €)</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Recap commission -->
+    <div style="background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:14px;padding:18px;margin:14px 0;color:white;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:0.85;margin-bottom:8px;">💰 Recap commission</div>
+      <div id="cpRecapLines" style="font-size:13px;line-height:1.8;"></div>
+      <div style="border-top:1px solid rgba(255,255,255,0.2);margin-top:10px;padding-top:10px;text-align:center;">
+        <div style="font-size:11px;opacity:0.7;">Ta remuneration potentielle</div>
+        <div id="cpRecapTotal" style="font-size:32px;font-weight:800;letter-spacing:-1px;">0 €</div>
+      </div>
+    </div>
+
+    <!-- Boutons -->
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button onclick="fermerContratParticulier()" style="flex:1;padding:12px;background:white;border:1.5px solid #e9d5ff;border-radius:8px;cursor:pointer;color:#6b7280;font-size:14px;">Annuler</button>
+      <button id="cpBtnValider" onclick="validerContratParticulier()" style="flex:2;padding:12px;background:linear-gradient(135deg,#7c3aed,#d946ef);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;">✅ Valider et m'envoyer le recap</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ===== CONTRAT PARTICULIER =====
+var _cpState = { elec: null, gaz: null }; // null | 'premium' | 'extra_eco'
+
+function openContratParticulier() {
+  _cpState = { elec: null, gaz: null };
+  ['cpPrenom','cpNom','cpEmail','cpTel','cpAdresse','cpPdl','cpPce','cpConsoElec','cpConsoGaz'].forEach(function(id){ var el=document.getElementById(id);if(el)el.value=''; });
+  ['cpElecPrem','cpElecEco','cpGazPrem','cpGazEco'].forEach(function(id){ document.getElementById(id).style.borderColor='#e9d5ff'; document.getElementById(id).style.background='#faf5ff'; });
+  document.getElementById('cpDualBadge').style.display='none';
+  document.getElementById('cpElecFields').style.display='none';
+  document.getElementById('cpGazFields').style.display='none';
+  document.getElementById('cpPceWrap').style.display='none';
+  document.getElementById('cpServicesSection').style.display='none';
+  document.getElementById('cpThermostatWrap').style.display='none';
+  document.getElementById('cpEntretienWrap').style.display='none';
+  document.getElementById('cpThermostat').checked=false;
+  document.getElementById('cpEntretien').checked=false;
+  document.getElementById('cpChauffage').value='';
+  document.getElementById('cpResidence').value='OUI';
+  document.getElementById('cpFournisseur').value='';
+  document.getElementById('cpFournisseurAutre').style.display='none';
+  document.getElementById('cpPuissance').value='6kVA+';
+  document.getElementById('cpCategorieGaz').value='base';
+  var btn=document.getElementById('cpBtnValider');btn.disabled=false;btn.textContent='✅ Valider et m\'envoyer le recap';
+  recalcCp();
+  document.getElementById('modalContratParticulier').style.display='flex';
+  document.addEventListener('keydown',_cpEsc);
+  setTimeout(function(){document.getElementById('cpPrenom').focus();},100);
+}
+function _cpEsc(e){if(e.key==='Escape')fermerContratParticulier();}
+function fermerContratParticulier(){document.getElementById('modalContratParticulier').style.display='none';document.removeEventListener('keydown',_cpEsc);}
+
+function toggleCpOffre(energie, offre) {
+  if (_cpState[energie] === offre) { _cpState[energie] = null; } else { _cpState[energie] = offre; }
+  // Update card styles
+  var elecCards = { premium: 'cpElecPrem', extra_eco: 'cpElecEco' };
+  var gazCards = { premium: 'cpGazPrem', extra_eco: 'cpGazEco' };
+  Object.keys(elecCards).forEach(function(k){ var el=document.getElementById(elecCards[k]); el.style.borderColor=(_cpState.elec===k)?'#7c3aed':'#e9d5ff'; el.style.background=(_cpState.elec===k)?'#ede9fe':'#faf5ff'; });
+  Object.keys(gazCards).forEach(function(k){ var el=document.getElementById(gazCards[k]); el.style.borderColor=(_cpState.gaz===k)?'#7c3aed':'#e9d5ff'; el.style.background=(_cpState.gaz===k)?'#ede9fe':'#faf5ff'; });
+  // Dual badge
+  document.getElementById('cpDualBadge').style.display=(_cpState.elec && _cpState.gaz)?'block':'none';
+  // Show/hide fields
+  document.getElementById('cpElecFields').style.display=_cpState.elec?'block':'none';
+  document.getElementById('cpGazFields').style.display=_cpState.gaz?'block':'none';
+  document.getElementById('cpPceWrap').style.display=_cpState.gaz?'block':'none';
+  // Services
+  var showServices = _cpState.elec || _cpState.gaz;
+  document.getElementById('cpServicesSection').style.display=showServices?'block':'none';
+  document.getElementById('cpEntretienWrap').style.display=_cpState.gaz?'block':'none';
+  updateCpThermostat();
+  recalcCp();
+}
+
+function updateCpThermostat() {
+  var wrap = document.getElementById('cpThermostatWrap');
+  var label = document.getElementById('cpThermostatLabel');
+  var msg = document.getElementById('cpThermostatMsg');
+  var radWrap = document.getElementById('cpRadiateursWrap');
+  if (!_cpState.elec) { wrap.style.display='none'; return; }
+  var chauffage = document.getElementById('cpChauffage').value;
+  if (chauffage !== 'Tout electrique') { wrap.style.display='none'; document.getElementById('cpThermostat').checked=false; recalcCp(); return; }
+  wrap.style.display='block';
+  radWrap.style.display='block';
+  var res = document.getElementById('cpResidence').value === 'OUI';
+  var rad = document.getElementById('cpRadiateurs').value === 'OUI';
+  var ok = res && rad;
+  if (ok) {
+    label.style.opacity='1'; label.style.pointerEvents='auto';
+    msg.innerHTML='<span style="color:#10b981;">✅ Conditions remplies (3/3) : Residence principale / Tout electrique / 3 radiateurs+</span>';
+  } else {
+    label.style.opacity='0.4'; label.style.pointerEvents='none';
+    document.getElementById('cpThermostat').checked=false;
+    var missing=[];if(!res)missing.push('Residence principale');missing.push('Tout electrique ✓');if(!rad)missing.push('3 radiateurs+');
+    msg.innerHTML='<span style="color:#ef4444;">❌ Conditions non remplies : '+missing.filter(function(m){return !m.includes('✓');}).join(', ')+'</span>';
+  }
+  recalcCp();
+}
+
+function calcCpCommission() {
+  var total=0, lines=[];
+  if (_cpState.elec) {
+    var p=document.getElementById('cpPuissance').value;
+    var elecAmt=0;
+    if (_cpState.elec==='premium') elecAmt=(p==='3kVA'?20:40);
+    else elecAmt=(p==='3kVA'?20:30);
+    total+=elecAmt;
+    lines.push('⚡ Elec '+(_cpState.elec==='premium'?'Premium':'Extra Eco')+' '+p+' : '+elecAmt+' €');
+  }
+  if (_cpState.gaz) {
+    var cat=document.getElementById('cpCategorieGaz').value;
+    var gazAmt=0;
+    if (_cpState.gaz==='premium') gazAmt=(cat==='base'?20:cat==='b0'?30:40);
+    else gazAmt=(cat==='base'?20:cat==='b0'?20:30);
+    total+=gazAmt;
+    lines.push('🔥 Gaz '+(_cpState.gaz==='premium'?'Premium':'Extra Eco')+' '+(cat==='b1_b2i'?'B1-B2i':cat.toUpperCase())+' : '+gazAmt+' €');
+  }
+  if (document.getElementById('cpEntretien').checked) { total+=10; lines.push('🔧 Entretien chaudiere : +10 €'); }
+  if (document.getElementById('cpThermostat').checked) { total+=15; lines.push('📡 Thermostat connecte : +15 €'); }
+  return { total: total, lines: lines };
+}
+
+function recalcCp() {
+  var c=calcCpCommission();
+  document.getElementById('cpRecapLines').innerHTML=c.lines.length?c.lines.join('<br>'):'<span style="opacity:0.6;">Selectionne une offre ci-dessus</span>';
+  document.getElementById('cpRecapTotal').textContent=c.total+' €';
+}
+
+async function validerContratParticulier() {
+  if (!_cpState.elec && !_cpState.gaz) { showToast('Selectionne au moins une offre', 'error'); return; }
+  var prenom=document.getElementById('cpPrenom').value.trim();
+  var nom=document.getElementById('cpNom').value.trim();
+  var email=document.getElementById('cpEmail').value.trim();
+  var tel=document.getElementById('cpTel').value.trim();
+  var adresse=document.getElementById('cpAdresse').value.trim();
+  if (!prenom||!nom||!email||!tel||!adresse) { showToast('Remplis tous les champs client', 'error'); return; }
+
+  var fournisseur=document.getElementById('cpFournisseur').value;
+  if (fournisseur==='Autre') fournisseur=document.getElementById('cpFournisseurAutre').value.trim()||'Autre';
+
+  var btn=document.getElementById('cpBtnValider');
+  btn.disabled=true; btn.textContent='⏳ Envoi...';
+
+  var user=JSON.parse(localStorage.getItem('user')||'{}');
+  var payload={
+    client:{prenom:prenom,nom:nom,email:email,tel:tel,adresse:adresse},
+    lieu:{pdl_prm:document.getElementById('cpPdl').value.trim(),pce:document.getElementById('cpPce').value.trim(),fournisseur_actuel:fournisseur,residence_principale:document.getElementById('cpResidence').value},
+    logement:{type_chauffage:document.getElementById('cpChauffage').value,plus_3_radiateurs:document.getElementById('cpRadiateurs').value==='OUI'},
+    contrat:{
+      elec:_cpState.elec?{active:true,offre:_cpState.elec,puissance:document.getElementById('cpPuissance').value,conso_kwh:parseInt(document.getElementById('cpConsoElec').value)||0}:{active:false},
+      gaz:_cpState.gaz?{active:true,offre:_cpState.gaz,categorie:document.getElementById('cpCategorieGaz').value,conso_kwh:parseInt(document.getElementById('cpConsoGaz').value)||0}:{active:false}
+    },
+    services:{entretien_chaudiere:document.getElementById('cpEntretien').checked,thermostat:document.getElementById('cpThermostat').checked},
+    vendeur:{nom_complet:user.nom||user.email||'',email:user.email||''}
+  };
+
+  try {
+    var token=localStorage.getItem('token');
+    var r=await fetch('/api/contrats-particuliers/creer',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(payload)});
+    var d=await r.json();
+    if (d.success) { showToast('Contrat enregistre — Commission : '+d.commission+' €','success'); setTimeout(fermerContratParticulier,400); }
+    else showToast(d.error||'Erreur','error');
+  } catch(e) { showToast('Erreur reseau','error'); }
+  btn.disabled=false; btn.textContent='✅ Valider et m\'envoyer le recap';
+}
+</script>
 
 </body>
 </html>
